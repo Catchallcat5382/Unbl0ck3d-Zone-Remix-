@@ -46,6 +46,7 @@
   <meta name="monetag" content="865d0173948d1ee2f7178e3b31fd226f">
   <link rel="icon" id="page-favicon" type="image/svg+xml" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAYAAAAmL5yKAAAAAXNSR0IArs4c6QAAAhBJREFUOE9tk89rE1EQx78Tf0A22tg2W4qHVqPVtol3Dyq24M2r7B48WS9F0KNQ0CLoP9CbCJ6zvSiKIlY02ggFr2tvmjbVKGSTIs22iSk7MvM21VIfebz3yHw/7/tmZunW1aN8ZXIbIAYR4mE2zAAhATCB5RwRmOU/AiLCk9I+UGfJZuIQRBItYfFgAZhgESoknuCEgZEF6nxMsdzsb/Xjc8s2LlRsLMiqM2IgMvtcch1565cCqVM6xHKz1xjFfGNU3Rm/DOtAUoXNdjMGROAogpMpw8lU1BX9XjysgPn6KXiN0zsvSB20MDt5W2GzCw/QbIUqFqAAXLtiHLQ/9LC836uP6DQWgBtnp3Axe073xS+LmCs9BHYAK3DttRjwPs2i8YIT8Oon/3GQxL1LM3q+8+o+QnHAXQerCtAntIpHNNeFehZekP1bBQApyQEzwraIJaGSSIZjV+Da34yD1rterV0hOAYvOK6A/OAYcoPjusrwfyxjaeUTykFZIU5mDe7Ad+Ng622fAdSG4QXDuHl+GhMjF3Y56R6e+y/xqPRYxa5dNQ423/SbHNSGUKgN4en1wn/F6qS6jJlnd1Xs2FWtEG0u2FpGP+yBH6ZxZmxqF0AbKh5h+BNfV18gZ20gb20YB+HrAemzbvX23q4AaWX5mVXbW5uNQNcup9md2B8LSWO77byXlog/MNMrXnEbfwCrwRQID/CEeAAAAABJRU5ErkJggg==">
   <link rel="preconnect" href="https://quantil.jsdelivr.net">
+  <link rel="stylesheet" href="community/community.css">
   <style>
     @font-face{font-family:'ApplePixel';src:url('https://quantil.jsdelivr.net/gh/bradardeletethis/apple/font.woff2') format('woff2');font-weight:400;font-style:normal;}
     html.page-hidden > body > *:not(#stealth-cover) { display: none !important; }
@@ -1631,7 +1632,9 @@
         <button class="sidebar-btn" data-tab="requests">
           <span class="icon"><svg width="24" height="24" viewBox="-2 -2 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.72 14.456l1.761-.508 10.603-10.73a.456.456 0 0 0-.003-.64l-.635-.642a.443.443 0 0 0-.632-.003L6.239 12.635l-.52 1.82zM18.703.664l.635.643c.876.887.884 2.318.016 3.196L8.428 15.561l-3.764 1.084a.901.901 0 0 1-1.11-.623.915.915 0 0 1-.002-.506l1.095-3.84L15.544.647a2.215 2.215 0 0 1 3.159.016zM7.184 1.817c.496 0 .898.407.898.909a.903.903 0 0 1-.898.909H3.592c-.992 0-1.796.814-1.796 1.817v10.906c0 1.004.804 1.818 1.796 1.818h10.776c.992 0 1.797-.814 1.797-1.818v-3.635c0-.502.402-.909.898-.909s.898.407.898.91v3.634c0 2.008-1.609 3.636-3.593 3.636H3.592C1.608 19.994 0 18.366 0 16.358V5.452c0-2.007 1.608-3.635 3.592-3.635h3.592z" fill="currentColor"/></svg></span><span class="sidebar-label">Requests</span>
         </button>
-        <button class="sidebar-btn" data-tab="settings">
+        <button class="sidebar-btn" data-tab="community">
+          <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span><span class="sidebar-label">Community</span>
+        </button>        <button class="sidebar-btn" data-tab="settings">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" /><circle cx="12" cy="12" r="3" /></svg></span><span class="sidebar-label">Settings</span>
         </button>
         <button class="sidebar-btn" data-tab="console">
@@ -1730,6 +1733,31 @@
         </div>
       </div>
 
+
+      <div class="tab-content" id="community">
+        <div class="community-shell">
+          <section class="community-panel">
+            <h2>Community</h2>
+            <p>Live chat and staff-only posts use Supabase. Roles are checked by database policies, not by editable browser code.</p>
+            <div id="community-setup" class="community-setup">Paste Supabase settings in <b>community/config.js</b>, run <b>community/supabase-schema.sql</b>, then redeploy.</div>
+            <div id="community-user"></div>
+            <div class="community-status" id="community-status"></div>
+          </section>
+          <section class="community-panel community-grid">
+            <div>
+              <div class="community-tabs">
+                <button class="community-btn community-tab active" data-community-tab="chat">Chat</button>
+                <button class="community-btn secondary community-tab" data-community-tab="posts">Posts</button>
+              </div>
+            </div>
+            <div class="community-list" id="community-list"></div>
+            <div>
+              <div id="community-chat-form"></div>
+              <div id="community-post-form" class="community-hidden"></div>
+            </div>
+          </section>
+        </div>
+      </div>
       <div class="tab-content" id="media">
 
         <div class="media-section" id="media-movies" style="display:none">
@@ -8200,3 +8228,6 @@ let DATA = {
   else window.addEventListener('load', function () { setTimeout(initOnLoad, 300); });
 })();
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="community/config.js"></script>
+  <script src="community/community.js"></script>
