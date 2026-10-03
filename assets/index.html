@@ -147,7 +147,7 @@
     .loading-stripe .top-text { font-size: 14px; color: #ffffff; }
     .loading-stripe .website { font-size: 30px; color: #ffffff; }
     .loading-stripe .bottom-text { font-size: 14px; color: #ffffff; }
-    .loading-system-msg { color: var(--accent); margin-bottom: 8px; font-size: 14px; }
+    .loading-system-msg { color: #bfc5cf; margin-bottom: 8px; font-size: 14px; }
 
     #loading-timer {
       display: none;
@@ -1236,7 +1236,7 @@
     #loading-screen{background:#050507;}
     #loading-screen .blockScreen-svg g{stroke:var(--accent)!important;}
     #loading-screen .loading-stripe{background:var(--accent);}
-    #loading-screen .loading-system-msg{color:var(--accent);}
+    #loading-screen .loading-system-msg{color:#bfc5cf;}
     #loading-timer{color:rgba(var(--accent-rgb),0.35);}
 
     *::-webkit-scrollbar{display:block;width:12px;height:12px;}
@@ -1634,7 +1634,8 @@
         </button>
         <button class="sidebar-btn" data-tab="community">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span><span class="sidebar-label">Community</span>
-        </button>        <button class="sidebar-btn" data-tab="settings">
+        </button>
+        <button class="sidebar-btn" data-tab="settings">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" /><circle cx="12" cy="12" r="3" /></svg></span><span class="sidebar-label">Settings</span>
         </button>
         <button class="sidebar-btn" data-tab="console">
@@ -1726,11 +1727,7 @@
         <div class="quote-section">
           <div id="quote"></div>
         </div>
-        <div class="social-links">
-          <a href="https://www.tiktok.com/@unblockedzone" target="_blank" class="social-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"></path></svg><span class="social-label">TikTok</span></a>
-          <a href="https://www.youtube.com/@realunblockedzone" target="_blank" class="social-btn"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.4.6A3 3 0 0 0 .5 6.2C0 7.9 0 12 0 12s0 4.1.5 5.8a3 3 0 0 0 2.1 2.1c1.7.6 9.4.6 9.4.6s7.7 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 16.1 24 12 24 12s0-4.1-.5-5.8zM9.75 15.5v-7l6.5 3.5-6.5 3.5z" fill="currentColor" stroke="none"></path></svg><span class="social-label">YouTube</span></a>
-          <a href="https://discord.gg/v66D3fn4kD" target="_blank" class="social-btn"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" fill="currentColor" stroke="none"></path></svg><span class="social-label">Discord</span></a>
-        </div>
+        <div class="social-links">          <a href="https://www.youtube.com/@UselessGamz" target="_blank" class="social-btn"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.4.6A3 3 0 0 0 .5 6.2C0 7.9 0 12 0 12s0 4.1.5 5.8a3 3 0 0 0 2.1 2.1c1.7.6 9.4.6 9.4.6s7.7 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 16.1 24 12 24 12s0-4.1-.5-5.8zM9.75 15.5v-7l6.5 3.5-6.5 3.5z" fill="currentColor" stroke="none"></path></svg><span class="social-label">YouTube</span></a>        </div>
       </div>
 
 
@@ -3088,6 +3085,13 @@
             </select>
             <p style="color:#aaa;font-size:13px;margin-top:10px;">Status: <span id="adb-status">Checking...</span></p>
             <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:14px 0;">
+            <p style="color:#aaa;font-size:13px;font-weight:bold;">Login Gate</p>
+            <label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;color:var(--accent);font-family:'ApplePixel',sans-serif;font-size:14px;">
+              <input type="checkbox" id="login-required-check" onchange="setLoginRequired(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+              Require Google/Microsoft login
+            </label>
+            <p style="color:#aaa;font-size:12px;margin-top:8px;">Configure Google/Microsoft OAuth in Supabase first. Passwords are never collected by this page.</p>
+            <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:14px 0;">
             <p style="color:#aaa;font-size:13px;font-weight:bold;">Launcher</p>
             <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
               <button class="settings-btn" onclick="openSiteBlank()">Open in about:blank</button>
@@ -3156,6 +3160,12 @@
               <input type="text" id="panic-key-input" class="settings-input" readonly placeholder="Press a key..." onclick="armPanicCapture()" style="flex:1;cursor:pointer;">
               <button class="settings-btn" id="panic-key-capture-btn" onclick="armPanicCapture()">Set Key</button>
             </div>
+            <select id="panic-action-select" class="settings-input" onchange="savePanicSettings()" style="margin-top:12px;">
+              <option value="redirect">Redirect to URL</option>
+              <option value="close">Close this tab</option>
+              <option value="blank">Blank page</option>
+              <option value="history-back">Go back</option>
+            </select>
             <input type="text" id="panic-url-input" class="settings-input" placeholder="Redirect URL (https://www.google.com)" onchange="savePanicSettings()" style="margin-top:12px;">
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
               <button class="settings-btn" onclick="savePanicSettings()">Save</button>
@@ -3526,6 +3536,7 @@
   </div>
 
   <!-- ─── CUSTOM CONTEXT MENU ─── -->
+  <div id="uz-autosave-note" class="community-save-note">Autosaved</div>
   <div id="context-menu">
     <div class="ctx-title">Navigation</div>
     <div class="ctx-item" onclick="ctxGo('reload')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M21 12C21 16.9706 16.9706 21 12 21C9.69494 21 7.59227 20.1334 6 18.7083L3 16M3 12C3 7.02944 7.02944 3 12 3C14.3051 3 16.4077 3.86656 18 5.29168L21 8M3 21V16M3 16H8M21 3V8M21 8H16" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 2.5;"/></svg> Reload Page</div>
@@ -4749,6 +4760,22 @@
     function setPanicEnabled(enabled) {
       localStorage.setItem('panicEnabled', enabled ? '1' : '0');
     }
+    function getLoginRequired() {
+      return localStorage.getItem('uzRequireLogin') === '1';
+    }
+    function setLoginRequired(enabled) {
+      localStorage.setItem('uzRequireLogin', enabled ? '1' : '0');
+      if (window.UZ_COMMUNITY_CONFIG) window.UZ_COMMUNITY_CONFIG.requireLogin = !!enabled;
+      notifyAutosave('Login gate setting saved');
+    }
+    function notifyAutosave(msg) {
+      var n = document.getElementById('uz-autosave-note') || document.getElementById('community-save-note');
+      if (!n) return;
+      n.textContent = msg || 'Autosaved';
+      n.classList.add('show');
+      clearTimeout(notifyAutosave.t);
+      notifyAutosave.t = setTimeout(function(){ n.classList.remove('show'); }, 1500);
+    }
     function getPanicKey() {
       var k = localStorage.getItem('panicKey') || 'Backquote';
       if (k === 'Backquote') return '`';
@@ -4757,6 +4784,9 @@
     function getPanicUrl() {
       return localStorage.getItem('panicUrl') || 'https://www.google.com';
     }
+    function getPanicAction() {
+      return localStorage.getItem('panicAction') || 'redirect';
+    }
     function savePanicSettings() {
       var url = document.getElementById('panic-url-input');
       if (url) {
@@ -4764,14 +4794,21 @@
         url.value = val;
         localStorage.setItem('panicUrl', val);
       }
+      var action = document.getElementById('panic-action-select');
+      if (action) localStorage.setItem('panicAction', action.value || 'redirect');
+      notifyAutosave('Panic settings saved');
     }
     function resetPanicSettings() {
       localStorage.setItem('panicKey', 'Backquote');
       localStorage.setItem('panicUrl', 'https://www.google.com');
+      localStorage.setItem('panicAction', 'redirect');
       var inp = document.getElementById('panic-key-input');
       if (inp) inp.value = panicKeyLabel('Backquote');
       var url = document.getElementById('panic-url-input');
       if (url) url.value = 'https://www.google.com';
+      var action = document.getElementById('panic-action-select');
+      if (action) action.value = 'redirect';
+      notifyAutosave('Panic settings reset');
     }
     function panicKeyLabel(key) {
       var map = {
@@ -4832,6 +4869,11 @@
       if (inp) inp.value = panicKeyLabel(getPanicKey());
       var url = document.getElementById('panic-url-input');
       if (url) url.value = getPanicUrl();
+      var action = document.getElementById('panic-action-select');
+      if (action) action.value = getPanicAction();
+      var lg = document.getElementById('login-required-check');
+      if (lg) lg.checked = getLoginRequired();
+      if (window.UZ_COMMUNITY_CONFIG) window.UZ_COMMUNITY_CONFIG.requireLogin = getLoginRequired();
     })();
     window.addEventListener('keydown', function(e) {
       if (!getPanicEnabled() || panicCaptureArmed) return;
@@ -4846,6 +4888,10 @@
       if (e.key.toLowerCase() !== keyPart) return;
       e.preventDefault();
       window.__panicBypass = true;
+      var action = getPanicAction();
+      if (action === 'close') { window.close(); location.href = 'about:blank'; return; }
+      if (action === 'blank') { location.href = 'about:blank'; return; }
+      if (action === 'history-back') { history.back(); return; }
       window.location.href = getPanicUrl();
     });
 
@@ -5118,7 +5164,107 @@
     // Quote Rotator
     const quotes = [
       "Hi...",
-      "The bell does not dissmiss you, I do.",
+      "The bell does not dismiss you, I do.",
+      "Loading brilliance... probably.",
+      "Your tab looks normal. Your plans do not.",
+      "404: motivation not found.",
+      "The homework was allegedly seen nearby.",
+      "Certified classroom moment.",
+      "Quiet mode: enabled. Mischief mode: pending.",
+      "If anyone asks, this is research.",
+      "Today is a good day to not get caught lacking.",
+      "Trust the process, but verify the link.",
+      "The mitochondria is the powerhouse of pretending to work.",
+      "Keyboard warmed up. Brain optional.",
+      "This page has academic camouflage.",
+      "One more click and you are basically a software engineer.",
+      "The vibes compiled successfully.",
+      "Save early, save often, blame cache.",
+      "Education, but make it tactical.",
+      "This quote was locally sourced from pure nonsense.",
+      "The tab title is doing heavy lifting.",
+      "When in doubt, refresh once. Not twelve times.",
+      "This button definitely does button things.",
+      "The system is calm. Suspiciously calm.",
+      "Achievement unlocked: opened the page.",
+      "No pop quiz detected. Yet.",
+      "If it works, it is not legacy. It is vintage.",
+      "The code is thinking about its choices.",
+      "Please wait while the pixels assemble.",
+      "The lesson plan did not account for this.",
+      "Your focus has entered spectator mode.",
+      "A clean UI is half the battle.",
+      "Tiny settings, enormous consequences.",
+      "This is not a bug, it is character development.",
+      "The CDN is trying its best.",
+      "Everything is fine, probably cached.",
+      "LocalStorage remembers.",
+      "Today we learn about distributed assets.",
+      "The browser said yes, so we proceed.",
+      "Classroom aesthetic, chaotic interior.",
+      "This message passed the vibe check.",
+      "Do not anger the reload button.",
+      "Somewhere, a div is perfectly centered.",
+      "You are now entering the no-homework zone.",
+      "Latency is just suspense.",
+      "The pixels have unionized.",
+      "Your settings have opinions.",
+      "One does not simply clear site data.",
+      "The quote rotator is awake.",
+      "This is the part where the UI gets dramatic.",
+      "Behold: educationally adjacent technology.",
+      "If the page blinks, blink back.",
+      "The safest link is the one you control.",
+      "The second safest link is the one you checked.",
+      "This app respects the ancient art of looking busy.",
+      "The stylesheet has entered the chat.",
+      "There are two types of people: cached and uncached.",
+      "A watched deploy never builds.",
+      "The server is not slow; it is building suspense.",
+      "Today assignment: survive the loading screen.",
+      "Keep calm and blame DNS.",
+      "The console knows what you did.",
+      "The UI is wearing a disguise.",
+      "This quote has no educational value. Perfect.",
+      "Your profile name is now part of the lore.",
+      "Posts are for owners. Chat is for chaos.",
+      "No passwords. No weird stuff. Just OAuth.",
+      "If it needs to be secret, it does not belong in public HTML.",
+      "Public CDN code is public.",
+      "Owner mode requires server trust.",
+      "The login gate guards the door, not the source code.",
+      "Today we respect row-level security.",
+      "Supabase is the bouncer. The browser is just the guest list.",
+      "Do not paste service_role keys. Ever.",
+      "Anon key means public key. Public means public.",
+      "A good policy beats a hidden script.",
+      "This tab is wearing a fake mustache.",
+      "Settings saved. The tiny toast has spoken.",
+      "If you can read this, the font loaded.",
+      "The background is doing background things.",
+      "Every great site starts with a questionable idea.",
+      "The panic key is not a personality trait.",
+      "Close tab mode: dramatic exit.",
+      "Blank page mode: vanish protocol.",
+      "Redirect mode: tactical retreat.",
+      "Back mode: browser time travel.",
+      "The stylesheet said no overlap today.",
+      "Buttons should glow responsibly.",
+      "This page contains traces of caffeine.",
+      "The quote pool is now unnecessarily large.",
+      "Never trust a single mirror.",
+      "Quantil, Fastly, GCore: the CDN multiverse.",
+      "If one mirror fails, another takes the wheel.",
+      "The owner email is not a suggestion.",
+      "The database decides roles. The frontend asks nicely.",
+      "Your code is less cursed than yesterday.",
+      "Progress is still progress if it has bugs.",
+      "The UI is under new management.",
+      "We have entered the polishing arc.",
+      "One hundred quotes? Fine. Have one hundred-ish.",
+      "This line exists because someone asked for random stuff.",
+      "The page is pretending to be professional.",
+      "And honestly, it is pulling it off."
     ];
     const quoteEl = document.getElementById('quote');
     var shown = [];
@@ -5716,7 +5862,7 @@ if (/<head/i.test(html)) html = html.replace(/<head([^>]*)>/i, '<head$1>' + ytSt
       if (!url || !url.startsWith('http')) return;
       var name = document.getElementById('gv-title').textContent.replace(/[^a-zA-Z0-9_-]/g, '_') || 'g4mes';
       fetch(url).then(function(r){ return r.ok ? r.text() : Promise.reject(); }).then(function(html){
-        var note = 'Downloaded from unblockedzone. join discord.gg/v66D3fn4kD for 100+ links';
+        var note = 'Downloaded from Unbl0cked Zone Remix.';
         var water = '\n<script>try{var _n=document.createElement("div");_n.style.cssText="position:fixed;bottom:8px;right:8px;z-index:2147483647;background:rgba(0,0,0,.65);color:#fff;font:11px/1.4 Arial,sans-serif;padding:5px 9px;border-radius:5px;pointer-events:none;max-width:80vw;";_n.textContent=' + JSON.stringify(note) + ';(document.body||document.documentElement).appendChild(_n);}catch(e){}</' + 'script>';
         if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, water + '\n</body>'); else html += water;
         var blob = new Blob(['<!-- ' + note + ' -->\n' + html], { type: 'text/html' });
@@ -5785,7 +5931,7 @@ if (/<head/i.test(html)) html = html.replace(/<head([^>]*)>/i, '<head$1>' + ytSt
         '    fetchContent(0);\n' +
         '})();\n' +
         '<\/script>\n</body>\n</html>';
-      var note = 'Downloaded from unblockedzone. join discord.gg/v66D3fn4kD for 100+ links';
+      var note = 'Downloaded from Unbl0cked Zone Remix.';
       var blob = new Blob(['<!-- ' + note + ' -->\n' + stub], { type: 'text/html' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -8231,3 +8377,4 @@ let DATA = {
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="community/config.js"></script>
   <script src="community/community.js"></script>
+  <script src="community/auth-gate.js"></script>
