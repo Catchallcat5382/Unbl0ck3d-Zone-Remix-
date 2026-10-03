@@ -3,6 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Account-scoped site settings: must run before other scripts touch localStorage -->
+  <script>
+    (function () {
+      try {
+        if (window.__uzScopedStorage) return;
+        window.__uzScopedStorage = true;
+        var rawGet = Storage.prototype.getItem;
+        var rawSet = Storage.prototype.setItem;
+        var rawRemove = Storage.prototype.removeItem;
+        var rawKey = Storage.prototype.key;
+        var shared = /^(uzLoginEmail|uzRememberMe|uzRecentAccounts|uzSessionOk|uzCommunityProfileName:|uzCommunityAvatar:|sb-|supabase\.|community\.|__|ownerBypassHash)/;
+        function user() { return String(rawGet.call(localStorage, 'uzLoginEmail') || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '') || ''; }
+        function scoped(k) {
+          k = String(k || '');
+          if (!k || shared.test(k) || k.indexOf('uzacct:') === 0) return k;
+          var u = user();
+          return u ? 'uzacct:' + u + ':' + k : k;
+        }
+        Storage.prototype.getItem = function (k) { return rawGet.call(this, this === localStorage ? scoped(k) : k); };
+        Storage.prototype.setItem = function (k, v) { return rawSet.call(this, this === localStorage ? scoped(k) : k, v); };
+        Storage.prototype.removeItem = function (k) { return rawRemove.call(this, this === localStorage ? scoped(k) : k); };
+        Storage.prototype.key = function (i) { return rawKey.call(this, i); };
+      } catch (e) {}
+    })();
+  </script>
   <!-- Performance Mode bootstrap: must run before the body parses -->
   <script>
     (function () {
