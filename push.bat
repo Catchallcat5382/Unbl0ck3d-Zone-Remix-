@@ -77,8 +77,7 @@ echo Files Git sees in this folder:
 git status --short
 if errorlevel 1 goto :git_error
 echo.
-choice /C YN /M "Stage, commit, and push these changes"
-if errorlevel 2 goto :cancelled
+echo Staging, committing, and pushing without asking...
 
 git add -A
 if errorlevel 1 goto :git_error
