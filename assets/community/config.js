@@ -1,10 +1,8 @@
 window.UZ_COMMUNITY_CONFIG = {
   supabaseUrl: '',
   supabaseAnonKey: '',
-  authProvider: 'classlink',
-  classLinkLoginUrl: '',
-  allowedEmailDomains: ['student.cbsd.org', 'cbsd.org'],
-  ownerEmails: ['GoldsteinI.166@student.cbsd.org'],
+  authProvider: 'password',
+  internalAuthDomain: 'uz.local',
   requireLogin: true,
   minNameLength: 2,
   maxNameLength: 24,

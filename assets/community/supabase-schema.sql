@@ -1,14 +1,21 @@
--- Supabase SQL for Unbl0cked Zone community chat/posts with safe OAuth identity.
--- Run in Supabase Dashboard > SQL Editor. Enable Google/Microsoft OAuth in Authentication > Providers.
--- The browser never sets email or role. Supabase derives them from the authenticated OAuth token.
+-- Supabase SQL for Unbl0cked Zone community chat/posts with custom username/password auth.
+-- Passwords are handled by Supabase Auth and are never stored in readable form.
+-- Run this in Supabase Dashboard > SQL Editor after creating the project.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
+  username text,
   display_name text not null default 'Member' check (char_length(display_name) between 2 and 24),
   role text not null default 'member' check (role in ('owner','admin','mod','member','banned')),
   created_at timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists email text;
+alter table public.profiles add column if not exists username text;
+alter table public.profiles add column if not exists display_name text not null default 'Member';
+alter table public.profiles add column if not exists role text not null default 'member';
+alter table public.profiles add column if not exists created_at timestamptz not null default now();
 
 create or replace function public.set_profile_identity()
 returns trigger
@@ -17,11 +24,13 @@ security definer
 as $$
 declare
   jwt_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  jwt_username text := lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'username', split_part(jwt_email, '@', 1)));
 begin
   new.email := jwt_email;
-  if jwt_email = lower('GoldsteinI.166@student.cbsd.org') then
-    new.role := 'owner';
-  elsif tg_op = 'INSERT' then
+  if coalesce(new.username, '') = '' then
+    new.username := jwt_username;
+  end if;
+  if tg_op = 'INSERT' then
     new.role := 'member';
   else
     new.role := old.role;
@@ -85,3 +94,6 @@ do $$ begin
   alter publication supabase_realtime add table public.posts;
 exception when duplicate_object then null;
 end $$;
+
+-- To make your own account owner after you sign up, replace YOUR_USERNAME and run:
+-- update public.profiles set role = 'owner' where lower(username) = lower('YOUR_USERNAME');
