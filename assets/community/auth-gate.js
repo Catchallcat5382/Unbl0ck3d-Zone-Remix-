@@ -13,7 +13,8 @@
   function usernameFromUser(user) { return (user && user.user_metadata && user.user_metadata.username) || (user && user.email ? user.email.split('@')[0] : ''); }
   function setLightspeed(name) { try { localStorage.setItem('uzLoginEmail', name || ''); localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + (name || 'user') + ' (IP Address: █████).'); } catch (e) {} }
   function isTempOwner() { return sessionStorage.getItem('uzTempOwnerUnlocked') === 'true'; }
-  function bypassCodeReady() { return typeof cfg.ownerBypassHash === 'string' && cfg.ownerBypassHash.length === 64; }
+  function bypassCodeReady() { return typeof cfg.ownerBypassHash === 'string' && /^[a-f0-9]{64}$/i.test(cfg.ownerBypassHash); }
+  function shortHash(value) { value = String(value || ''); return value.length >= 12 ? value.slice(0, 6) + '...' + value.slice(-6) : value; }
   async function sha256Hex(value) { var data = new TextEncoder().encode(value); var digest = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(digest)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join(''); }
   function authUrl() { return String(cfg.supabaseUrl || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, ''); }
   function initClient() { if (ready && !client) client = window.supabase.createClient(authUrl(), cfg.supabaseAnonKey); }
@@ -101,7 +102,7 @@
       if (code.length !== 32) { err.textContent = 'Type the original raw 32-character code, not the 64-character hash.'; return; }
       if (!bypassCodeReady()) { err.textContent = 'Set ownerBypassHash in community/config.js first.'; return; }
       var codeHash = await sha256Hex(code);
-      if (codeHash !== cfg.ownerBypassHash) { err.textContent = 'Wrong code.'; input.value = ''; input.focus(); return; }
+      if (codeHash !== cfg.ownerBypassHash) { err.textContent = 'Wrong code. Typed code hashes to ' + shortHash(codeHash) + ', but config has ' + shortHash(cfg.ownerBypassHash) + '.'; input.value = ''; input.focus(); return; }
       sessionStorage.setItem('uzTempOwnerUnlocked', 'true');
       setLightspeed('temporary-owner');
       sparkle();
