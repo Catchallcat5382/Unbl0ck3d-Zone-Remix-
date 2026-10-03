@@ -8,7 +8,7 @@
   function when(ts) { try { return new Date(ts).toLocaleString(); } catch (e) { return ''; } }
   function status(msg) { var el = $('community-status'); if (el) el.textContent = msg || ''; }
   function role() { return state.profile && state.profile.role ? state.profile.role : 'member'; }
-  function isTempOwner() { return sessionStorage.getItem('uzTempOwnerUnlocked') === 'true'; }
+  function isTempOwner() { return window.UZTempOwnerActive === true; }
   function isOwner() { return role() === 'owner' || isTempOwner(); }
   function canPost() { return ['owner','admin','mod'].indexOf(role()) !== -1 || isTempOwner(); }
   function canEditPost(row) { return role() === 'owner' || role() === 'admin' || (role() === 'mod' && state.user && row.user_id === state.user.id) || isTempOwner(); }
