@@ -3,7 +3,7 @@ window.UZ_COMMUNITY_CONFIG = {
   supabaseAnonKey: 'sb_publishable_0uYYo1yZn5KzvlLGsAxMMw_DePYh78F',
   authProvider: 'password',
   internalAuthDomain: 'uzlogin.net',
-  ownerBypassHash: '08a841e996781e9e77d30a4e4420a8f501a280b00624e6d1224bf54aaff73eba',
+  ownerBypassHash: '7e72ea0dcee964fa6f5220219cad4ceaf6e4e8caf27d29fb788dbb6d1eabc90f',
   requireLogin: true,
   minNameLength: 2,
   maxNameLength: 24,
