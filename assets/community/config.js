@@ -1,9 +1,9 @@
 window.UZ_COMMUNITY_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  supabaseUrl: 'https://bvgqpqsdyfgxweaqihvs.supabase.co',
+  supabaseAnonKey: 'sb_publishable_0uYYo1yZn5KzvlLGsAxMMw_DePYh78F',
   authProvider: 'password',
-  internalAuthDomain: 'uz.local',
-  ownerBypassCode: '',
+  internalAuthDomain: 'uzlogin.net',
+  ownerBypassHash: '',
   requireLogin: true,
   minNameLength: 2,
   maxNameLength: 24,

@@ -4,16 +4,19 @@
   var ready = Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase);
   var konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
   var konamiIndex = 0;
+  var authMode = 'signin';
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function cleanUsername(v) { return String(v || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 24); }
-  function authEmail(username) { return cleanUsername(username) + '@' + (cfg.internalAuthDomain || 'uz.local'); }
+  function authEmail(username) { return cleanUsername(username) + '@' + (cfg.internalAuthDomain || 'uzlogin.net'); }
   function getName() { return String(localStorage.getItem('uzCommunityProfileName') || '').trim(); }
   function getAvatar() { return String(localStorage.getItem('uzCommunityAvatar') || '').trim(); }
   function usernameFromUser(user) { return (user && user.user_metadata && user.user_metadata.username) || (user && user.email ? user.email.split('@')[0] : ''); }
   function setLightspeed(name) { try { localStorage.setItem('uzLoginEmail', name || ''); localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + (name || 'user') + ' (IP Address: █████).'); } catch (e) {} }
   function isTempOwner() { return sessionStorage.getItem('uzTempOwnerUnlocked') === 'true'; }
-  function bypassCodeReady() { return typeof cfg.ownerBypassCode === 'string' && cfg.ownerBypassCode.length === 32; }
-  function initClient() { if (ready && !client) client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey); }
+  function bypassCodeReady() { return typeof cfg.ownerBypassHash === 'string' && cfg.ownerBypassHash.length === 64; }
+  async function sha256Hex(value) { var data = new TextEncoder().encode(value); var digest = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(digest)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join(''); }
+  function authUrl() { return String(cfg.supabaseUrl || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, ''); }
+  function initClient() { if (ready && !client) client = window.supabase.createClient(authUrl(), cfg.supabaseAnonKey); }
   function note(msg) { var el = document.getElementById('uz-auth-error'); if (el) el.textContent = msg || ''; }
   async function ensureProfile(user) {
     if (!ready || !user) return null;
@@ -29,10 +32,16 @@
     if (!gate) { gate = document.createElement('div'); gate.id = 'uz-auth-gate'; gate.className = 'uz-auth-gate uz-auth-ms-style'; document.body.appendChild(gate); }
     var setup = !ready ? '<div class="uz-auth-setup"><b>Setup needed</b><span>Accounts turn on after you paste your Supabase Project URL and publishable anon key into community/config.js.</span></div>' : '';
     var disabled = ready ? '' : ' disabled';
-    gate.innerHTML = '<div class="uz-auth-card"><div class="uz-login-brand"><div class="uz-login-logo">UZ</div><div><b>Unbl0cked Zone</b><span>Private access</span></div></div><h1>Welcome back</h1><p class="uz-auth-detail">Use a custom site account. This is not Microsoft, Google, ClassLink, or your school login.</p>' + setup + '<label>Username</label><input id="uz-login-user" autocomplete="username" maxlength="24" placeholder="pick a username"><label>Password</label><input id="uz-login-pass" autocomplete="current-password" type="password" placeholder="6+ characters"><div class="uz-auth-actions"><button class="community-btn" id="uz-login-submit"' + disabled + '>Sign in</button><button class="community-btn secondary" id="uz-login-create"' + disabled + '>Create account</button></div><p class="uz-auth-detail">Passwords are secured by Supabase Auth and are not readable by site admins.</p><p class="uz-auth-hint">Owner shortcut: press Up Up Down Down Left Right Left Right B A, then enter your 32-character code. It lasts only for this tab.</p><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></div>';
-    document.getElementById('uz-login-submit').onclick = signIn;
-    document.getElementById('uz-login-create').onclick = signUp;
-    document.getElementById('uz-login-pass').addEventListener('keydown', function(e){ if (e.key === 'Enter') signIn(); });
+    var title = authMode === 'signup' ? 'Create your account' : 'Welcome back';
+    var primary = authMode === 'signup' ? 'Create account' : 'Sign in';
+    var switchText = authMode === 'signup' ? 'Already have an account? Sign in' : 'Need an account? Create one';
+    gate.innerHTML = '<div class="uz-auth-card"><div class="uz-login-brand"><div class="uz-login-logo"><span>U</span><i></i><span>Z</span></div><div><b>Unbl0cked Zone</b><span>Private access</span></div></div><div class="uz-auth-tabs"><button id="uz-tab-signin" class="' + (authMode === 'signin' ? 'active' : '') + '">Sign in</button><button id="uz-tab-signup" class="' + (authMode === 'signup' ? 'active' : '') + '">Create account</button></div><h1>' + title + '</h1><p class="uz-auth-detail">Use a custom site account. This is not Microsoft, Google, ClassLink, or your school login.</p>' + setup + '<label>Username</label><input id="uz-login-user" autocomplete="username" maxlength="24" placeholder="pick a username"><label>Password</label><input id="uz-login-pass" autocomplete="current-password" type="password" placeholder="6+ characters"><button class="community-btn uz-auth-primary" id="uz-login-primary"' + disabled + '>' + primary + '</button><button class="uz-auth-switch" id="uz-auth-switch" type="button">' + switchText + '</button><p class="uz-auth-detail">Passwords are secured by Supabase Auth and are not readable by site admins.</p><button class="uz-owner-link" id="uz-owner-link" type="button">Owner unlock</button><p class="uz-auth-hint">Shortcut: Up Up Down Down Left Right Left Right B A. The 32-character owner unlock lasts only for this tab.</p><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></div>';
+    document.getElementById('uz-tab-signin').onclick = function(){ authMode = 'signin'; renderGate(''); };
+    document.getElementById('uz-tab-signup').onclick = function(){ authMode = 'signup'; renderGate(''); };
+    document.getElementById('uz-auth-switch').onclick = function(){ authMode = authMode === 'signin' ? 'signup' : 'signin'; renderGate(''); };
+    document.getElementById('uz-owner-link').onclick = showOwnerPrompt;
+    document.getElementById('uz-login-primary').onclick = function(){ if (authMode === 'signup') signUp(); else signIn(); };
+    document.getElementById('uz-login-pass').addEventListener('keydown', function(e){ if (e.key === 'Enter') { if (authMode === 'signup') signUp(); else signIn(); } });
   }
   function clearGate() { var gate = document.getElementById('uz-auth-gate'); if (gate) gate.remove(); }
   async function signIn() {
@@ -86,11 +95,12 @@
     document.body.appendChild(modal);
     var input = document.getElementById('uz-owner-code-input');
     var err = document.getElementById('uz-owner-code-error');
-    function submit() {
+    async function submit() {
       var code = input.value.trim();
       if (code.length !== 32) { err.textContent = 'Code must be exactly 32 characters.'; return; }
-      if (!bypassCodeReady()) { err.textContent = 'Set ownerBypassCode in community/config.js first.'; return; }
-      if (code !== cfg.ownerBypassCode) { err.textContent = 'Wrong code.'; input.value = ''; input.focus(); return; }
+      if (!bypassCodeReady()) { err.textContent = 'Set ownerBypassHash in community/config.js first.'; return; }
+      var codeHash = await sha256Hex(code);
+      if (codeHash !== cfg.ownerBypassHash) { err.textContent = 'Wrong code.'; input.value = ''; input.focus(); return; }
       sessionStorage.setItem('uzTempOwnerUnlocked', 'true');
       setLightspeed('temporary-owner');
       sparkle();
