@@ -91,13 +91,14 @@
     var modal = document.createElement('div');
     modal.id = 'uz-owner-code-modal';
     modal.className = 'uz-owner-code-modal';
-    modal.innerHTML = '<div class="uz-owner-code-card"><h2>Owner unlock</h2><p>Enter your 32-character temporary owner code. This unlock lasts only until this tab closes.</p><input id="uz-owner-code-input" type="password" maxlength="32" autocomplete="off" placeholder="32-character code"><div class="community-row"><button class="community-btn" id="uz-owner-code-submit">Unlock</button><button class="community-btn secondary" id="uz-owner-code-cancel">Cancel</button></div><p id="uz-owner-code-error" class="uz-auth-error"></p></div>';
+    modal.innerHTML = '<div class="uz-owner-code-card"><h2>Owner unlock</h2><p>Enter your 32-character temporary owner code. This unlock lasts only until this tab closes.</p><input id="uz-owner-code-input" type="password" maxlength="64" autocomplete="off" placeholder="32-character raw code"><div class="community-row"><button class="community-btn" id="uz-owner-code-submit">Unlock</button><button class="community-btn secondary" id="uz-owner-code-cancel">Cancel</button></div><p id="uz-owner-code-error" class="uz-auth-error"></p></div>';
     document.body.appendChild(modal);
     var input = document.getElementById('uz-owner-code-input');
     var err = document.getElementById('uz-owner-code-error');
     async function submit() {
       var code = input.value.trim();
-      if (code.length !== 32) { err.textContent = 'Code must be exactly 32 characters.'; return; }
+      if (code.length === 64 && /^[a-f0-9]{64}$/i.test(code)) { err.textContent = 'That is the hash from config.js, not the raw 32-character unlock code.'; return; }
+      if (code.length !== 32) { err.textContent = 'Type the original raw 32-character code, not the 64-character hash.'; return; }
       if (!bypassCodeReady()) { err.textContent = 'Set ownerBypassHash in community/config.js first.'; return; }
       var codeHash = await sha256Hex(code);
       if (codeHash !== cfg.ownerBypassHash) { err.textContent = 'Wrong code.'; input.value = ''; input.focus(); return; }

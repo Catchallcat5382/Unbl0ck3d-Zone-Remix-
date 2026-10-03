@@ -35,3 +35,6 @@ ownerBypassHash: 'PASTE_HASH_HERE',
 ```
 
 If the owner modal says `Wrong code`, the hash in config does not match the exact 32 characters typed into the modal.
+
+## Common mistake
+If the modal says Wrong code, do not type the 64-character ownerBypassHash value into the website. Type the original 32-character raw code you used to generate that hash. If you lost the raw code, choose a new 32-character code, generate a new hash, paste that hash into config.js, then push again.
