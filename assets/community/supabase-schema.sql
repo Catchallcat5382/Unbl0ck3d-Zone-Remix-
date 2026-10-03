@@ -1,11 +1,12 @@
 -- Supabase SQL for Unbl0cked Zone community chat/posts with custom username/password auth.
 -- Passwords are handled by Supabase Auth and are never stored in readable form.
 -- Run this in Supabase Dashboard > SQL Editor after creating the project.
+-- Re-run this file after updates; it is written to be mostly safe to run more than once.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
-  username text,
+  username text unique,
   display_name text not null default 'Member' check (char_length(display_name) between 2 and 24),
   role text not null default 'member' check (role in ('owner','admin','mod','member','banned')),
   created_at timestamptz not null default now()
@@ -16,6 +17,23 @@ alter table public.profiles add column if not exists username text;
 alter table public.profiles add column if not exists display_name text not null default 'Member';
 alter table public.profiles add column if not exists role text not null default 'member';
 alter table public.profiles add column if not exists created_at timestamptz not null default now();
+create unique index if not exists profiles_username_unique on public.profiles (lower(username));
+
+create table if not exists public.role_grants (
+  username text primary key,
+  role text not null check (role in ('owner','admin','mod','member','banned')),
+  note text,
+  created_at timestamptz not null default now()
+);
+
+create or replace function public.current_role()
+returns text
+language sql
+security definer
+stable
+as $$
+  select coalesce((select role from public.profiles where id = auth.uid()), 'member')
+$$;
 
 create or replace function public.set_profile_identity()
 returns trigger
@@ -25,14 +43,19 @@ as $$
 declare
   jwt_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
   jwt_username text := lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'username', split_part(jwt_email, '@', 1)));
+  granted_role text;
 begin
   new.email := jwt_email;
   if coalesce(new.username, '') = '' then
     new.username := jwt_username;
   end if;
+
+  select rg.role into granted_role from public.role_grants rg where lower(rg.username) = lower(new.username);
+
   if tg_op = 'INSERT' then
-    new.role := 'member';
+    new.role := coalesce(granted_role, 'member');
   else
+    -- Existing roles stay exactly as a higher role changed them.
     new.role := old.role;
   end if;
   return new;
@@ -56,24 +79,38 @@ create table if not exists public.posts (
   user_id uuid not null references public.profiles(id) on delete cascade,
   title text not null check (char_length(title) between 1 and 120),
   body text not null check (char_length(body) between 1 and 4000),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
+alter table public.posts add column if not exists updated_at timestamptz not null default now();
+
 alter table public.profiles enable row level security;
+alter table public.role_grants enable row level security;
 alter table public.chat_messages enable row level security;
 alter table public.posts enable row level security;
 
 drop policy if exists "profiles readable" on public.profiles;
 drop policy if exists "users insert own profile" on public.profiles;
 drop policy if exists "users update own display name" on public.profiles;
+drop policy if exists "owners update roles" on public.profiles;
+drop policy if exists "role grants readable by owners" on public.role_grants;
+drop policy if exists "owners manage role grants" on public.role_grants;
 drop policy if exists "chat readable" on public.chat_messages;
 drop policy if exists "signed in users can chat" on public.chat_messages;
 drop policy if exists "posts readable" on public.posts;
 drop policy if exists "owners can post" on public.posts;
+drop policy if exists "staff can create posts" on public.posts;
+drop policy if exists "staff can update posts" on public.posts;
+drop policy if exists "staff can delete posts" on public.posts;
 
 create policy "profiles readable" on public.profiles for select using (true);
 create policy "users insert own profile" on public.profiles for insert with check (auth.uid() = id);
 create policy "users update own display name" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+create policy "owners update roles" on public.profiles for update using (public.current_role() = 'owner') with check (public.current_role() = 'owner');
+
+create policy "role grants readable by owners" on public.role_grants for select using (public.current_role() = 'owner');
+create policy "owners manage role grants" on public.role_grants for all using (public.current_role() = 'owner') with check (public.current_role() = 'owner');
 
 create policy "chat readable" on public.chat_messages for select using (true);
 create policy "signed in users can chat" on public.chat_messages for insert with check (
@@ -81,8 +118,16 @@ create policy "signed in users can chat" on public.chat_messages for insert with
 );
 
 create policy "posts readable" on public.posts for select using (true);
-create policy "owners can post" on public.posts for insert with check (
-  auth.uid() = user_id and exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'owner')
+create policy "staff can create posts" on public.posts for insert with check (
+  auth.uid() = user_id and public.current_role() in ('owner','admin','mod')
+);
+create policy "staff can update posts" on public.posts for update using (
+  public.current_role() in ('owner','admin') or (public.current_role() = 'mod' and auth.uid() = user_id)
+) with check (
+  public.current_role() in ('owner','admin') or (public.current_role() = 'mod' and auth.uid() = user_id)
+);
+create policy "staff can delete posts" on public.posts for delete using (
+  public.current_role() in ('owner','admin') or (public.current_role() = 'mod' and auth.uid() = user_id)
 );
 
 do $$ begin
@@ -95,5 +140,9 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
--- To make your own account owner after you sign up, replace YOUR_USERNAME and run:
+-- Owner setup after signing up:
 -- update public.profiles set role = 'owner' where lower(username) = lower('YOUR_USERNAME');
+
+-- Auto-role setup for future signups. Existing manual role changes are preserved.
+-- insert into public.role_grants (username, role, note) values ('friendname', 'mod', 'trusted poster')
+-- on conflict (username) do update set role = excluded.role, note = excluded.note;
