@@ -3,12 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unbl0cked Zone</title>
-  <meta http-equiv="refresh" content="0; url=https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html">
-  <script>location.replace('https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html');</script>
-  <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#100703;color:#ff7a1a;font-family:Arial,sans-serif}a{color:#ffb000}</style>
+  <title>Unbl0cked Zone Loader</title>
+  <style>
+    html,body{margin:0;min-height:100%;background:#100703;color:#ff7a1a;font-family:Arial,sans-serif}
+    body{display:grid;place-items:center}
+    main{max-width:560px;padding:28px;border:1px solid #ff6a00;border-radius:14px;background:#080506;box-shadow:0 0 36px rgba(255,106,0,.22)}
+    h1{margin:0 0 10px;font-size:24px}p{line-height:1.45;color:#ffd2a0}.err{color:#ffb4a8;white-space:pre-wrap}button{background:#ff7a1a;color:#160600;border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
+  </style>
 </head>
 <body>
-  <p>Opening <a href="https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html">Unbl0cked Zone</a>...</p>
+  <main id="loader">
+    <h1>Loading Unbl0cked Zone</h1>
+    <p>Pulling the live build from jsDelivr...</p>
+  </main>
+  <script>
+    (async function () {
+      var pageUrl = 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html';
+      var baseUrl = 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/';
+      var loader = document.getElementById('loader');
+      try {
+        var res = await fetch(pageUrl + '?v=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('jsDelivr returned HTTP ' + res.status);
+        var html = await res.text();
+        if (/<base\s/i.test(html)) html = html.replace(/<base\s[^>]*>/i, '<base href="' + baseUrl + '">');
+        else html = html.replace(/<head([^>]*)>/i, '<head$1><base href="' + baseUrl + '">');
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (err) {
+        loader.innerHTML = '<h1>Loader failed</h1><p class="err">' + String(err && err.message ? err.message : err).replace(/[&<>]/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c];}) + '</p><button onclick="location.reload()">Retry</button>';
+      }
+    })();
+  </script>
 </body>
 </html>
