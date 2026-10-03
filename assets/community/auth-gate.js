@@ -12,7 +12,7 @@
   function usernameFromUser(user) { return (user && user.user_metadata && user.user_metadata.username) || (user && user.email ? user.email.split('@')[0] : ''); }
   function setLightspeed(name) { try { localStorage.setItem('uzLoginEmail', name || ''); localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + (name || 'user') + ' (IP Address: █████).'); } catch (e) {} }
   function isTempOwner() { return sessionStorage.getItem('uzTempOwnerUnlocked') === 'true'; }
-  function bypassCodeReady() { return typeof cfg.ownerBypassCode === 'string' && cfg.ownerBypassCode.length === 36; }
+  function bypassCodeReady() { return typeof cfg.ownerBypassCode === 'string' && cfg.ownerBypassCode.length === 32; }
   function initClient() { if (ready && !client) client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey); }
   function note(msg) { var el = document.getElementById('uz-auth-error'); if (el) el.textContent = msg || ''; }
   async function ensureProfile(user) {
@@ -29,7 +29,7 @@
     if (!gate) { gate = document.createElement('div'); gate.id = 'uz-auth-gate'; gate.className = 'uz-auth-gate uz-auth-ms-style'; document.body.appendChild(gate); }
     var setup = !ready ? '<div class="uz-auth-setup"><b>Setup needed</b><span>Accounts turn on after you paste your Supabase Project URL and publishable anon key into community/config.js.</span></div>' : '';
     var disabled = ready ? '' : ' disabled';
-    gate.innerHTML = '<div class="uz-auth-card"><div class="uz-login-brand"><div class="uz-login-logo">UZ</div><div><b>Unbl0cked Zone</b><span>Private access</span></div></div><h1>Welcome back</h1><p class="uz-auth-detail">Use a custom site account. This is not Microsoft, Google, ClassLink, or your school login.</p>' + setup + '<label>Username</label><input id="uz-login-user" autocomplete="username" maxlength="24" placeholder="pick a username"><label>Password</label><input id="uz-login-pass" autocomplete="current-password" type="password" placeholder="6+ characters"><div class="uz-auth-actions"><button class="community-btn" id="uz-login-submit"' + disabled + '>Sign in</button><button class="community-btn secondary" id="uz-login-create"' + disabled + '>Create account</button></div><p class="uz-auth-detail">Passwords are secured by Supabase Auth and are not readable by site admins.</p><p class="uz-auth-hint">Owner shortcut: press Up Up Down Down Left Right Left Right B A, then enter your 36-character code. It lasts only for this tab.</p><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></div>';
+    gate.innerHTML = '<div class="uz-auth-card"><div class="uz-login-brand"><div class="uz-login-logo">UZ</div><div><b>Unbl0cked Zone</b><span>Private access</span></div></div><h1>Welcome back</h1><p class="uz-auth-detail">Use a custom site account. This is not Microsoft, Google, ClassLink, or your school login.</p>' + setup + '<label>Username</label><input id="uz-login-user" autocomplete="username" maxlength="24" placeholder="pick a username"><label>Password</label><input id="uz-login-pass" autocomplete="current-password" type="password" placeholder="6+ characters"><div class="uz-auth-actions"><button class="community-btn" id="uz-login-submit"' + disabled + '>Sign in</button><button class="community-btn secondary" id="uz-login-create"' + disabled + '>Create account</button></div><p class="uz-auth-detail">Passwords are secured by Supabase Auth and are not readable by site admins.</p><p class="uz-auth-hint">Owner shortcut: press Up Up Down Down Left Right Left Right B A, then enter your 32-character code. It lasts only for this tab.</p><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></div>';
     document.getElementById('uz-login-submit').onclick = signIn;
     document.getElementById('uz-login-create').onclick = signUp;
     document.getElementById('uz-login-pass').addEventListener('keydown', function(e){ if (e.key === 'Enter') signIn(); });
@@ -82,13 +82,13 @@
     var modal = document.createElement('div');
     modal.id = 'uz-owner-code-modal';
     modal.className = 'uz-owner-code-modal';
-    modal.innerHTML = '<div class="uz-owner-code-card"><h2>Owner unlock</h2><p>Enter your 36-character temporary owner code. This unlock lasts only until this tab closes.</p><input id="uz-owner-code-input" type="password" maxlength="36" autocomplete="off" placeholder="36-character code"><div class="community-row"><button class="community-btn" id="uz-owner-code-submit">Unlock</button><button class="community-btn secondary" id="uz-owner-code-cancel">Cancel</button></div><p id="uz-owner-code-error" class="uz-auth-error"></p></div>';
+    modal.innerHTML = '<div class="uz-owner-code-card"><h2>Owner unlock</h2><p>Enter your 32-character temporary owner code. This unlock lasts only until this tab closes.</p><input id="uz-owner-code-input" type="password" maxlength="32" autocomplete="off" placeholder="32-character code"><div class="community-row"><button class="community-btn" id="uz-owner-code-submit">Unlock</button><button class="community-btn secondary" id="uz-owner-code-cancel">Cancel</button></div><p id="uz-owner-code-error" class="uz-auth-error"></p></div>';
     document.body.appendChild(modal);
     var input = document.getElementById('uz-owner-code-input');
     var err = document.getElementById('uz-owner-code-error');
     function submit() {
       var code = input.value.trim();
-      if (code.length !== 36) { err.textContent = 'Code must be exactly 36 characters.'; return; }
+      if (code.length !== 32) { err.textContent = 'Code must be exactly 32 characters.'; return; }
       if (!bypassCodeReady()) { err.textContent = 'Set ownerBypassCode in community/config.js first.'; return; }
       if (code !== cfg.ownerBypassCode) { err.textContent = 'Wrong code.'; input.value = ''; input.focus(); return; }
       sessionStorage.setItem('uzTempOwnerUnlocked', 'true');
