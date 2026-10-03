@@ -59,43 +59,9 @@ if not defined CURRENT_REMOTE (
   if errorlevel 1 goto :git_error
 )
 
-rem Detect the remote's default branch, such as main or master.
-for /f "tokens=2" %%A in ('git ls-remote --symref origin HEAD 2^>nul ^| findstr /b "ref:"') do set "REMOTE_HEAD=%%A"
-if defined REMOTE_HEAD set "BRANCH=%REMOTE_HEAD:refs/heads/=%"
-
-if not defined BRANCH (
-  for /f "delims=" %%B in ('git branch --show-current 2^>nul') do set "BRANCH=%%B"
-)
-if not defined BRANCH set "BRANCH=main"
-
-git ls-remote --exit-code --heads origin "%BRANCH%" >nul 2>&1
-if not errorlevel 1 (
-  echo Syncing with GitHub branch "%BRANCH%"...
-  git fetch origin "%BRANCH%"
-  if errorlevel 1 goto :git_error
-
-  git show-ref --verify --quiet "refs/heads/%BRANCH%"
-  if errorlevel 1 (
-    rem This can fail safely if local untracked files conflict with remote files.
-    git switch --track -c "%BRANCH%" "origin/%BRANCH%"
-    if errorlevel 1 (
-      echo Could not check out the GitHub branch without overwriting local files.
-      echo Back up this folder, then use a clone of the repository or resolve the filename conflict.
-      goto :failed
-    )
-  ) else (
-    for /f "delims=" %%C in ('git branch --show-current 2^>nul') do set "CURRENT_BRANCH=%%C"
-    if /I not "%CURRENT_BRANCH%"=="%BRANCH%" (
-      git switch "%BRANCH%"
-      if errorlevel 1 (
-        echo Could not switch to the GitHub default branch safely.
-        echo Commit or move conflicting local changes, then run this file again.
-        goto :failed
-      )
-    )
-  )
-)
-
+rem Fast path: use the current local branch and push directly.
+for /f "delims=" %%B in ('git branch --show-current 2^>nul') do set "BRANCH=%%B"
+if not defined BRANCH set "BRANCH=master"
 rem Avoid accidentally publishing a common local secrets file.
 if exist ".env" (
   git check-ignore -q ".env"
@@ -126,21 +92,11 @@ if errorlevel 1 (
   echo No new file changes to commit.
 )
 
-rem Rebase local work on the latest remote commit; never force-push.
-git ls-remote --exit-code --heads origin "%BRANCH%" >nul 2>&1
-if not errorlevel 1 (
-  git pull --rebase origin "%BRANCH%"
-  if errorlevel 1 (
-    echo Pull/rebase stopped, usually because the remote and local files conflict.
-    echo Resolve the conflict, then run push.bat again. No force-push was attempted.
-    goto :failed
-  )
-)
-
+rem Push directly for speed; if Git rejects it, resolve the message it prints and retry.
 git push -u origin "%BRANCH%"
 if errorlevel 1 (
-  echo Push failed. Git may need you to sign in to GitHub in the browser.
-  echo If Git reports a conflict, keep this folder backed up and resolve it before retrying.
+  echo Push failed. Git may need you to sign in to GitHub in the browser, or the remote may have newer commits.
+  echo Your local files are still here. Resolve any Git message above, then run push.bat again.
   goto :failed
 )
 
