@@ -3,6 +3,7 @@ window.UZ_COMMUNITY_CONFIG = {
   supabaseAnonKey: '',
   authProvider: 'password',
   internalAuthDomain: 'uz.local',
+  ownerBypassCode: '',
   requireLogin: true,
   minNameLength: 2,
   maxNameLength: 24,
