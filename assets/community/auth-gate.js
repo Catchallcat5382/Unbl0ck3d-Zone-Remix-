@@ -5,7 +5,7 @@
   var konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
   var konamiIndex = 0;
   var authMode = 'signin';
-  var tempOwnerActive = false; window.UZTempOwnerActive = false;
+  var tempOwnerActive = false; window.UZTempOwnerActive = false; window.UZCurrentProfile = null;
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function cleanUsername(v) { return String(v || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 24); }
   function authEmail(username) { return cleanUsername(username) + '@' + (cfg.internalAuthDomain || 'uzlogin.net'); }
@@ -22,9 +22,17 @@
   function initClient() { if (ready && !client) client = window.supabase.createClient(authUrl(), cfg.supabaseAnonKey); }
   function note(msg) { var el = document.getElementById('uz-auth-error'); if (el) el.textContent = msg || ''; }
   function rememberWanted() { var box = document.getElementById('uz-remember-me'); return !box || box.checked; }
-  function recentAccounts() { try { return JSON.parse(localStorage.getItem('uzRecentAccounts') || '[]').filter(function(a){ return a && a.username && Date.now() - a.time < 2592000000; }); } catch(e) { return []; } }
+  function recentAccounts() { try { return JSON.parse(localStorage.getItem('uzRecentAccounts') || '[]').filter(function(a){ return a && a.username && Date.now() - a.time < 2592000000; }).slice(0, 12); } catch(e) { return []; } }
+  function removeRecentAccount(username) { var u = cleanUsername(username); localStorage.setItem('uzRecentAccounts', JSON.stringify(recentAccounts().filter(function(a){ return cleanUsername(a.username) !== u; }))); }
+  function recentDaysLeft(a) { return Math.max(1, Math.ceil((2592000000 - (Date.now() - a.time)) / 86400000)); }
   function saveRecentAccount(username) { if (!rememberWanted()) { localStorage.setItem('uzRememberMe', 'false'); return; } var list = recentAccounts().filter(function(a){ return a.username !== username; }); list.unshift({ username: username, time: Date.now() }); localStorage.setItem('uzRecentAccounts', JSON.stringify(list.slice(0, 6))); localStorage.setItem('uzRememberMe', 'true'); }
-  function recentAccountsHtml() { var list = recentAccounts(); if (!list.length || authMode !== 'signin') return ''; return '<div class="uz-recent-accounts"><span>Recent accounts</span>' + list.map(function(a){ return '<button type="button" class="uz-recent-account" data-username="' + esc(a.username) + '">' + esc(a.username) + '</button>'; }).join('') + '</div>'; }
+  function recentAccountsHtml() {
+    var list = recentAccounts();
+    if (!list.length || authMode !== 'signin') return '';
+    var first = list.slice(0, 5).map(function(a){ return '<button type="button" class="uz-recent-account" data-username="' + esc(a.username) + '">' + esc(a.username) + ' <small>' + recentDaysLeft(a) + 'd</small></button>'; }).join('');
+    var rest = list.slice(5).map(function(a){ return '<button type="button" class="uz-recent-account" data-username="' + esc(a.username) + '">' + esc(a.username) + ' <small>' + recentDaysLeft(a) + 'd</small></button>'; }).join('');
+    return '<div class="uz-recent-accounts"><span>Recent accounts</span>' + first + (rest ? '<details class="uz-recent-more"><summary>More</summary>' + rest + '</details>' : '') + '</div>';
+  }
   function wireRecentAccounts() { Array.prototype.forEach.call(document.querySelectorAll('.uz-recent-account'), function(btn){ btn.onclick = function(){ var input = document.getElementById('uz-login-user'); if (input) input.value = btn.dataset.username || ''; var pass = document.getElementById('uz-login-pass'); if (pass) pass.focus(); }; }); }
   async function ensureProfile(user) { if (!ready || !user) return null; var username = usernameFromUser(user); var localDisplay = getName(username); var payload = { id: user.id, username: username }; if (localDisplay) payload.display_name = localDisplay; var res = await client.from('profiles').upsert(payload, { onConflict: 'id' }).select('*').single(); if (res.error) { note(res.error.message || 'Profile could not be saved.'); return null; } if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return res.data || null; }
   function logoSvg() { return '<svg class="uz-logo-svg" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="uzOrange" x1="10" y1="8" x2="86" y2="90"><stop stop-color="#ffd36b"/><stop offset="0.42" stop-color="#ff7a1a"/><stop offset="1" stop-color="#d93400"/></linearGradient><filter id="uzGlow" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M48 6 84 22v28c0 23-14 36-36 44C26 86 12 73 12 50V22L48 6Z" fill="#150704" stroke="#ff7a1a" stroke-width="4" filter="url(#uzGlow)"/><path d="M27 29h12v27c0 7 3 10 9 10s9-3 9-10V29h12v28c0 14-8 22-21 22s-21-8-21-22V29Z" fill="url(#uzOrange)"/><path d="M31 25h39L45 53h24v11H27l25-29H31V25Z" fill="#ffb347"/><path d="M20 76 78 20" stroke="#fff1c2" stroke-width="5" stroke-linecap="round" opacity=".88"/><path d="M22 78 80 22" stroke="#ff5a00" stroke-width="3" stroke-linecap="round" opacity=".95"/></svg>'; }
@@ -37,33 +45,50 @@
     var title = authMode === 'signup' ? 'Create your account' : 'Welcome back';
     var primary = authMode === 'signup' ? 'Create account' : 'Sign in';
     var switchText = authMode === 'signup' ? 'Already have an account? Sign in' : 'Need an account? Create one';
-    gate.innerHTML = '<div class="uz-auth-card"><aside class="uz-auth-art"><div class="uz-auth-wordmark">' + logoSvg() + '<div><strong>Unbl0cked Zone</strong><span>Remix access panel</span></div></div><div class="uz-auth-copy"><b>Choose your route.</b><span>Sign in or create a site account to continue.</span></div></aside><section class="uz-auth-form"><div class="uz-auth-tabs"><button id="uz-tab-signin" class="' + (authMode === 'signin' ? 'active' : '') + '">Sign in</button><button id="uz-tab-signup" class="' + (authMode === 'signup' ? 'active' : '') + '">Create account</button></div><h1>' + title + '</h1><p class="uz-auth-detail">Use your Unbl0cked Zone account. This is not a school, Google, Microsoft, or ClassLink login.</p>' + setup + recentAccountsHtml() + '<label>Username</label><input id="uz-login-user" autocomplete="username" maxlength="24" placeholder="Choose a username"><label>Password</label><input id="uz-login-pass" autocomplete="current-password" type="password" placeholder="At least 6 characters"><label class="uz-remember-row"><input id="uz-remember-me" type="checkbox" checked> Remember this account for 30 days</label><button class="community-btn uz-auth-primary" id="uz-login-primary"' + disabled + '>' + primary + '</button><button class="uz-auth-switch" id="uz-auth-switch" type="button">' + switchText + '</button><p class="uz-auth-detail">Passwords are protected by Supabase Auth and cannot be read by site admins.</p><button class="uz-owner-link" id="uz-owner-link" type="button" aria-label="More options">More options</button><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></section></div>';
+    gate.innerHTML = '<div class="uz-auth-card"><aside class="uz-auth-art"><div class="uz-auth-wordmark">' + logoSvg() + '<div><strong>Unbl0cked Zone</strong><span>Remix access panel</span></div></div><div class="uz-auth-copy"><b>Choose your route.</b><span>Sign in or create a site account to continue.</span></div></aside><section class="uz-auth-form"><div class="uz-auth-tabs"><button id="uz-tab-signin" class="' + (authMode === 'signin' ? 'active' : '') + '">Sign in</button><button id="uz-tab-signup" class="' + (authMode === 'signup' ? 'active' : '') + '">Create account</button></div><h1>' + title + '</h1><p class="uz-auth-detail">Use your Unbl0cked Zone account. This is not a school, Google, Microsoft, or ClassLink login.</p>' + setup + recentAccountsHtml() + '<label>Username</label><input id="uz-login-user" autocomplete="username" name="username" maxlength="24" placeholder="Choose a username"><label>Password</label><input id="uz-login-pass" autocomplete="current-password" name="password" type="password" placeholder="At least 6 characters"><label class="uz-remember-row"><input id="uz-remember-me" type="checkbox" checked> Remember this account for 30 days</label><button class="community-btn uz-auth-primary" id="uz-login-primary"' + disabled + '>' + primary + '</button><button class="uz-auth-switch" id="uz-auth-switch" type="button">' + switchText + '</button><button class="uz-auth-switch" id="uz-forgot-pass" type="button">Forgot password?</button><p class="uz-auth-detail">Passwords are protected by Supabase Auth and cannot be read by site admins.</p><button class="uz-owner-link" id="uz-owner-link" type="button" aria-label="More options">More options</button><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></section></div>';
     document.getElementById('uz-tab-signin').onclick = function(){ authMode = 'signin'; renderGate(''); };
     document.getElementById('uz-tab-signup').onclick = function(){ authMode = 'signup'; renderGate(''); };
     document.getElementById('uz-auth-switch').onclick = function(){ authMode = authMode === 'signin' ? 'signup' : 'signin'; renderGate(''); };
-    document.getElementById('uz-owner-link').onclick = showOwnerPrompt;
+    document.getElementById('uz-owner-link').onclick = showOwnerPrompt; var fp = document.getElementById('uz-forgot-pass'); if (fp) fp.onclick = forgotPassword;
     wireRecentAccounts();
     document.getElementById('uz-login-primary').onclick = function(){ if (authMode === 'signup') signUp(); else signIn(); };
     document.getElementById('uz-login-pass').addEventListener('keydown', function(e){ if (e.key === 'Enter') { if (authMode === 'signup') signUp(); else signIn(); } });
   }
   function clearGate() { var gate = document.getElementById('uz-auth-gate'); if (gate) gate.remove(); }
-  async function signIn() { if (!ready) { note('Connect Supabase first.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { note('Username needs 2+ characters and password needs 6+ characters.'); return; } var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); if (res.error) { note(res.error.message); return; } localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); await ensureProfile(res.data.user); location.reload(); }
-  async function signUp() { if (!ready) { note('Connect Supabase first.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { note('Username needs 2+ characters and password needs 6+ characters.'); return; } var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); if (res.error) { note(res.error.message); return; } localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); await ensureProfile(res.data.user); location.reload(); }
-  function renderProfile(session, profile) {
+  async function forgotPassword() {
+    var username = cleanUsername((document.getElementById('uz-login-user') || {}).value || '');
+    if (!username) { note('Enter your username first, then press Forgot password.'); return; }
+    note('Password reset needs owner/admin help for this custom account system. Ask staff to reset it from Supabase Authentication.');
+  }
+  function authFail(msg) { note(msg || 'That did not work. Check the username and password.'); var card = document.querySelector('.uz-auth-card'); if (card) { card.classList.remove('uz-auth-shake'); void card.offsetWidth; card.classList.add('uz-auth-shake'); } }
+  async function signIn() { if (!ready) { note('Connect Supabase first.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { note('Username needs 2+ characters and password needs 6+ characters.'); return; } var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); if (res.error) { authFail(res.error.message); return; } localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); await ensureProfile(res.data.user); location.reload(); }
+  async function signUp() { if (!ready) { note('Connect Supabase first.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { note('Username needs 2+ characters and password needs 6+ characters.'); return; } var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); if (res.error) { authFail(res.error.message); return; } localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); await ensureProfile(res.data.user); location.reload(); }
+
+  function updateProfileReady() {
     var mount = document.getElementById('uz-profile-menu');
-    if (!mount) { mount = document.createElement('div'); mount.id = 'uz-profile-menu'; mount.className = 'uz-profile-menu'; document.body.appendChild(mount); }
+    if (!mount) return;
+    var loading = document.getElementById('loading-screen');
+    var boot = document.getElementById('boot-screen');
+    var busy = (loading && loading.style.display !== 'none' && !loading.classList.contains('hidden')) || (boot && boot.style.display !== 'none' && !boot.classList.contains('hidden'));
+    mount.classList.toggle('uz-profile-ready', !busy);
+  }
+  function renderProfile(session, profile) {
+    if (!session && !profile && !isTempOwner()) { var old = document.getElementById('uz-profile-menu'); if (old) old.remove(); return; }
+    var mount = document.getElementById('uz-profile-menu');
+    if (!mount) { mount = document.createElement('div'); mount.id = 'uz-profile-menu'; mount.className = 'uz-profile-menu'; document.body.appendChild(mount); if (window.MutationObserver) { var obs = new MutationObserver(updateProfileReady); ['loading-screen','boot-screen'].forEach(function(id){ var el = document.getElementById(id); if (el) obs.observe(el, { attributes: true, attributeFilter: ['class','style'] }); }); } } updateProfileReady();
     var user = session && session.user;
     var username = (profile && profile.username) || usernameFromUser(user) || localStorage.getItem('uzLoginEmail') || '';
-    var owner = (profile && profile.role === 'owner') || isTempOwner();
+    window.UZCurrentProfile = profile || null; var owner = (profile && profile.role === 'owner') || isTempOwner();
     var temporary = isTempOwner() && !user;
     var savedName = temporary ? '' : getName(username);
     var name = temporary ? 'Temporary Owner' : (savedName || (profile && profile.display_name) || username || 'Profile');
     var avatar = temporary ? '' : getAvatar(username);
     var disabled = temporary ? ' disabled' : '';
     var readonlyNote = temporary ? '<p class="uz-profile-note">Temporary owner mode cannot save profile names, images, or account settings.</p>' : '';
-    var passwordTools = temporary ? '' : '<details class="uz-account-tools"><summary>Account security</summary><label>New password</label><input id="uz-new-password" type="password" autocomplete="new-password" placeholder="At least 8 characters"><button class="community-btn secondary" id="uz-password-save" type="button">Change password</button></details>';
+    var passwordTools = temporary ? '' : '<details class="uz-account-tools"><summary>Account security</summary><button class="community-btn secondary" id="uz-password-save" type="button">Forgot / reset password</button></details>';
+    var switchButton = temporary ? '' : '<button class="community-btn secondary" id="uz-switch-account" type="button">Switch account</button>';
     var deleteButton = temporary ? '' : '<button class="community-btn danger" id="uz-profile-delete">Delete account</button>';
-    mount.innerHTML = '<button class="uz-profile-chip" id="uz-profile-toggle"><span class="uz-profile-avatar">' + (avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(name.charAt(0).toUpperCase() || 'P')) + '</span><span>' + esc(name) + '</span></button><div class="uz-profile-panel" id="uz-profile-panel"><label>Display name</label><input id="uz-profile-name" maxlength="24" value="' + esc(savedName) + '" placeholder="Choose a name"' + disabled + '><label>Image URL</label><input id="uz-profile-avatar" value="' + esc(avatar) + '" placeholder="https://..."' + disabled + '><div class="community-row"><button class="community-btn" id="uz-profile-save"' + disabled + '>Save</button><button class="community-btn secondary" id="uz-profile-open" type="button">Expand profile settings</button><button class="community-btn secondary" id="uz-profile-logout">Log out</button></div>' + passwordTools + deleteButton + readonlyNote + '<p>Account: <b>' + esc(username || 'Not signed in') + '</b></p><p>Role: <b>' + esc(owner ? 'owner' : 'member') + '</b></p></div>';
+    mount.innerHTML = '<button class="uz-profile-chip" id="uz-profile-toggle"><span class="uz-profile-avatar">' + (avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(name.charAt(0).toUpperCase() || 'P')) + '</span><span>' + esc(name) + '</span></button><div class="uz-profile-panel" id="uz-profile-panel"><label>Display name</label><input id="uz-profile-name" maxlength="24" value="' + esc(savedName) + '" placeholder="Choose a name"' + disabled + '><label>Image URL</label><input id="uz-profile-avatar" value="' + esc(avatar) + '" placeholder="https://..."' + disabled + '><div class="community-row"><button class="community-btn" id="uz-profile-save"' + disabled + '>Save</button><button class="community-btn secondary" id="uz-profile-open" type="button">Expand profile settings</button><button class="community-btn secondary" id="uz-profile-logout">Log out</button></div>' + switchButton + passwordTools + deleteButton + readonlyNote + '<p>Account: <b>' + esc(username || 'Not signed in') + '</b></p><p>Role: <b>' + esc(owner ? 'owner' : 'member') + '</b></p></div>';
     document.getElementById('uz-profile-toggle').onclick = function () { document.getElementById('uz-profile-panel').classList.toggle('open'); };
     var openProfile = document.getElementById('uz-profile-open');
     if (openProfile) openProfile.onclick = function () { openProfileSettings(username, name, avatar, owner, temporary); };
@@ -79,7 +104,7 @@
       check();
     };
     var passBtn = document.getElementById('uz-password-save');
-    if (passBtn) passBtn.onclick = async function () { await changePassword(); };
+    if (passBtn) passBtn.onclick = async function () { await forgotPassword(); }; var switchBtn = document.getElementById('uz-switch-account'); if (switchBtn) switchBtn.onclick = async function () { sessionStorage.removeItem('uzSessionOk'); if (client) await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); authMode = 'signin'; renderGate('Pick a recent account or sign in.'); };
     var del = document.getElementById('uz-profile-delete');
     if (del) del.onclick = async function () { await deleteAccount(username); };
     document.getElementById('uz-profile-logout').onclick = async function () { tempOwnerActive = false; window.UZTempOwnerActive = false; sessionStorage.removeItem('uzSessionOk'); if (client) await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); location.reload(); };
@@ -95,36 +120,26 @@
     document.getElementById('uz-profile-modal-close').onclick = function(){ modal.remove(); };
     modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
   }
-  async function changePassword() {
-    if (!ready || !client || isTempOwner()) return;
-    var input = document.getElementById('uz-new-password');
-    var password = input ? input.value : '';
-    if (!password || password.length < 8) { note('New password needs at least 8 characters.'); return; }
-    var res = await client.auth.updateUser({ password: password });
-    if (res.error) { note(res.error.message || 'Password could not be changed.'); return; }
-    if (input) input.value = '';
-    var toast = document.getElementById('uz-autosave-note');
-    if (toast) { toast.textContent = 'Password changed'; toast.classList.add('show'); setTimeout(function(){ toast.classList.remove('show'); }, 1500); }
-  }
+  async function changePassword() { return forgotPassword(); }
   async function deleteAccount(username) {
     if (!ready || !client || isTempOwner()) return;
     var typed = prompt('Type your exact username to delete this account:');
     if (typed !== username) { note('Account deletion cancelled. Username did not match.'); return; }
-    var again = confirm('Delete account "' + username + '"? This removes the login from Supabase Auth.');
+    var again = confirm('Delete account "' + username + '"? This cannot be undone.');
     if (!again) return;
     try { await client.from('profiles').delete().eq('id', (await client.auth.getUser()).data.user.id); } catch(e) {}
     var res = await client.rpc('delete_current_user');
     if (res.error) { note('Account deletion needs the Supabase delete_current_user function from the updated schema.'); return; }
     localStorage.removeItem(profileKey('uzCommunityProfileName', username));
-    localStorage.removeItem(profileKey('uzCommunityAvatar', username));
+    localStorage.removeItem(profileKey('uzCommunityAvatar', username)); removeRecentAccount(username);
     await client.auth.signOut();
     localStorage.removeItem('uzLoginEmail');
     location.reload();
   }  function sparkle() { for (var i = 0; i < 24; i++) { var s = document.createElement('i'); s.className = 'uz-owner-spark'; s.style.setProperty('--spark-x', ((Math.random() * 260) - 130) + 'px'); s.style.setProperty('--spark-y', ((Math.random() * 220) - 110) + 'px'); document.body.appendChild(s); setTimeout(function(el){ return function(){ el.remove(); }; }(s), 850); } }
   function showOwnerPrompt() { var existing = document.getElementById('uz-owner-code-modal'); if (existing) existing.remove(); var modal = document.createElement('div'); modal.id = 'uz-owner-code-modal'; modal.className = 'uz-owner-code-modal'; modal.innerHTML = '<div class="uz-owner-code-card"><h2>Owner unlock</h2><p>Enter your 32-character temporary owner code. This unlock lasts until refresh or tab close.</p><input id="uz-owner-code-input" type="password" maxlength="64" autocomplete="off" placeholder="32-character raw code"><div class="community-row"><button class="community-btn" id="uz-owner-code-submit">Unlock</button><button class="community-btn secondary" id="uz-owner-code-cancel">Cancel</button></div><p id="uz-owner-code-error" class="uz-auth-error"></p></div>'; document.body.appendChild(modal); var input = document.getElementById('uz-owner-code-input'); var err = document.getElementById('uz-owner-code-error'); async function submit() { var code = input.value.trim(); if (code.length === 64 && /^[a-f0-9]{64}$/i.test(code)) { err.textContent = 'Enter the raw unlock code, not the stored hash.'; return; } if (code.length !== 32) { err.textContent = 'Enter the 32-character raw unlock code.'; return; } if (!bypassCodeReady()) { err.textContent = 'Owner unlock is not configured yet.'; return; } var codeHash = await sha256Hex(code); if (codeHash !== cfg.ownerBypassHash) { err.textContent = 'Wrong code.'; input.value = ''; input.focus(); return; } tempOwnerActive = true; window.UZTempOwnerActive = true; setLightspeed('temporary-owner'); sparkle(); modal.remove(); check(); } document.getElementById('uz-owner-code-submit').onclick = submit; document.getElementById('uz-owner-code-cancel').onclick = function () { modal.remove(); }; input.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); if (e.key === 'Escape') modal.remove(); }); setTimeout(function(){ input.focus(); }, 30); }
-  async function check() { if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); return; } initClient(); if (!ready) { renderProfile(null, null); renderGate(''); return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } if (localStorage.getItem('uzRememberMe') !== 'true' && sessionStorage.getItem('uzSessionOk') !== 'true') { await client.auth.signOut(); renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); setLightspeed(username); clearGate(); renderProfile(session, profile); }
+  async function check() { if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } initClient(); if (!ready) { renderProfile(null, null); renderGate(''); return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } if (localStorage.getItem('uzRememberMe') !== 'true' && sessionStorage.getItem('uzSessionOk') !== 'true') { await client.auth.signOut(); renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); if (profile && profile.banned_until && new Date(profile.banned_until) > new Date()) { await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); renderGate('This account is banned.'); return; } setLightspeed(username); clearGate(); renderProfile(session, profile); }
   document.addEventListener('keydown', function (e) { var key = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (key === konami[konamiIndex]) { konamiIndex++; sparkle(); } else { konamiIndex = key === konami[0] ? 1 : 0; } if (konamiIndex === konami.length) { konamiIndex = 0; sparkle(); showOwnerPrompt(); } }, true);
-  window.UZAuthGate = { refresh: check };
+  window.UZAuthGate = { refresh: check, showLogin: function(msg){ tempOwnerActive=false; window.UZTempOwnerActive=false; renderGate(msg || ''); } };
   if (ready) { initClient(); client.auth.onAuthStateChange(check); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check); else check();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ check(); updateProfileReady(); }); else { check(); updateProfileReady(); } window.addEventListener('load', updateProfileReady);
 }());

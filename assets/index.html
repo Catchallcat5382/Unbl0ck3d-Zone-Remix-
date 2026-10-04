@@ -4899,7 +4899,7 @@
       if (action) action.value = getPanicAction();
       var lg = document.getElementById('login-required-check');
       if (lg) lg.checked = getLoginRequired();
-      if (window.UZ_COMMUNITY_CONFIG) window.UZ_COMMUNITY_CONFIG.requireLogin = getLoginRequired();
+
     })();
     window.addEventListener('keydown', function(e) {
       if (!getPanicEnabled() || panicCaptureArmed) return;
@@ -4917,7 +4917,7 @@
       var action = getPanicAction();
       if (action === 'close') { window.close(); location.href = 'about:blank'; return; }
       if (action === 'blank') { location.href = 'about:blank'; return; }
-      if (action === 'history-back') { history.back(); return; }
+      if (action === 'history-back') { if (history.length > 1) history.back(); else window.location.href = getPanicUrl(); return; }
       window.location.href = getPanicUrl();
     });
 
@@ -6631,7 +6631,7 @@ let DATA = {
       });
     }
 
-    
+
 
     // ─── Category switching ───
     document.querySelectorAll(".g4mes-cat").forEach(btn=>{
@@ -7266,27 +7266,27 @@ let DATA = {
 
     document.getElementById('cloak-preset').addEventListener('change', function() { applyCloakPreset(this.value); });
 
-    // Apply saved cloak on load
+    // Apply saved cloak on load without overwriting the saved preset.
     function _restoreCloak() {
       var savedPreset = null, savedTitle = null, savedFavicon = null;
       try { savedPreset = localStorage.getItem('cloakPreset'); } catch(e) {}
       try { savedTitle = localStorage.getItem('cloakCustomTitle'); } catch(e) {}
       try { savedFavicon = localStorage.getItem('cloakCustomFavicon'); } catch(e) {}
-      applyCloakPreset('classroom');
-      var hasCustom = (savedPreset && savedPreset !== 'classroom' && cloakPresets[savedPreset]) || savedTitle || savedFavicon;
-      if (hasCustom) {
-        setTimeout(function() {
-          if (savedPreset && savedPreset !== 'classroom' && cloakPresets[savedPreset]) {
-            applyCloakPreset(savedPreset);
-          } else {
-            if (savedTitle) document.title = savedTitle;
-            if (savedFavicon) setFavicon(savedFavicon);
-          }
-          try { document.getElementById('cloak-title-input').value = savedTitle || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].title : ''); } catch(e) {}
-          try { document.getElementById('cloak-favicon-input').value = savedFavicon || ''; } catch(e) {}
-          updateCloakPreview(savedFavicon || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].icon : null), savedTitle || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].title : null));
-        }, 1000);
+      if (savedTitle || savedFavicon) {
+        if (savedTitle) document.title = savedTitle;
+        if (savedFavicon) setFavicon(savedFavicon);
+      } else if (savedPreset && cloakPresets[savedPreset]) {
+        var preset = cloakPresets[savedPreset];
+        document.title = preset.title;
+        setFavicon(preset.icon);
+      } else if (cloakPresets.classroom) {
+        document.title = cloakPresets.classroom.title;
+        setFavicon(cloakPresets.classroom.icon);
       }
+      try { document.getElementById('cloak-preset').value = savedPreset || ''; } catch(e) {}
+      try { document.getElementById('cloak-title-input').value = savedTitle || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].title : ''); } catch(e) {}
+      try { document.getElementById('cloak-favicon-input').value = savedFavicon || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].icon : ''); } catch(e) {}
+      updateCloakPreview(savedFavicon || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].icon : null), savedTitle || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].title : null));
     }
     _restoreCloak();
     document.addEventListener('DOMContentLoaded', _restoreCloak);

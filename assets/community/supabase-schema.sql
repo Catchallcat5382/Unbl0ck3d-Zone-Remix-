@@ -54,9 +54,10 @@ begin
 
   if tg_op = 'INSERT' then
     new.role := coalesce(granted_role, 'member');
+  elsif new.role is distinct from old.role and (auth.uid() is null or public.current_role() = 'owner') then
+    new.role := new.role;
   else
-    -- Existing roles stay exactly as a higher role changed them.
-    new.role := old.role;
+    new.role := coalesce(granted_role, old.role);
   end if;
   return new;
 end;
@@ -193,14 +194,14 @@ create policy "owners update roles" on public.profiles for update using (public.
 create policy "role grants readable by owners" on public.role_grants for select using (public.current_role() = 'owner');
 create policy "owners manage role grants" on public.role_grants for all using (public.current_role() = 'owner') with check (public.current_role() = 'owner');
 
-create policy "chat readable" on public.chat_messages for select using (true);
+create policy "chat readable" on public.chat_messages for select using (public.current_role() in ('owner','admin','mod') or exists (select 1 from public.profiles p where p.id = auth.uid() and coalesce(p.banned_until, now() - interval '1 minute') < now()));
 create policy "signed in users can chat" on public.chat_messages for insert with check (
   auth.uid() = user_id and exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('owner','admin','mod','member') and coalesce(p.banned_until, now() - interval '1 minute') < now() and coalesce(p.muted_until, now() - interval '1 minute') < now())
 );
 
-create policy "posts readable" on public.posts for select using (true);
+create policy "posts readable" on public.posts for select using (public.current_role() in ('owner','admin','mod') or exists (select 1 from public.profiles p where p.id = auth.uid() and coalesce(p.banned_until, now() - interval '1 minute') < now()));
 create policy "staff can create posts" on public.posts for insert with check (
-  auth.uid() = user_id and public.current_role() in ('owner','admin','mod') and exists (select 1 from public.profiles p where p.id = auth.uid() and coalesce(p.banned_until, now() - interval '1 minute') < now()) and exists (select 1 from public.profiles p where p.id = auth.uid() and coalesce(p.banned_until, now() - interval '1 minute') < now())
+  auth.uid() = user_id and public.current_role() in ('owner','admin','mod') and exists (select 1 from public.profiles p where p.id = auth.uid() and coalesce(p.banned_until, now() - interval '1 minute') < now())
 );
 create policy "staff can update posts" on public.posts for update using (
   public.current_role() in ('owner','admin') or (public.current_role() = 'mod' and auth.uid() = user_id)
