@@ -6310,6 +6310,11 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
     }
 
     // Load saved settings
+    if (!localStorage.getItem('lightspeedSchoolName')) localStorage.setItem('lightspeedSchoolName', 'Unblocked Zone');
+    if (!localStorage.getItem('lightspeedTopText')) localStorage.setItem('lightspeedTopText', 'Oops,');
+    if (!localStorage.getItem('lightspeedBottomText')) localStorage.setItem('lightspeedBottomText', 'is not available because it is categorized as Security - Proxy.');
+    if (!localStorage.getItem('lightspeedSystemMsg')) localStorage.setItem('lightspeedSystemMsg', 'You are logged in as guest (IP Address: █████).');
+    if (!localStorage.getItem('scUrl')) localStorage.setItem('scUrl', 'Unblocked Zone');
     var savedAccent = localStorage.getItem('accentColorV2');
     if (savedAccent) setAccent(savedAccent);
     localStorage.removeItem('siteTheme');
@@ -8360,9 +8365,9 @@ let DATA = {
     { cmd: '/warn username reason', fill: '/warn ', desc: 'Add a warning to a user.' },
     { cmd: '/mute username 10 reason', fill: '/mute ', desc: 'Mute a user for minutes.' },
     { cmd: '/unmute username reason', fill: '/unmute ', desc: 'Remove a mute.' },
-    { cmd: '/kick username reason', fill: '/kick ', desc: 'Log a kick action.' },
-    { cmd: '/ban username reason', fill: '/ban ', desc: 'Ban a user from community actions.' },
-    { cmd: '/unban username reason', fill: '/unban ', desc: 'Remove a ban.' },
+    { cmd: '/kick username reason', fill: '/kick ', desc: 'Kick a user back to login.' },
+    { cmd: '/ban username reason', fill: '/ban ', desc: 'Owner only: ban a user from the site.' },
+    { cmd: '/unban username reason', fill: '/unban ', desc: 'Owner only: remove a ban.' },
     { cmd: '/setrole username role', fill: '/setrole ', desc: 'Owner only: change a user role.' },
     { cmd: '/deleteuser username', fill: '/deleteuser ', desc: 'Owner only: delete a user account.' }
   ];
