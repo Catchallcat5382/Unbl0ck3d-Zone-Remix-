@@ -20,7 +20,7 @@
   async function sha256Hex(value) { var data = new TextEncoder().encode(value); var digest = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(digest)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join(''); }
   function authUrl() { return String(cfg.supabaseUrl || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, ''); }
   function initClient() { if (ready && !client) client = window.supabase.createClient(authUrl(), cfg.supabaseAnonKey); }
-  function note(msg) { var el = document.getElementById('uz-auth-error'); if (el) el.textContent = msg || ''; }
+  function note(msg, html) { var el = document.getElementById('uz-auth-error'); if (!el) return; if (html) el.innerHTML = msg || ''; else el.textContent = msg || ''; }
   function rememberWanted() { var box = document.getElementById('uz-remember-me'); return !box || box.checked; }
   function recentAccounts() { try { return JSON.parse(localStorage.getItem('uzRecentAccounts') || '[]').filter(function(a){ return a && a.username && Date.now() - a.time < 2592000000; }).slice(0, 12); } catch(e) { return []; } }
   function removeRecentAccount(username) { var u = cleanUsername(username); localStorage.setItem('uzRecentAccounts', JSON.stringify(recentAccounts().filter(function(a){ return cleanUsername(a.username) !== u; }))); }
@@ -38,10 +38,19 @@
   function wireProfileSwitchAccounts() { Array.prototype.forEach.call(document.querySelectorAll('.uz-switch-account-option'), function(btn){ btn.onclick = async function(){ var username = btn.dataset.username || ''; sessionStorage.removeItem('uzSessionOk'); if (client) await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); authMode = 'signin'; renderGate(username ? 'Sign in to switch to ' + username + '.' : 'Sign in with another account.'); var input = document.getElementById('uz-login-user'); if (input) input.value = username; var pass = document.getElementById('uz-login-pass'); if (pass) pass.focus(); }; }); var plain = document.getElementById('uz-switch-account'); if (plain) plain.onclick = async function(){ sessionStorage.removeItem('uzSessionOk'); if (client) await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); authMode = 'signin'; renderGate('Sign in with another account.'); }; }
   async function ensureProfile(user) { if (!ready || !user) return null; var username = usernameFromUser(user); var localDisplay = getName(username); var payload = { id: user.id, username: username }; if (localDisplay) payload.display_name = localDisplay; var res = await client.from('profiles').upsert(payload, { onConflict: 'id' }).select('*').single(); if (res.error) { note(res.error.message || 'Profile could not be saved.'); return null; } if (res.data && res.data.banned_until && new Date(res.data.banned_until) > new Date()) { try { localStorage.setItem('uzBannedAccount:' + cleanUsername(username), '1'); await client.auth.signOut(); } catch(e) {} renderBannedGate(username); return null; } if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return res.data || null; }
   function logoSvg() { return '<svg class="uz-logo-svg" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="uzOrange" x1="10" y1="8" x2="86" y2="90"><stop stop-color="#ffd36b"/><stop offset="0.42" stop-color="#ff7a1a"/><stop offset="1" stop-color="#d93400"/></linearGradient><filter id="uzGlow" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M48 6 84 22v28c0 23-14 36-36 44C26 86 12 73 12 50V22L48 6Z" fill="#150704" stroke="#ff7a1a" stroke-width="4" filter="url(#uzGlow)"/><path d="M27 29h12v27c0 7 3 10 9 10s9-3 9-10V29h12v28c0 14-8 22-21 22s-21-8-21-22V29Z" fill="url(#uzOrange)"/><path d="M31 25h39L45 53h24v11H27l25-29H31V25Z" fill="#ffb347"/><path d="M20 76 78 20" stroke="#fff1c2" stroke-width="5" stroke-linecap="round" opacity=".88"/><path d="M22 78 80 22" stroke="#ff5a00" stroke-width="3" stroke-linecap="round" opacity=".95"/></svg>'; }
+  function resetAuthBranding() {
+    try { document.title = 'Unblocked Zone'; } catch(e) {}
+    try {
+      var link = document.getElementById('page-favicon') || document.querySelector('link[rel="icon"]') || document.createElement('link');
+      link.id = 'page-favicon'; link.rel = 'icon'; link.type = 'image/svg+xml';
+      link.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(logoSvg().replace(' class="uz-logo-svg"', ''));
+      if (!link.parentNode) document.head.appendChild(link);
+    } catch(e) {}
+  }
   function renderGate(message) {
     if (!cfg.requireLogin) return;
     document.body.classList.add('uz-auth-locked');
-    try { document.title = 'Unblocked Zone'; } catch(e) {}
+    resetAuthBranding();
     var gate = document.getElementById('uz-auth-gate');
     if (!gate) { gate = document.createElement('div'); gate.id = 'uz-auth-gate'; gate.className = 'uz-auth-gate uz-auth-ms-style'; document.body.appendChild(gate); }
     var setup = !ready ? '<div class="uz-auth-setup"><b>Setup needed</b><span>Accounts turn on after you paste your Supabase Project URL and publishable anon key into community/config.js.</span></div>' : '';
@@ -62,6 +71,7 @@
   }
   function clearGate() { document.body.classList.remove('uz-auth-locked'); var gate = document.getElementById('uz-auth-gate'); if (gate) gate.remove(); if (window.restoreSavedCloak) window.restoreSavedCloak(); }
   function renderBannedGate(username) {
+    resetAuthBranding();
     document.body.classList.add('uz-auth-locked');
     var gate = document.getElementById('uz-auth-gate');
     if (!gate) { gate = document.createElement('div'); gate.id = 'uz-auth-gate'; gate.className = 'uz-auth-gate uz-auth-ms-style'; document.body.appendChild(gate); }
@@ -73,9 +83,10 @@
     note('Password reset needs owner/admin help for this custom account system. Ask staff to reset it from Supabase Authentication.');
   }
   function screenFlash(kind) { document.body.classList.remove('uz-flash-good','uz-flash-bad'); void document.body.offsetWidth; document.body.classList.add(kind === 'good' ? 'uz-flash-good' : 'uz-flash-bad'); clearTimeout(screenFlash.t); screenFlash.t = setTimeout(function(){ document.body.classList.remove('uz-flash-good','uz-flash-bad'); }, 620); }
-  function authFail(msg) { note(msg || 'That did not work. Check the username and password.'); screenFlash('bad'); ownerAudio('bad'); var card = document.querySelector('.uz-auth-card'); if (card) { card.classList.remove('uz-auth-shake'); void card.offsetWidth; card.classList.add('uz-auth-shake'); } }
+  function wireCreateAccountError() { var btn = document.getElementById('uz-create-account-error'); if (btn) btn.onclick = function(){ authMode = 'signup'; renderGate(''); var input = document.getElementById('uz-login-user'); if (input) input.focus(); }; }
+  function authFail(msg) { if (msg === 'ACCOUNT_MISSING') { note('Account does not exist. Press <button type="button" id="uz-create-account-error" class="uz-auth-inline-link">Create account</button> below to make one.', true); wireCreateAccountError(); } else note(msg || 'That did not work. Check the username and password.'); screenFlash('bad'); ownerAudio('bad'); var card = document.querySelector('.uz-auth-card'); if (card) { card.classList.remove('uz-auth-shake'); void card.offsetWidth; card.classList.add('uz-auth-shake'); } }
   async function accountExists(username) { try { var found = await client.from('profiles').select('id').eq('username', username).maybeSingle(); return !!(found && found.data && found.data.id); } catch(e) { return true; } }
-  function loginErrorMessage(username, exists) { return exists ? 'Username or password incorrect. Try again, or press Forgot password if this is your account.' : 'Account does not exist. Press Create account below to make one.'; }
+  function loginErrorMessage(username, exists) { return exists ? 'Username or password incorrect. Try again, or press Forgot password if this is your account.' : 'ACCOUNT_MISSING'; }
   async function signIn() { if (!ready) { authFail('Connect Supabase first.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (localStorage.getItem('uzBannedAccount:' + username) === '1') { renderBannedGate(username); return; } if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); if (res.error) { removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
   async function signUp() { if (!ready) { authFail('Connect Supabase first.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (localStorage.getItem('uzBannedAccount:' + username) === '1') { renderBannedGate(username); return; } if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); if (res.error) { authFail(res.error.message); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
 

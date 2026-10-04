@@ -107,3 +107,4 @@ body.uz-flash-bad::after{background:radial-gradient(circle,rgba(255,55,55,.48),r
 .community-profile-actions h3{margin:14px 0 8px!important;color:#ffb15d!important;font-size:14px!important}
 .community-profile-command-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.community-profile-command-grid .community-btn{width:100%;min-height:38px}.community-profile-command-grid .danger{margin-top:0!important}
 @media(max-width:520px){.community-profile-command-grid{grid-template-columns:1fr}}
+.uz-auth-inline-link{display:inline;border:0;background:transparent;color:#ffd29a;font:inherit;font-weight:900;text-decoration:underline;cursor:pointer;padding:0}.uz-auth-inline-link:hover{color:#fff}
