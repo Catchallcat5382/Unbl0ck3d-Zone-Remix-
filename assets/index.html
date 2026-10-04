@@ -8392,10 +8392,20 @@ let DATA = {
 <script>
 (function(){
   window.USELESSGAMZ_WEB_URL = window.USELESSGAMZ_WEB_URL || localStorage.getItem('uselessGamzWebUrl') || 'https://raw.githack.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/uselessgamz-web/public/index.html';
+  function ensureWebStyles(){
+    if (document.getElementById('uz-web-overlay-style')) return;
+    var s=document.createElement('style'); s.id='uz-web-overlay-style';
+    s.textContent='.uz-web-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.82);display:grid;grid-template-rows:auto 1fr;padding:18px;backdrop-filter:blur(10px)}.uz-web-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#100907;border:1px solid #ff6a00;border-radius:12px 12px 0 0;padding:10px 12px;color:#fff;box-shadow:0 0 24px rgba(255,106,0,.22)}.uz-web-bar b{color:#ff8a1a}.uz-web-actions{display:flex;gap:8px}.uz-web-actions button,.uz-web-actions a{border:1px solid #ff6a00;background:#0b0706;color:#ffb15d;border-radius:8px;padding:8px 10px;font:700 12px/1 Arial,sans-serif;text-decoration:none;cursor:pointer}.uz-web-actions .primary{background:linear-gradient(135deg,#ffb000,#ff6a00);color:#190700}.uz-web-frame{width:100%;height:100%;border:1px solid #ff6a00;border-top:0;border-radius:0 0 12px 12px;background:#090504}';
+    document.head.appendChild(s);
+  }
   window.openUselessGamzWeb = function(){
-    var url = String(window.USELESSGAMZ_WEB_URL || '').trim();
-    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    ensureWebStyles();
+    var old=document.getElementById('uz-web-overlay'); if(old) old.remove();
+    var url=String(window.USELESSGAMZ_WEB_URL||'').trim(); if(!/^https?:\/\//i.test(url)) url='https://'+url;
+    var overlay=document.createElement('div'); overlay.id='uz-web-overlay'; overlay.className='uz-web-overlay';
+    overlay.innerHTML='<div class="uz-web-bar"><b>UselessGamz Web</b><div class="uz-web-actions"><a class="primary" href="'+url.replace(/"/g,'%22')+'" target="_blank" rel="noopener noreferrer">Open tab</a><button id="uz-web-close">Close</button></div></div><iframe class="uz-web-frame" src="'+url.replace(/"/g,'%22')+'" referrerpolicy="no-referrer"></iframe>';
+    document.body.appendChild(overlay);
+    document.getElementById('uz-web-close').onclick=function(){overlay.remove();};
   };
 })();
 </script>
