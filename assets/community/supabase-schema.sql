@@ -45,16 +45,21 @@ declare
   jwt_username text := lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'username', split_part(jwt_email, '@', 1)));
   granted_role text;
 begin
-  new.email := jwt_email;
-  if coalesce(new.username, '') = '' then
-    new.username := jwt_username;
+  if tg_op = 'INSERT' then
+    new.email := jwt_email;
+    if coalesce(new.username, '') = '' then
+      new.username := jwt_username;
+    end if;
+  else
+    new.email := old.email;
+    new.username := old.username;
   end if;
 
   select rg.role into granted_role from public.role_grants rg where lower(rg.username) = lower(new.username);
 
   if tg_op = 'INSERT' then
     new.role := coalesce(granted_role, 'member');
-  elsif new.role is distinct from old.role and (auth.uid() is null or public.current_role() = 'owner') then
+  elsif new.role is distinct from old.role and public.current_role() = 'owner' then
     new.role := new.role;
   else
     new.role := coalesce(granted_role, old.role);
@@ -192,6 +197,11 @@ begin
   if target.id is null then
     raise exception 'target user not found';
   end if;
+  if target.id = auth.uid() then
+    raise exception 'owners cannot change their own role here';
+  end if;
+  insert into public.role_grants(username, role) values (target.username, new_role)
+  on conflict (username) do update set role = excluded.role;
   update public.profiles set role = new_role where id = target.id;
   insert into public.moderation_actions(actor_id, target_id, action, reason)
   values (auth.uid(), target.id, 'set_role', 'role=' || new_role);

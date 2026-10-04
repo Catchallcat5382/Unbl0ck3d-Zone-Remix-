@@ -2208,6 +2208,10 @@
 
       <div class="tab-content" id="tools">
 <div class="g4mes-section" style="display:flex;gap:18px;padding:10px 36px 30px;justify-content:center;flex-wrap:wrap;">
+          <button class="g4mes-btn" onclick="event.preventDefault();openUselessGamzWeb();">
+            <img loading="lazy" decoding="async" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='55%25'%3E%3Cstop stop-color='%23ffd36b'/%3E%3Cstop offset='.52' stop-color='%23ff7a1a'/%3E%3Cstop offset='1' stop-color='%236b2200'/%3E%3C/radialGradient%3E%3Cfilter id='glow' x='-40%25' y='-40%25' width='180%25' height='180%25'%3E%3CfeGaussianBlur stdDeviation='8' result='b'/%3E%3CfeMerge%3E%3CfeMergeNode in='b'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='256' height='256' rx='44' fill='%23090504'/%3E%3Ccircle cx='128' cy='128' r='78' fill='none' stroke='url(%23g)' stroke-width='18' filter='url(%23glow)'/%3E%3Cpath d='M45 142c22 16 49 24 83 24s61-8 83-24' fill='none' stroke='%23ffd18a' stroke-width='13' stroke-linecap='round'/%3E%3Cpath d='M93 55c-18 33-22 86-4 142M163 55c18 33 22 86 4 142M52 108h152' fill='none' stroke='%23ff8a1a' stroke-width='10' stroke-linecap='round' opacity='.95'/%3E%3Cpath d='M88 80h80' stroke='%23fff4d5' stroke-width='10' stroke-linecap='round'/%3E%3C/svg%3E" alt="UselessGamz Web">
+            <div class="overlay"><span>UselessGamz Web</span></div>
+          </button>
           <button class="g4mes-btn" onclick="event.preventDefault();fetchTool('https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@latest/assets/html/other/runner.html','Code Editor');">
             <img loading="lazy" decoding="async" src="https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@latest/assets/img/vscode.png" alt="Code Editor">
             <div class="overlay"><span>Code Editor</span></div>
@@ -8382,6 +8386,20 @@ let DATA = {
     document.getElementById('uz-command-close').onclick=function(){overlay.remove();};
     overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
     render(); setTimeout(function(){input.focus();},20);
+  };
+})();
+</script>
+<script>
+(function(){
+  window.USELESSGAMZ_WEB_URL = window.USELESSGAMZ_WEB_URL || localStorage.getItem('uselessGamzWebUrl') || 'https://YOUR-NETLIFY-SITE.netlify.app/';
+  window.openUselessGamzWeb = function(){
+    var url = String(window.USELESSGAMZ_WEB_URL || '').trim();
+    if (!url || url.indexOf('YOUR-NETLIFY-SITE') !== -1) {
+      alert('Set your UselessGamz Web Netlify URL first. After deploying, run: localStorage.setItem("uselessGamzWebUrl", "https://your-site.netlify.app/")');
+      return;
+    }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 })();
 </script>
