@@ -94,3 +94,4 @@ body.uz-flash-bad::after{background:radial-gradient(circle,rgba(255,55,55,.48),r
 .uz-glass-break.reverse i{animation:uzGlassReturn .78s cubic-bezier(.2,.7,.2,1) forwards}
 @keyframes uzGlassFall{0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.7)}12%{opacity:1}100%{opacity:0;transform:translate(var(--rx),var(--fall)) rotate(var(--rot)) scale(.95)}}
 @keyframes uzGlassReturn{0%{opacity:0;transform:translate(var(--rx),var(--fall)) rotate(var(--rot)) scale(.95)}35%{opacity:1}100%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.7)}}
+.uz-recent-account.is-banned{border-color:#ff3b30!important;background:rgba(255,59,48,.16)!important;color:#ffb3ad!important;text-decoration:line-through}

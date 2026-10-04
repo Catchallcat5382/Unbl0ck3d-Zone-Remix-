@@ -1,6 +1,6 @@
 (function () {
   var cfg = window.UZ_COMMUNITY_CONFIG || {};
-  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, heartbeatTimer: null };
+  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null };
   var ready = Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase);
   var storageKey = 'uzCommunityProfileName';
   var channelInfo = {
@@ -17,7 +17,7 @@
   function isTempOwner() { return window.UZTempOwnerActive === true; }
   function role() { if (isTempOwner()) return 'owner'; var a = state.profile || {}; var b = window.UZCurrentProfile || {}; var rank = { member: 0, mod: 1, admin: 2, owner: 3 }; return (rank[b.role] || 0) > (rank[a.role] || 0) ? b.role : (a.role || b.role || 'member'); }
   function isBanned(profile) { return profile && profile.banned_until && new Date(profile.banned_until) > new Date(); }
-  function isKicked(profile) { return profile && profile.kicked_until && new Date(profile.kicked_until) > new Date(); }
+  function isKicked(profile) { return profile && state.kickReady && profile.kicked_until && new Date(profile.kicked_until) > new Date(); }
   function isMuted(profile) { return profile && profile.muted_until && new Date(profile.muted_until) > new Date(); }
   function isOwner() { return role() === 'owner'; }
   function isRealOwner() { return role() === 'owner' && !isTempOwner() && !!state.user; }
@@ -36,7 +36,7 @@
   function initClient() { if (ready && !state.client) state.client = window.supabase.createClient(String(cfg.supabaseUrl || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, ''), cfg.supabaseAnonKey); }
   function displayName() { return getName() || (state.profile && (state.profile.display_name || state.profile.username)) || (state.user && state.user.email ? state.user.email.split('@')[0] : 'Member'); }
   function mergeProfile(profile) { if (!profile) return; var rank = { member: 0, mod: 1, admin: 2, owner: 3 }; var cur = state.profile || {}; state.profile = Object.assign({}, cur, profile); if ((rank[(window.UZCurrentProfile || {}).role] || 0) > (rank[state.profile.role] || 0)) state.profile.role = window.UZCurrentProfile.role; window.UZCurrentProfile = state.profile; }
-  function profileFields() { return 'id, username, display_name, role, warnings, banned_until, muted_until, kicked_until, staff_note' + (state.presenceReady ? ', last_seen' : ''); }
+  function profileFields() { return 'id, username, display_name, role, warnings, banned_until, muted_until' + (state.kickReady ? ', kicked_until' : '') + ', staff_note' + (state.presenceReady ? ', last_seen' : ''); }
   function isOnline(profile) { if (!profile) return false; if (state.user && String(profile.id) === String(state.user.id)) return true; return !!(state.onlineIds && state.onlineIds[String(profile.id)]); }
   async function touchPresence() { if (!ready || !state.client || !state.user || !state.presenceReady) return; var res = await state.client.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', state.user.id).select(profileFields()).single(); if (res.error) { if (/last_seen/i.test(res.error.message || '')) state.presenceReady = false; return; } if (res.data) mergeProfile(res.data); }
   function startHeartbeat() { clearInterval(state.heartbeatTimer); if (!state.user) return; touchPresence(); state.heartbeatTimer = setInterval(function(){ touchPresence(); if (state.tab === 'members') loadMembers(true); else loadMembers(false); }, 25000); }
@@ -59,6 +59,28 @@
       if (status === 'SUBSCRIBED') state.presenceChannel.track({ user_id: state.user.id, username: username, online_at: new Date().toISOString() });
     });
   }
+  function handleProfileError(error) {
+    var msg = error && error.message ? error.message : '';
+    var changed = false;
+    if (/last_seen/i.test(msg)) { state.presenceReady = false; changed = true; }
+    if (/kicked_until/i.test(msg)) { state.kickReady = false; changed = true; }
+    return changed;
+  }
+  function subscribeOwnProfile() {
+    if (!ready || !state.client || !state.user) return;
+    if (state.profileRealtime) state.client.removeChannel(state.profileRealtime);
+    state.profileRealtime = state.client.channel('uz-profile-' + state.user.id).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + state.user.id }, async function(payload){
+      if (payload && payload.new) mergeProfile(payload.new);
+      if (isBanned(state.profile)) {
+        try { await state.client.auth.signOut(); } catch(e) {}
+        if (window.UZAuthGate && window.UZAuthGate.showBanned) window.UZAuthGate.showBanned((state.profile && state.profile.username) || 'this account');
+      } else if (isKicked(state.profile)) {
+        try { await state.client.auth.signOut(); } catch(e) {}
+        if (window.UZAuthGate) window.UZAuthGate.showLogin('You were kicked from this account until ' + when(state.profile.kicked_until) + '.');
+      }
+      loadMembers(state.tab === 'members');
+    }).subscribe();
+  }
   function renderSetup() { var setup = $('community-setup'); if (setup) setup.classList.toggle('community-hidden', ready); }
   function renderUser() {
     var box = $('community-user'); if (!box) return;
@@ -68,8 +90,8 @@
   }
   async function saveProfile() { var name = displayName(); if (!validName(name)) { status('Pick a clean profile name, 2-' + (cfg.maxNameLength || 24) + ' characters.'); return false; } if (state.user) await upsertProfile(); renderUser(); renderComposer(); return true; }
   async function logout() { if (!state.client) return; await state.client.auth.signOut(); state.user = null; state.profile = null; status('Signed out.'); renderUser(); renderComposer(); loadItems(); if (window.UZAuthGate) window.UZAuthGate.refresh(); }
-  async function upsertProfile() { if (!ready || !state.user) return; initClient(); var payload = { id: state.user.id, display_name: displayName() }; if (state.presenceReady) payload.last_seen = new Date().toISOString(); var res = await state.client.from('profiles').upsert(payload, { onConflict: 'id' }).select(profileFields()).single(); if (res.error && /last_seen|kicked_until/i.test(res.error.message || '')) { state.presenceReady = /last_seen/i.test(res.error.message || '') ? false : state.presenceReady; delete payload.last_seen; res = await state.client.from('profiles').upsert(payload, { onConflict: 'id' }).select(profileFields().replace(', kicked_until', '')).single(); } if (!res.error && res.data) mergeProfile(res.data); try { localStorage.setItem('lightspeedSchoolName', 'Unblocked Zone'); localStorage.setItem('lightspeedTopText', 'Oops,'); localStorage.setItem('lightspeedBottomText', 'is not available because it is categorized as Security - Proxy.'); localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + ((state.profile && state.profile.username) || state.user.email || 'user') + ' (IP Address: █████).'); localStorage.setItem('scUrl', 'Unblocked Zone'); } catch(e) {} if (isKicked(state.profile)) { status('You were kicked from the site.'); if (state.client) await state.client.auth.signOut(); if (window.UZAuthGate) window.UZAuthGate.showLogin('You were kicked from this account until ' + when(state.profile.kicked_until) + '.'); return; } if (isBanned(state.profile)) { status('This account is banned.'); if (state.client) await state.client.auth.signOut(); if (window.UZAuthGate && window.UZAuthGate.showBanned) window.UZAuthGate.showBanned((state.profile && state.profile.username) || 'this account'); else if (window.UZAuthGate) window.UZAuthGate.showLogin('This account is banned.'); } }
-  async function refreshSession() { if (!ready) { renderSetup(); renderUser(); renderComposer(); loadItems(); return; } initClient(); var session = await state.client.auth.getSession(); state.user = session.data && session.data.session ? session.data.session.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); } state.client.auth.onAuthStateChange(async function (_event, sessionData) { state.user = sessionData && sessionData.user ? sessionData.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); } else { clearInterval(state.heartbeatTimer); if (state.presenceChannel) state.client.removeChannel(state.presenceChannel); state.onlineIds = {}; state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); }
+  async function upsertProfile() { if (!ready || !state.user) return; initClient(); var payload = { id: state.user.id, display_name: displayName() }; if (state.presenceReady) payload.last_seen = new Date().toISOString(); var res = await state.client.from('profiles').upsert(payload, { onConflict: 'id' }).select(profileFields()).single(); if (res.error && handleProfileError(res.error)) { delete payload.last_seen; res = await state.client.from('profiles').upsert(payload, { onConflict: 'id' }).select(profileFields()).single(); } if (!res.error && res.data) mergeProfile(res.data); try { localStorage.setItem('lightspeedSchoolName', 'Unblocked Zone'); localStorage.setItem('lightspeedTopText', 'Oops,'); localStorage.setItem('lightspeedBottomText', 'is not available because it is categorized as Security - Proxy.'); localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + ((state.profile && state.profile.username) || state.user.email || 'user') + ' (IP Address: █████).'); localStorage.setItem('scUrl', 'Unblocked Zone'); } catch(e) {} if (isKicked(state.profile)) { status('You were kicked from the site.'); if (state.client) await state.client.auth.signOut(); if (window.UZAuthGate) window.UZAuthGate.showLogin('You were kicked from this account until ' + when(state.profile.kicked_until) + '.'); return; } if (isBanned(state.profile)) { status('This account is banned.'); if (state.profile && state.profile.username) try { localStorage.setItem('uzBannedAccount:' + state.profile.username, '1'); } catch(e) {} if (state.client) await state.client.auth.signOut(); if (window.UZAuthGate && window.UZAuthGate.showBanned) window.UZAuthGate.showBanned((state.profile && state.profile.username) || 'this account'); else if (window.UZAuthGate) window.UZAuthGate.showLogin('This account is banned.'); } }
+  async function refreshSession() { if (!ready) { renderSetup(); renderUser(); renderComposer(); loadItems(); return; } initClient(); var session = await state.client.auth.getSession(); state.user = session.data && session.data.session ? session.data.session.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } state.client.auth.onAuthStateChange(async function (_event, sessionData) { state.user = sessionData && sessionData.user ? sessionData.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } else { clearInterval(state.heartbeatTimer); if (state.presenceChannel) state.client.removeChannel(state.presenceChannel); if (state.profileRealtime) state.client.removeChannel(state.profileRealtime); state.onlineIds = {}; state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); }
   function postAllowedMessage() { if (state.channelName === 'announcements') return 'Announcements are staff-only. Members can read and copy.'; return 'Sign in to post here.'; }
   function renderComposer() {
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
@@ -104,7 +126,7 @@
     if (state.tab === 'members') { await loadMembers(true); return; }
     var table = state.tab === 'chat' ? 'chat_messages' : 'posts';
     var res = await state.client.from(table).select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(100);
-    if (res.error && /last_seen/i.test(res.error.message || '')) { state.presenceReady = false; res = await state.client.from(table).select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(100); }
+    if (res.error && handleProfileError(res.error)) { res = await state.client.from(table).select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(100); }
     if (res.error) { list.innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
     var rows = (res.data || []).slice().reverse();
     if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
@@ -131,7 +153,7 @@
   async function loadMembers(main) {
     if (!ready) return; initClient();
     var res = await state.client.from('profiles').select(profileFields()).order('role', { ascending: false }).limit(200);
-    if (res.error && /last_seen/i.test(res.error.message || '')) { state.presenceReady = false; res = await state.client.from('profiles').select(profileFields()).order('role', { ascending: false }).limit(200); }
+    if (res.error && handleProfileError(res.error)) { res = await state.client.from('profiles').select(profileFields()).order('role', { ascending: false }).limit(200); }
     if (res.error) { if (main && $('community-list')) $('community-list').innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
     state.memberRows = (res.data || []);
     var html = renderMembers(state.memberRows, main);
