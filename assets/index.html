@@ -314,6 +314,12 @@
       z-index: 100; box-sizing: border-box;
       pointer-events: none;
       overflow: visible;
+      transition: left 0.32s cubic-bezier(0.4,0,0.2,1),
+                  right 0.32s cubic-bezier(0.4,0,0.2,1),
+                  top 0.32s cubic-bezier(0.4,0,0.2,1),
+                  bottom 0.32s cubic-bezier(0.4,0,0.2,1),
+                  transform 0.32s cubic-bezier(0.4,0,0.2,1),
+                  opacity 0.22s ease;
     }
     #floating-logo {
       position: fixed; right: 24px; bottom: 18px; z-index: 10;
@@ -4768,6 +4774,8 @@
       sb.classList.remove('left-sidebar', 'right-sidebar');
       if (pos === 'left') sb.classList.add('left-sidebar');
       if (pos === 'right') sb.classList.add('right-sidebar');
+      document.body.classList.remove('uz-sidebar-bottom', 'uz-sidebar-left', 'uz-sidebar-right');
+      document.body.classList.add(pos === 'left' ? 'uz-sidebar-left' : pos === 'right' ? 'uz-sidebar-right' : 'uz-sidebar-bottom');
       var side = pos === 'left' || pos === 'right';
       document.getElementById('floating-logo').classList.toggle('hidden', side);
       sb.classList.add('sidebar-icons-only');
@@ -4965,9 +4973,22 @@
 
     (function initBottomBarToggle(){
       var css = document.createElement('style');
-      css.textContent = 'html.loading-active #sidebar-toggle,body.uz-auth-locked #sidebar-toggle{display:none!important}#sidebar-toggle{position:fixed;left:50%;bottom:8px;z-index:1000002;transform:translateX(-50%);width:38px;height:24px;border:1px solid var(--accent);border-radius:999px;background:rgba(0,0,0,.82);color:var(--accent);font:900 16px/1 Arial,sans-serif;cursor:pointer;box-shadow:0 0 18px rgba(255,102,0,.32)}body.uz-sidebar-hidden #sidebar{transform:translate(-50%,calc(100% + 36px))!important;opacity:0!important;pointer-events:none!important}body.uz-sidebar-hidden #sidebar-toggle{bottom:10px}';
+      css.textContent = '#sidebar-toggle{display:none!important;position:fixed;left:50%;right:auto;top:auto;bottom:8px;z-index:1000002;transform:translateX(-50%);width:38px;height:24px;border:1px solid var(--accent);border-radius:999px;background:rgba(0,0,0,.82);color:var(--accent);font:900 16px/1 Arial,sans-serif;cursor:pointer;box-shadow:0 0 18px rgba(255,102,0,.32);opacity:0;transition:left .32s cubic-bezier(.4,0,.2,1),right .32s cubic-bezier(.4,0,.2,1),top .32s cubic-bezier(.4,0,.2,1),bottom .32s cubic-bezier(.4,0,.2,1),transform .32s cubic-bezier(.4,0,.2,1),opacity .2s ease}body.uz-app-unlocked #sidebar-toggle{display:block!important;opacity:1}html.loading-active #sidebar-toggle,body.uz-auth-locked #sidebar-toggle,body:not(.uz-app-unlocked) #sidebar-toggle{display:none!important;opacity:0!important}body.uz-sidebar-bottom #sidebar-toggle{left:50%;right:auto;top:auto;bottom:8px;transform:translateX(-50%)}body.uz-sidebar-left #sidebar-toggle{left:14px;right:auto;top:50%;bottom:auto;transform:translateY(-50%) rotate(-90deg)}body.uz-sidebar-right #sidebar-toggle{left:auto;right:14px;top:50%;bottom:auto;transform:translateY(-50%) rotate(90deg)}body.uz-sidebar-hidden.uz-sidebar-bottom #sidebar{transform:translate(-50%,calc(100% + 36px))!important;opacity:0!important;pointer-events:none!important}body.uz-sidebar-hidden.uz-sidebar-left #sidebar{transform:translate(calc(-100% - 36px),-50%)!important;opacity:0!important;pointer-events:none!important}body.uz-sidebar-hidden.uz-sidebar-right #sidebar{transform:translate(calc(100% + 36px),-50%)!important;opacity:0!important;pointer-events:none!important}body.uz-sidebar-hidden.uz-sidebar-bottom #sidebar-toggle{bottom:10px}body.uz-sidebar-hidden.uz-sidebar-left #sidebar-toggle{left:10px}body.uz-sidebar-hidden.uz-sidebar-right #sidebar-toggle{right:10px}';
       document.head.appendChild(css);
-      function apply(){ document.body.classList.toggle('uz-sidebar-hidden', localStorage.getItem('uzSidebarHidden') === '1'); var b = document.getElementById('sidebar-toggle'); if (b) b.textContent = document.body.classList.contains('uz-sidebar-hidden') ? '^' : 'v'; }
+      function syncPosition(){
+        var sb = document.getElementById('sidebar');
+        var pos = sb && sb.classList.contains('left-sidebar') ? 'left' : sb && sb.classList.contains('right-sidebar') ? 'right' : 'bottom';
+        document.body.classList.remove('uz-sidebar-bottom', 'uz-sidebar-left', 'uz-sidebar-right');
+        document.body.classList.add(pos === 'left' ? 'uz-sidebar-left' : pos === 'right' ? 'uz-sidebar-right' : 'uz-sidebar-bottom');
+        return pos;
+      }
+      function apply(){
+        var pos = syncPosition();
+        var hidden = localStorage.getItem('uzSidebarHidden') === '1';
+        document.body.classList.toggle('uz-sidebar-hidden', hidden);
+        var b = document.getElementById('sidebar-toggle');
+        if (b) b.textContent = pos === 'left' ? (hidden ? '>' : '<') : pos === 'right' ? (hidden ? '<' : '>') : hidden ? '^' : 'v';
+      }
       function make(){ if (document.getElementById('sidebar-toggle')) { apply(); return; } var btn = document.createElement('button'); btn.id = 'sidebar-toggle'; btn.type = 'button'; btn.setAttribute('aria-label', 'Toggle bottom bar'); btn.onclick = function(){ localStorage.setItem('uzSidebarHidden', document.body.classList.contains('uz-sidebar-hidden') ? '0' : '1'); apply(); }; document.body.appendChild(btn); apply(); }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', make); else make();
     })();
