@@ -14,10 +14,14 @@
 <body>
   <main id="loader">
     <h1>Loading Unbl0cked Zone</h1>
-    <p>Pulling the live build from GitHub raw...</p>
+    <p>Opening the local live build first...</p>
   </main>
   <script>
     (async function () {
+      if (location.protocol === 'file:' && !location.search.includes('remote=1')) {
+        location.replace('assets/index.html?local=' + Date.now());
+        return;
+      }
       var pageUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/index.html';
       var fallbacks = ['https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html', 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html'];
       var baseUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';

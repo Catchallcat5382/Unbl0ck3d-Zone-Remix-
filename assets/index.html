@@ -1473,6 +1473,11 @@
     #context-menu .ctx-sep{height:1px;background:rgba(255,255,255,0.1);margin:5px 8px;}
     #context-menu .ctx-title{padding:6px 12px 2px;color:#666;font-size:11px;letter-spacing:1px;text-transform:uppercase;}
     @keyframes ctxIn{from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);}}
+    .uz-command-overlay{position:fixed;inset:0;z-index:60000;display:grid;place-items:start center;padding-top:12vh;background:rgba(0,0,0,.48);backdrop-filter:blur(5px)}
+    .uz-command-card{width:min(760px,calc(100vw - 28px));border:2px solid var(--accent);border-radius:12px;background:#090607;box-shadow:0 0 34px rgba(var(--accent-rgb),.35);padding:12px;font-family:'ApplePixel',monospace;color:#fff}
+    .uz-command-title{display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--accent);font-size:15px;margin-bottom:10px}.uz-command-title button{background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:6px 10px;cursor:pointer}
+    .uz-command-input{width:100%;box-sizing:border-box;background:#111;border:2px solid var(--accent);border-radius:8px;color:#fff;font-family:'ApplePixel',monospace;font-size:18px;padding:13px;outline:none}.uz-command-input:focus{box-shadow:0 0 18px rgba(var(--accent-rgb),.45)}
+    .uz-command-help{display:grid;gap:7px;margin-top:10px}.uz-command-suggestion{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid rgba(var(--accent-rgb),.35);border-radius:8px;padding:9px 10px;background:rgba(255,255,255,.03);color:#ddd;cursor:pointer}.uz-command-suggestion.active,.uz-command-suggestion:hover{background:rgba(var(--accent-rgb),.18);color:#fff}.uz-command-suggestion code{color:var(--accent);font-family:'ApplePixel',monospace}.uz-command-status{min-height:22px;color:#ffd29a;margin-top:10px;font-size:13px}
 
     /* ─── EXTRA MOTION ─── */
     .day-name{animation:titleGlow 4s ease-in-out infinite;}
@@ -1659,7 +1664,7 @@
         </button>
         <button class="sidebar-btn" data-tab="community">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span><span class="sidebar-label">Community</span>
-        </button>        <button class="sidebar-btn" data-tab="community" data-community-target="staff">
+        </button>        <button class="sidebar-btn" data-tab="community" data-command-panel="true">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span><span class="sidebar-label">Terminal</span>
         </button>
         <button class="sidebar-btn" data-tab="settings">
@@ -5108,7 +5113,7 @@
           } catch (e) {}
         });
       } else {
-        btn.addEventListener('click', function () { switchTab(btn.dataset.tab); if (btn.dataset.communityTarget === 'staff') { setTimeout(function(){ if (window.UZCommunity && window.UZCommunity.openTerminal) window.UZCommunity.openTerminal(); }, 0); } });
+        btn.addEventListener('click', function () { if (btn.dataset.commandPanel === 'true') { if (window.openUZCommandPalette) window.openUZCommandPalette(); return; } switchTab(btn.dataset.tab); });
       }
     });
 
@@ -8392,6 +8397,33 @@ let DATA = {
   }
   if (document.readyState === 'complete') setTimeout(initOnLoad, 300);
   else window.addEventListener('load', function () { setTimeout(initOnLoad, 300); });
+})();
+</script>
+<script>
+(function(){
+  var commands = [
+    { cmd: '/warn username reason', fill: '/warn ', desc: 'Add a warning to a user.' },
+    { cmd: '/mute username 10 reason', fill: '/mute ', desc: 'Mute a user for minutes.' },
+    { cmd: '/ban username reason', fill: '/ban ', desc: 'Ban a user from community actions.' },
+    { cmd: '/unban username reason', fill: '/unban ', desc: 'Remove a ban.' }
+  ];
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function roleText(){ try { return window.UZCommunity && window.UZCommunity.role ? window.UZCommunity.role() : ((window.UZCurrentProfile||{}).role || (window.UZTempOwnerActive ? 'owner' : 'member')); } catch(e){ return 'member'; } }
+  window.openUZCommandPalette = function(){
+    var old=document.getElementById('uz-command-overlay'); if(old) old.remove();
+    var overlay=document.createElement('div'); overlay.id='uz-command-overlay'; overlay.className='uz-command-overlay';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /warn, /mute, /ban, or /unban"><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command.</div></div>';
+    document.body.appendChild(overlay);
+    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');
+    function matching(){ var q=input.value.trim().toLowerCase(); return commands.filter(function(c){return !q || c.cmd.toLowerCase().indexOf(q)===0 || c.fill.trim().indexOf(q)===0;}); }
+    function render(){ var list=matching(); help.innerHTML=(list.length?list:commands).map(function(c,i){return '<button type="button" class="uz-command-suggestion'+(i===0?' active':'')+'" data-fill="'+esc(c.fill)+'"><span><code>'+esc(c.cmd)+'</code><br>'+esc(c.desc)+'</span><span>Tab</span></button>';}).join(''); Array.prototype.forEach.call(help.querySelectorAll('.uz-command-suggestion'),function(btn){btn.onclick=function(){input.value=btn.dataset.fill; input.focus(); render();};}); }
+    async function run(){ var text=input.value.trim(); if(!text){status.textContent='Type a command first.'; return;} if(!window.UZCommunity || !window.UZCommunity.runCommand){status.textContent='Community command system is not loaded yet.'; return;} status.textContent='Running...'; var result=await window.UZCommunity.runCommand(text); status.textContent=(result&&result.message)||'Done.'; if(result&&result.ok) input.value=''; render(); }
+    input.addEventListener('input',render);
+    input.addEventListener('keydown',function(e){ if(e.key==='Escape'){overlay.remove();} if(e.key==='Tab'){e.preventDefault(); var first=help.querySelector('.uz-command-suggestion'); if(first){input.value=first.dataset.fill; render();}} if(e.key==='Enter'){e.preventDefault(); run();} });
+    document.getElementById('uz-command-close').onclick=function(){overlay.remove();};
+    overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+    render(); setTimeout(function(){input.focus();},20);
+  };
 })();
 </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
