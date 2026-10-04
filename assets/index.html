@@ -1638,6 +1638,7 @@
     <button id="console-close" onclick="toggleConsoleOverlay()">✕</button>
     <div id="luna-console"></div>
   </div>
+  <div id="uz-notification-tray"><button id="uz-notification-toggle" type="button">Notifications <b id="uz-notification-count">0</b></button><div id="uz-notification-list" hidden></div></div>
   <div id="main-content">
     <aside id="sidebar">
       <nav class="sidebar-nav">
@@ -1662,8 +1663,14 @@
         <button class="sidebar-btn" data-tab="community">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span><span class="sidebar-label">Community</span>
         </button>
+        <button class="sidebar-btn announcements-taskbar-btn" data-tab="announcements">
+          <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></span><span class="sidebar-label">Announcements</span><span id="announcements-ping" class="uz-ping-dot" hidden>0</span>
+        </button>
         <button class="sidebar-btn community-staff-only community-hidden" data-tab="community" data-command-panel="true">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span><span class="sidebar-label">Terminal</span>
+        </button>
+        <button class="sidebar-btn community-staff-only community-hidden" data-tab="community" data-audit-panel="true">
+          <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h6"/></svg></span><span class="sidebar-label">Audit</span>
         </button>
         <button class="sidebar-btn" data-tab="settings">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" /><circle cx="12" cy="12" r="3" /></svg></span><span class="sidebar-label">Settings</span>
@@ -1757,6 +1764,7 @@
         <div class="quote-section">
           <div id="quote"></div>
         </div>
+        <details class="credits-box"><summary>Credits</summary><div class="credits-scroll"><p><b>UselessGamz</b> - Creator</p><p><b>AeroShift</b> - Proxy Maker</p></div></details>
         <div class="social-links">          <a href="https://www.youtube.com/@UselessGamz" target="_blank" class="social-btn"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.4.6A3 3 0 0 0 .5 6.2C0 7.9 0 12 0 12s0 4.1.5 5.8a3 3 0 0 0 2.1 2.1c1.7.6 9.4.6 9.4.6s7.7 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 16.1 24 12 24 12s0-4.1-.5-5.8zM9.75 15.5v-7l6.5 3.5-6.5 3.5z" fill="currentColor" stroke="none"></path></svg><span class="social-label">YouTube</span></a>        </div>
       </div>
 
@@ -1799,6 +1807,13 @@
             <div id="community-side-members" class="community-side-members"></div>
           </aside>
         </div>
+      </div>
+      <div class="tab-content" id="announcements">
+        <section class="announcements-board">
+          <div class="announcements-hero"><div><h2>Club Announcements</h2><p>Updates, links, files, and staff posts for everyone.</p></div><button class="community-btn secondary" id="announcements-refresh" type="button">Refresh</button></div>
+          <div id="announcements-list" class="announcements-list"><div class="community-message">Loading announcements...</div></div>
+          <div id="announcements-compose" class="announcements-compose"></div>
+        </section>
       </div>
       <div class="tab-content" id="media">
 
@@ -2211,9 +2226,9 @@
 
       <div class="tab-content" id="tools">
 <div class="g4mes-section" style="display:flex;gap:18px;padding:10px 36px 30px;justify-content:center;flex-wrap:wrap;">
-          <button class="g4mes-btn" onclick="event.preventDefault();openUselessGamzWeb();">
-            <img loading="lazy" decoding="async" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='55%25'%3E%3Cstop stop-color='%23ffd36b'/%3E%3Cstop offset='.52' stop-color='%23ff7a1a'/%3E%3Cstop offset='1' stop-color='%236b2200'/%3E%3C/radialGradient%3E%3Cfilter id='glow' x='-40%25' y='-40%25' width='180%25' height='180%25'%3E%3CfeGaussianBlur stdDeviation='8' result='b'/%3E%3CfeMerge%3E%3CfeMergeNode in='b'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='256' height='256' rx='44' fill='%23090504'/%3E%3Ccircle cx='128' cy='128' r='78' fill='none' stroke='url(%23g)' stroke-width='18' filter='url(%23glow)'/%3E%3Cpath d='M45 142c22 16 49 24 83 24s61-8 83-24' fill='none' stroke='%23ffd18a' stroke-width='13' stroke-linecap='round'/%3E%3Cpath d='M93 55c-18 33-22 86-4 142M163 55c18 33 22 86 4 142M52 108h152' fill='none' stroke='%23ff8a1a' stroke-width='10' stroke-linecap='round' opacity='.95'/%3E%3Cpath d='M88 80h80' stroke='%23fff4d5' stroke-width='10' stroke-linecap='round'/%3E%3C/svg%3E" alt="UselessGamz Web">
-            <div class="overlay"><span>UselessGamz Web</span></div>
+          <button class="g4mes-btn" onclick="event.preventDefault();openGUSTBrowser();">
+            <img loading="lazy" decoding="async" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='55%25'%3E%3Cstop stop-color='%23ffd36b'/%3E%3Cstop offset='.52' stop-color='%23ff7a1a'/%3E%3Cstop offset='1' stop-color='%236b2200'/%3E%3C/radialGradient%3E%3Cfilter id='glow' x='-40%25' y='-40%25' width='180%25' height='180%25'%3E%3CfeGaussianBlur stdDeviation='8' result='b'/%3E%3CfeMerge%3E%3CfeMergeNode in='b'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='256' height='256' rx='44' fill='%23090504'/%3E%3Ccircle cx='128' cy='128' r='78' fill='none' stroke='url(%23g)' stroke-width='18' filter='url(%23glow)'/%3E%3Cpath d='M45 142c22 16 49 24 83 24s61-8 83-24' fill='none' stroke='%23ffd18a' stroke-width='13' stroke-linecap='round'/%3E%3Cpath d='M93 55c-18 33-22 86-4 142M163 55c18 33 22 86 4 142M52 108h152' fill='none' stroke='%23ff8a1a' stroke-width='10' stroke-linecap='round' opacity='.95'/%3E%3Cpath d='M88 80h80' stroke='%23fff4d5' stroke-width='10' stroke-linecap='round'/%3E%3C/svg%3E" alt="GUST Browser">
+            <div class="overlay"><span>GUST Browser</span></div>
           </button>
           <button class="g4mes-btn" onclick="event.preventDefault();fetchTool('https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@latest/assets/html/other/runner.html','Code Editor');">
             <img loading="lazy" decoding="async" src="https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@latest/assets/img/vscode.png" alt="Code Editor">
@@ -4806,7 +4821,7 @@
       localStorage.setItem('panicEnabled', enabled ? '1' : '0');
     }
     function getLoginRequired() {
-      return localStorage.getItem('uzRequireLogin') === '1';
+      var v = localStorage.getItem('uzRequireLogin'); return v === null ? true : v === '1';
     }
     function setLoginRequired(enabled) {
       localStorage.setItem('uzRequireLogin', enabled ? '1' : '0');
@@ -4953,7 +4968,7 @@
 
     (function initBottomBarToggle(){
       var css = document.createElement('style');
-      css.textContent = '#sidebar-toggle{position:fixed;left:50%;bottom:8px;z-index:1000002;transform:translateX(-50%);width:38px;height:24px;border:1px solid var(--accent);border-radius:999px;background:rgba(0,0,0,.82);color:var(--accent);font:900 16px/1 Arial,sans-serif;cursor:pointer;box-shadow:0 0 18px rgba(255,102,0,.32)}body.uz-sidebar-hidden #sidebar{transform:translate(-50%,calc(100% + 36px))!important;opacity:0!important;pointer-events:none!important}body.uz-sidebar-hidden #sidebar-toggle{bottom:10px}';
+      css.textContent = 'html.loading-active #sidebar-toggle,body.uz-auth-locked #sidebar-toggle{display:none!important}#sidebar-toggle{position:fixed;left:50%;bottom:8px;z-index:1000002;transform:translateX(-50%);width:38px;height:24px;border:1px solid var(--accent);border-radius:999px;background:rgba(0,0,0,.82);color:var(--accent);font:900 16px/1 Arial,sans-serif;cursor:pointer;box-shadow:0 0 18px rgba(255,102,0,.32)}body.uz-sidebar-hidden #sidebar{transform:translate(-50%,calc(100% + 36px))!important;opacity:0!important;pointer-events:none!important}body.uz-sidebar-hidden #sidebar-toggle{bottom:10px}';
       document.head.appendChild(css);
       function apply(){ document.body.classList.toggle('uz-sidebar-hidden', localStorage.getItem('uzSidebarHidden') === '1'); var b = document.getElementById('sidebar-toggle'); if (b) b.textContent = document.body.classList.contains('uz-sidebar-hidden') ? '^' : 'v'; }
       function make(){ if (document.getElementById('sidebar-toggle')) { apply(); return; } var btn = document.createElement('button'); btn.id = 'sidebar-toggle'; btn.type = 'button'; btn.setAttribute('aria-label', 'Toggle bottom bar'); btn.onclick = function(){ localStorage.setItem('uzSidebarHidden', document.body.classList.contains('uz-sidebar-hidden') ? '0' : '1'); apply(); }; document.body.appendChild(btn); apply(); }
@@ -5111,6 +5126,7 @@
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
+      if (tabId === 'announcements' && window.UZCommunity && window.UZCommunity.renderAnnouncements) setTimeout(function(){ window.UZCommunity.renderAnnouncements(); }, 30);
       document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
       var fl = document.getElementById('floating-logo');
       var sb = document.getElementById('sidebar');
@@ -5145,7 +5161,7 @@
           } catch (e) {}
         });
       } else {
-        btn.addEventListener('click', function () { if (btn.dataset.commandPanel === 'true') { if (window.openUZCommandPalette) window.openUZCommandPalette(); return; } switchTab(btn.dataset.tab); });
+        btn.addEventListener('click', function () { if (btn.dataset.commandPanel === 'true') { if (window.openUZCommandPalette) window.openUZCommandPalette(); return; } if (btn.dataset.auditPanel === 'true') { if (window.openUZAuditPanel) window.openUZAuditPanel(); return; } switchTab(btn.dataset.tab); });
       }
     });
 
@@ -8440,35 +8456,46 @@ let DATA = {
 </script>
 <script>
 (function(){
-  function ensureWebStyles(){
-    if (document.getElementById('uz-web-overlay-style')) return;
-    var s=document.createElement('style'); s.id='uz-web-overlay-style';
-    s.textContent='.uz-web-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:18px;backdrop-filter:blur(10px)}.uz-web-card{width:min(880px,calc(100vw - 34px));background:#100907;border:1px solid #ff6a00;border-radius:14px;box-shadow:0 0 36px rgba(255,106,0,.24);padding:22px;color:#fff}.uz-web-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.uz-web-bar b{color:#ff8a1a;font-size:20px}.uz-web-actions button{border:1px solid #ff6a00;background:#0b0706;color:#ffb15d;border-radius:8px;padding:8px 10px;font:700 12px/1 Arial,sans-serif;cursor:pointer}.uz-web-card h1{margin:0 0 8px;color:#ff7a1a;text-shadow:0 0 20px rgba(255,106,0,.48);font-size:clamp(34px,6vw,64px);text-align:center}.uz-web-card p{color:#d7c8bf;text-align:center}.uz-web-form{display:grid;grid-template-columns:1fr auto;gap:10px;margin:20px auto 12px;max-width:720px;padding:9px;border:1px solid rgba(255,106,0,.55);border-radius:16px;background:rgba(14,9,8,.95)}.uz-web-form input{min-width:0;border:0;outline:0;background:transparent;color:white;padding:14px 15px;font:16px Arial,sans-serif}.uz-web-form button,.uz-web-engine.active{border:0;border-radius:10px;padding:0 22px;background:linear-gradient(135deg,#ffb000,#ff6a00);color:#1a0800;font:900 14px Arial,sans-serif;cursor:pointer}.uz-web-engines{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.uz-web-engine{padding:8px 13px;border-radius:999px;border:1px solid rgba(255,106,0,.45);background:#130c0a;color:#d7bca8;cursor:pointer}.uz-web-status{min-height:22px;margin-top:12px;color:#ffc078;text-align:center}.uz-web-status a{color:#ffb15d;font-weight:900}@media(max-width:600px){.uz-web-form{grid-template-columns:1fr}.uz-web-form button{padding:13px}}';
-    document.head.appendChild(s);
-  }
-  function targetFor(value, engine){
-    var looksUrl=/^https?:\/\//i.test(value)||/^[\w-]+(\.[\w-]+)+([/:?#].*)?$/i.test(value);
-    if(looksUrl) return /^https?:\/\//i.test(value)?value:'https://'+value;
-    var engines={google:'https://www.google.com/search?q=',bing:'https://www.bing.com/search?q=',duckduckgo:'https://duckduckgo.com/?q='};
-    return (engines[engine]||engines.duckduckgo)+encodeURIComponent(value);
-  }
-  window.openUselessGamzWeb = function(){
-    ensureWebStyles();
-    var old=document.getElementById('uz-web-overlay'); if(old) old.remove();
-    var overlay=document.createElement('div'); overlay.id='uz-web-overlay'; overlay.className='uz-web-overlay';
-    overlay.innerHTML='<section class="uz-web-card"><div class="uz-web-bar"><b>UselessGamz Web</b><div class="uz-web-actions"><button id="uz-web-close">Close</button></div></div><h1>UselessGamz Web</h1><p>Search or enter a URL. Results open in a normal tab so blocked iframe pages do not break this panel.</p><form class="uz-web-form" id="uz-web-form"><input id="uz-web-input" autocomplete="off" spellcheck="false" placeholder="Search or enter a URL"><button type="submit">Go</button></form><div class="uz-web-engines"><button class="uz-web-engine active" data-engine="duckduckgo">DuckDuckGo</button><button class="uz-web-engine" data-engine="google">Google</button><button class="uz-web-engine" data-engine="bing">Bing</button></div><div class="uz-web-status" id="uz-web-status">Ready.</div></section>';
-    document.body.appendChild(overlay);
-    var engine='duckduckgo', input=document.getElementById('uz-web-input'), status=document.getElementById('uz-web-status');
-    document.getElementById('uz-web-close').onclick=function(){overlay.remove();};
-    overlay.querySelectorAll('.uz-web-engine').forEach(function(btn){btn.onclick=function(){engine=btn.dataset.engine; overlay.querySelectorAll('.uz-web-engine').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active'); input.focus();};});
-    document.getElementById('uz-web-form').onsubmit=function(e){e.preventDefault(); var value=input.value.trim(); if(!value) return; var url=targetFor(value,engine); var opened=window.open(url,'_blank','noopener,noreferrer'); if(opened){status.textContent='Opened in a normal tab.';} else {status.innerHTML='Popup blocked. <a target="_blank" rel="noopener noreferrer" href="'+url.replace(/"/g,'%22')+'">Open result</a>';}};
-    setTimeout(function(){input.focus();},30);
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function ensureGustStyles(){ if(document.getElementById('uz-gust-style')) return; var s=document.createElement('style'); s.id='uz-gust-style'; s.textContent='.uz-gust-overlay{position:fixed;inset:0;z-index:999999;background:#050505;display:grid;grid-template-rows:auto 1fr}.uz-gust-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#0d0806;border-bottom:1px solid #ff6a00;color:#fff;padding:10px 14px}.uz-gust-bar b{color:#ff8a1a}.uz-gust-bar button{border:1px solid #ff6a00;background:#140b08;color:#ffb15d;border-radius:8px;padding:8px 10px;font:800 12px Arial,sans-serif;cursor:pointer}.uz-gust-overlay iframe{width:100%;height:100%;border:0;background:#0d0f12}.announcements-taskbar-btn{position:relative}.uz-ping-dot{position:absolute;top:2px;right:3px;min-width:18px;height:18px;border-radius:999px;background:#ff2b2b;color:white;font:900 11px/18px Arial;text-align:center;box-shadow:0 0 12px rgba(255,43,43,.65)}#uz-notification-tray{position:fixed;left:12px;top:12px;z-index:99997;font-family:Arial,sans-serif}html.loading-active #uz-notification-tray,body.uz-auth-locked #uz-notification-tray{display:none!important}#uz-notification-toggle{border:1px solid #ff6a00;background:rgba(8,8,10,.86);color:#ffb15d;border-radius:999px;padding:8px 12px;font-weight:900;cursor:pointer}#uz-notification-toggle b{display:inline-grid;place-items:center;margin-left:6px;min-width:18px;height:18px;border-radius:999px;background:#ff2b2b;color:#fff;font-size:11px}#uz-notification-list{width:min(360px,calc(100vw - 24px));max-height:360px;overflow:auto;margin-top:8px;border:1px solid #ff6a00;border-radius:12px;background:rgba(8,8,10,.96);box-shadow:0 0 30px rgba(255,106,0,.18);padding:10px;color:#fff}.uz-notification-item{border-bottom:1px solid rgba(255,106,0,.22);padding:9px 6px}.uz-notification-item:last-child{border-bottom:0}.credits-box{margin:16px auto 0;max-width:520px;border:1px solid rgba(255,106,0,.45);border-radius:10px;background:rgba(10,10,12,.72);color:#fff}.credits-box summary{cursor:pointer;padding:12px 14px;color:#ffb15d;font-weight:900}.credits-scroll{max-height:160px;overflow:auto;padding:0 14px 14px}.announcements-board{width:min(1120px,calc(100vw - 28px));margin:0 auto;display:grid;gap:16px}.announcements-hero{display:flex;justify-content:space-between;align-items:center;gap:12px;border:2px solid #ff6a00;border-radius:12px;background:linear-gradient(135deg,rgba(255,106,0,.18),rgba(7,7,9,.9));padding:20px}.announcements-hero h2{margin:0;color:#ff8a1a;font-size:clamp(30px,5vw,56px)}.announcements-list{display:grid;gap:12px}.announcement-card{border:1px solid rgba(255,106,0,.45);border-radius:10px;background:rgba(12,10,12,.88);padding:16px;color:#fff}.announcement-card h3{margin:0 0 8px;color:#ffd29a}.announcement-meta{color:#aeb4c0;font-size:12px;margin-bottom:10px}.announcement-body{white-space:pre-wrap;line-height:1.45}.announcements-compose{border:1px dashed rgba(255,106,0,.45);border-radius:10px;padding:12px;background:rgba(255,106,0,.05)}.announcements-compose input,.announcements-compose textarea{width:100%;margin:0 0 8px;background:#0d0d10;color:#fff;border:1px solid rgba(255,106,0,.5);border-radius:8px;padding:10px}.announcements-compose textarea{min-height:90px;resize:vertical}'; document.head.appendChild(s); }
+  window.openGUSTBrowser = function(){ ensureGustStyles(); var old=document.getElementById('uz-gust-overlay'); if(old) old.remove(); var overlay=document.createElement('div'); overlay.id='uz-gust-overlay'; overlay.className='uz-gust-overlay'; overlay.innerHTML='<div class="uz-gust-bar"><b>GUST Browser</b><div><button id="uz-gust-open">Open tab</button> <button id="uz-gust-close">Close</button></div></div><iframe src="assets/html/GUST.html"></iframe>'; document.body.appendChild(overlay); document.getElementById('uz-gust-close').onclick=function(){overlay.remove();}; document.getElementById('uz-gust-open').onclick=function(){window.open('assets/html/GUST.html','_blank','noopener,noreferrer');}; };
+  window.UZNotify = { add:function(text){ ensureGustStyles(); var list=JSON.parse(localStorage.getItem('uzNotifications')||'[]'); list.unshift({text:String(text||'Notification'),time:Date.now()}); localStorage.setItem('uzNotifications',JSON.stringify(list.slice(0,50))); renderNotifications(); }, render:renderNotifications };
+  function renderNotifications(){ ensureGustStyles(); var list=[]; try{list=JSON.parse(localStorage.getItem('uzNotifications')||'[]')}catch(e){} var count=document.getElementById('uz-notification-count'); var box=document.getElementById('uz-notification-list'); var ping=document.getElementById('announcements-ping'); if(count) count.textContent=String(list.length); if(ping){ ping.hidden=!list.length; ping.textContent=String(Math.min(99,list.length)); } if(box) box.innerHTML=list.length?list.map(function(n){return '<div class="uz-notification-item"><b>'+esc(new Date(n.time).toLocaleString())+'</b><br>'+esc(n.text)+'</div>';}).join(''):'<div class="uz-notification-item">No notifications yet.</div>'; }
+  document.addEventListener('click',function(e){ if(e.target && e.target.id==='uz-notification-toggle'){ var box=document.getElementById('uz-notification-list'); if(box) box.hidden=!box.hidden; }});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',renderNotifications); else renderNotifications();
+})();
+</script>
+
+<script>
+(function(){
+  function clean(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  window.openUZAuditPanel = function(){
+    var old=document.getElementById('uz-audit-overlay'); if(old) old.remove();
+    var logs=[]; try{logs=JSON.parse(localStorage.getItem('uzAuditLog')||'[]')}catch(e){}
+    var overlay=document.createElement('div'); overlay.id='uz-audit-overlay'; overlay.className='uz-command-overlay';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Staff Audit Log</span><button id="uz-audit-close">Close</button></div><div class="uz-command-help">'+(logs.length?logs.map(function(l){return '<button type="button" class="uz-command-suggestion"><span><code>'+clean(l.action||'event')+'</code><br>'+clean(l.detail||'')+'</span><span>'+clean(new Date(l.at||Date.now()).toLocaleString())+'</span></button>';}).join(''):'<div class="community-message">No local audit entries yet. For cross-device staff logs, add a Supabase audit_logs table/RPC.</div>')+'</div><div class="uz-command-status">Passwords are not shown. Supabase Auth protects them and does not expose plaintext passwords.</div></div>';
+    document.body.appendChild(overlay); document.getElementById('uz-audit-close').onclick=function(){overlay.remove();}; overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
   };
 })();
 </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');}</script>
   <script src="community/config.js"></script>
   <script src="community/community.js"></script>
   <script src="community/auth-gate.js"></script>
+<script>
+(function(){
+  function showAuthFallback(){
+    if (window.UZAuthGate || document.getElementById('uz-auth-gate')) return;
+    var cfg = window.UZ_COMMUNITY_CONFIG || {};
+    if (cfg.requireLogin === false) return;
+    document.body.classList.add('uz-auth-locked');
+    var gate=document.createElement('div'); gate.id='uz-auth-gate'; gate.className='uz-auth-gate uz-auth-ms-style uz-auth-fail-visible';
+    gate.innerHTML='<div class="uz-auth-card"><section class="uz-auth-form"><h1>Account service blocked</h1><p class="uz-auth-detail">The login screen could not load because the account scripts or Supabase connection were blocked on this network.</p><div class="uz-auth-setup"><b>Allowed fix</b><span>Try refreshing once, use the latest hosted link, or use a network where Supabase/Auth scripts are allowed. The site will not unlock accounts without the real account service.</span></div><button class="community-btn uz-auth-primary" type="button" onclick="location.reload()">Retry</button></section></div>';
+    document.body.appendChild(gate);
+  }
+  setTimeout(showAuthFallback, 4500);
+})();
+</script>
 </body>
 </html>
