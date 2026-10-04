@@ -49,6 +49,6 @@
     })
     .catch((error) => {
       deployStatus.textContent = "Static UI online";
-      healthOutput.textContent = "Health function unavailable: " + error.message;
+      healthOutput.textContent = "Static hosting is working. Netlify health function is only available if you deploy this folder to Netlify.";
     });
 })();

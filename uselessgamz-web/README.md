@@ -55,3 +55,11 @@ Recommended Netlify import settings if this folder is inside the main repo:
 - Build command: leave blank
 
 This is a normal search/URL launcher frontend. It is not a proxy or network bypass service.
+
+## No Netlify credits fallback
+
+The wrench-tab button in Unbl0cked Zone now opens the static jsDelivr URL by default:
+
+`https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/uselessgamz-web/public/index.html`
+
+That means Netlify is optional. Netlify only adds the `/health` function.

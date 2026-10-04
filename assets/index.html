@@ -8391,13 +8391,9 @@ let DATA = {
 </script>
 <script>
 (function(){
-  window.USELESSGAMZ_WEB_URL = window.USELESSGAMZ_WEB_URL || localStorage.getItem('uselessGamzWebUrl') || 'https://YOUR-NETLIFY-SITE.netlify.app/';
+  window.USELESSGAMZ_WEB_URL = window.USELESSGAMZ_WEB_URL || localStorage.getItem('uselessGamzWebUrl') || 'https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/uselessgamz-web/public/index.html';
   window.openUselessGamzWeb = function(){
     var url = String(window.USELESSGAMZ_WEB_URL || '').trim();
-    if (!url || url.indexOf('YOUR-NETLIFY-SITE') !== -1) {
-      alert('Set your UselessGamz Web Netlify URL first. After deploying, run: localStorage.setItem("uselessGamzWebUrl", "https://your-site.netlify.app/")');
-      return;
-    }
     if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
