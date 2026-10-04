@@ -226,9 +226,18 @@ begin
   if target.role = 'owner' and new_role <> 'owner' then
     raise exception 'owner accounts cannot be demoted here';
   end if;
-  insert into public.role_grants(username, role) values (target.username, new_role)
-  on conflict (username) do update set role = excluded.role;
-  update public.profiles set role = new_role where id = target.id;
+  if new_role = 'banned' then
+    delete from public.role_grants where lower(username) = lower(target.username);
+    update public.profiles
+    set role = 'banned', banned_until = now() + interval '100 years', muted_until = null, kicked_until = null
+    where id = target.id;
+  else
+    insert into public.role_grants(username, role) values (target.username, new_role)
+    on conflict (username) do update set role = excluded.role;
+    update public.profiles
+    set role = new_role, banned_until = null
+    where id = target.id;
+  end if;
   insert into public.moderation_actions(actor_id, target_id, action, reason)
   values (auth.uid(), target.id, 'set_role', 'role=' || new_role);
 end;
@@ -347,6 +356,11 @@ end $$;
 
 do $$ begin
   alter publication supabase_realtime add table public.posts;
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter publication supabase_realtime add table public.profiles;
 exception when duplicate_object then null;
 end $$;
 

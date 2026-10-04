@@ -95,3 +95,15 @@ body.uz-flash-bad::after{background:radial-gradient(circle,rgba(255,55,55,.48),r
 @keyframes uzGlassFall{0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.7)}12%{opacity:1}100%{opacity:0;transform:translate(var(--rx),var(--fall)) rotate(var(--rot)) scale(.95)}}
 @keyframes uzGlassReturn{0%{opacity:0;transform:translate(var(--rx),var(--fall)) rotate(var(--rot)) scale(.95)}35%{opacity:1}100%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.7)}}
 .uz-recent-account.is-banned{border-color:#ff3b30!important;background:rgba(255,59,48,.16)!important;color:#ffb3ad!important;text-decoration:line-through}
+
+/* Profile moderation controls. */
+.community-profile-status{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 10px!important;margin:10px 0!important;background:rgba(255,255,255,.05);font-weight:800!important;text-transform:uppercase;letter-spacing:.04em}
+.community-profile-status.is-online{border-color:rgba(53,208,127,.55);color:#66f0a9!important;background:rgba(53,208,127,.1)}
+.community-profile-status.is-offline{border-color:rgba(255,59,48,.5);color:#ff9f96!important;background:rgba(255,59,48,.08)}
+.community-profile-status.is-muted,.community-profile-status.is-kicked{border-color:rgba(255,176,0,.58);color:#ffd18a!important;background:rgba(255,176,0,.1)}
+.community-profile-status.is-banned{border-color:rgba(255,59,48,.8);color:#ffb3ad!important;background:rgba(80,8,8,.28);text-decoration:line-through}
+.community-profile-role-label{display:grid;gap:6px;margin:10px 0;color:#d8d3d0;font:800 12px/1.2 Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em}
+.community-profile-role-label select{width:100%;background:#0d0d10;color:#fff;border:1px solid rgba(255,106,0,.55);border-radius:8px;padding:9px;font:800 13px/1 Arial,sans-serif;text-transform:none;letter-spacing:0}
+.community-profile-actions h3{margin:14px 0 8px!important;color:#ffb15d!important;font-size:14px!important}
+.community-profile-command-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.community-profile-command-grid .community-btn{width:100%;min-height:38px}.community-profile-command-grid .danger{margin-top:0!important}
+@media(max-width:520px){.community-profile-command-grid{grid-template-columns:1fr}}
