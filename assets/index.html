@@ -1659,12 +1659,10 @@
         <button class="sidebar-btn" data-tab="ргоху">
           <span class="icon"><svg width="24" height="24" viewBox="5 6 26 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.6,24.32l-2.46,2.44a4,4,0,0,1-5.62,0,3.92,3.92,0,0,1,0-5.55l4.69-4.65a4,4,0,0,1,5.62,0,3.86,3.86,0,0,1,1,1.71A2,2,0,0,0,21.1,18l1.29-1.28a5.89,5.89,0,0,0-1.15-1.62,6,6,0,0,0-8.44,0L8.1,19.79a5.91,5.91,0,0,0,0,8.39,6,6,0,0,0,8.44,0l3.65-3.62c-.17,0-.33,0-.5,0A8,8,0,0,1,17.6,24.32Z" fill="currentColor"/><path d="M28.61,7.82a6,6,0,0,0-8.44,0l-3.65,3.62c.17,0,.33,0,.49,0h0a8,8,0,0,1,2.1.28l2.46-2.44a4,4,0,0,1,5.62,0,3.92,3.92,0,0,1,0,5.55l-4.69,4.65a4,4,0,0,1-5.62,0,3.86,3.86,0,0,1-1-1.71,2,2,0,0,0-.28.23l-1.29,1.28a5.89,5.89,0,0,0,1.15,1.62,6,6,0,0,0,8.44,0l4.69-4.65a5.92,5.92,0,0,0,0-8.39Z" fill="currentColor"/></svg></span><span class="sidebar-label">Ргохіеʂ</span>
         </button>
-        <button class="sidebar-btn" data-tab="requests">
-          <span class="icon"><svg width="24" height="24" viewBox="-2 -2 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.72 14.456l1.761-.508 10.603-10.73a.456.456 0 0 0-.003-.64l-.635-.642a.443.443 0 0 0-.632-.003L6.239 12.635l-.52 1.82zM18.703.664l.635.643c.876.887.884 2.318.016 3.196L8.428 15.561l-3.764 1.084a.901.901 0 0 1-1.11-.623.915.915 0 0 1-.002-.506l1.095-3.84L15.544.647a2.215 2.215 0 0 1 3.159.016zM7.184 1.817c.496 0 .898.407.898.909a.903.903 0 0 1-.898.909H3.592c-.992 0-1.796.814-1.796 1.817v10.906c0 1.004.804 1.818 1.796 1.818h10.776c.992 0 1.797-.814 1.797-1.818v-3.635c0-.502.402-.909.898-.909s.898.407.898.91v3.634c0 2.008-1.609 3.636-3.593 3.636H3.592C1.608 19.994 0 18.366 0 16.358V5.452c0-2.007 1.608-3.635 3.592-3.635h3.592z" fill="currentColor"/></svg></span><span class="sidebar-label">Requests</span>
-        </button>
         <button class="sidebar-btn" data-tab="community">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span><span class="sidebar-label">Community</span>
-        </button>        <button class="sidebar-btn" data-tab="community" data-command-panel="true">
+        </button>
+        <button class="sidebar-btn community-staff-only community-hidden" data-tab="community" data-command-panel="true">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span><span class="sidebar-label">Terminal</span>
         </button>
         <button class="sidebar-btn" data-tab="settings">
@@ -1767,7 +1765,7 @@
         <div class="community-shell">
           <section class="community-panel">
             <h2>Community</h2>
-            <p>Chat, posts, profiles, and moderation are protected by the live account system.</p>
+            <p>Channels, threads, members, profiles, and staff tools live here.</p>
             <div id="community-setup" class="community-setup">Community is still connecting. If this stays visible, refresh once or check the account setup.</div>
             <div id="community-user"></div>
             <div class="community-status" id="community-status"></div>
@@ -1776,8 +1774,9 @@
             <div>
               <div class="community-tabs">
                 <button class="community-btn community-tab active" data-community-tab="chat">Chat</button>
+                <button class="community-btn secondary community-tab" data-community-tab="forums">Forums</button>
                 <button class="community-btn secondary community-tab" data-community-tab="posts">Posts</button>
-                <button class="community-btn secondary community-tab community-staff-tab community-hidden" data-community-tab="staff">Terminal</button>
+                <button class="community-btn secondary community-tab" data-community-tab="members">Members</button>
               </div>
             </div>
             <div class="community-list" id="community-list"></div>
@@ -3949,11 +3948,7 @@
       };
       var hasActive = false;
       try { hasActive = !!localStorage.getItem('activeCursor'); } catch(e) {}
-      if (!hasActive) {
-        window.startTetoCursor();
-      } else {
-        window.stopTetoCursor();
-      }
+      window.stopTetoCursor();
     })();
 
     function getMusicOnStartup() {
@@ -4558,7 +4553,7 @@
         try {
           var _savedCursor = localStorage.getItem('activeCursor');
           if (_savedCursor && _savedCursor !== 'default' && typeof setCustomCursor === 'function') setCustomCursor(_savedCursor);
-          else if ((!_savedCursor || _savedCursor === 'default') && typeof window.startTetoCursor === 'function' && !_savedCursor) window.startTetoCursor();
+          else if (!_savedCursor || _savedCursor === 'default') { document.documentElement.style.cursor = ''; }
         } catch (e) {}
       }
       if (!on) {
@@ -5196,108 +5191,56 @@
 
     // Quote Rotator
     const quotes = [
-      "Hi...",
-      "The bell does not dismiss you, I do.",
-      "Loading brilliance... probably.",
-      "Your tab looks normal. Your plans do not.",
-      "404: motivation not found.",
-      "The homework was allegedly seen nearby.",
-      "Certified classroom moment.",
-      "Quiet mode: enabled. Mischief mode: pending.",
-      "If anyone asks, this is research.",
-      "Today is a good day to not get caught lacking.",
-      "Trust the process, but verify the link.",
-      "The mitochondria is the powerhouse of pretending to work.",
-      "Keyboard warmed up. Brain optional.",
-      "This page has academic camouflage.",
-      "One more click and you are basically a software engineer.",
-      "The vibes compiled successfully.",
-      "Save early, save often, blame cache.",
-      "Education, but make it tactical.",
-      "This quote was locally sourced from pure nonsense.",
-      "The tab title is doing heavy lifting.",
-      "When in doubt, refresh once. Not twelve times.",
-      "This button definitely does button things.",
-      "The system is calm. Suspiciously calm.",
-      "Achievement unlocked: opened the page.",
-      "No pop quiz detected. Yet.",
-      "If it works, it is not legacy. It is vintage.",
-      "The code is thinking about its choices.",
-      "Please wait while the pixels assemble.",
-      "The lesson plan did not account for this.",
-      "Your focus has entered spectator mode.",
-      "A clean UI is half the battle.",
-      "Tiny settings, enormous consequences.",
-      "This is not a bug, it is character development.",
-      "The CDN is trying its best.",
-      "Everything is fine, probably cached.",
-      "LocalStorage remembers.",
-      "Today we learn about distributed assets.",
-      "The browser said yes, so we proceed.",
-      "Classroom aesthetic, chaotic interior.",
-      "This message passed the vibe check.",
-      "Do not anger the reload button.",
-      "Somewhere, a div is perfectly centered.",
-      "You are now entering the no-homework zone.",
-      "Latency is just suspense.",
-      "The pixels have unionized.",
-      "Your settings have opinions.",
-      "One does not simply clear site data.",
-      "The quote rotator is awake.",
-      "This is the part where the UI gets dramatic.",
-      "Behold: educationally adjacent technology.",
-      "If the page blinks, blink back.",
-      "The safest link is the one you control.",
-      "The second safest link is the one you checked.",
-      "This app respects the ancient art of looking busy.",
-      "The stylesheet has entered the chat.",
-      "There are two types of people: cached and uncached.",
+      "Imagination is more important than knowledge. - Albert Einstein",
+      "Stay hungry. Stay foolish. - Steve Jobs",
+      "The secret of getting ahead is getting started. - Mark Twain",
+      "Well done is better than well said. - Benjamin Franklin",
+      "Simplicity is the ultimate sophistication. - Leonardo da Vinci",
+      "What we know is a drop; what we do not know is an ocean. - Isaac Newton",
+      "The journey of a thousand miles begins with one step. - Lao Tzu",
+      "No great mind has ever existed without a touch of madness. - Aristotle",
+      "It always seems impossible until it is done. - Nelson Mandela",
+      "The only true wisdom is knowing you know nothing. - Socrates",
+      "If you tell the truth, you do not have to remember anything. - Mark Twain",
+      "Genius is one percent inspiration and ninety-nine percent perspiration. - Thomas Edison",
+      "The unexamined life is not worth living. - Socrates",
+      "Knowing yourself is the beginning of all wisdom. - Aristotle",
+      "I have not failed. I have found 10,000 ways that will not work. - Thomas Edison",
+      "A person who never made a mistake never tried anything new. - Albert Einstein",
+      "Do what you can, with what you have, where you are. - Theodore Roosevelt",
+      "The best way out is always through. - Robert Frost",
+      "Fortune favors the bold. - Virgil",
+      "Knowledge speaks, but wisdom listens. - Often attributed to Jimi Hendrix",
+      "The loading screen has more confidence than I do.",
+      "Chat, I meant to do that. Totally planned.",
+      "This build is held together by orange glow and optimism.",
+      "If lag was a boss fight, I would be underleveled.",
+      "The tab is innocent. The user is complicated.",
+      "My strategy is simple: panic, then pretend it was a feature.",
+      "That button has main-character energy.",
       "A watched deploy never builds.",
-      "The server is not slow; it is building suspense.",
-      "Today assignment: survive the loading screen.",
-      "Keep calm and blame DNS.",
-      "The console knows what you did.",
-      "The UI is wearing a disguise.",
-      "This quote has no educational value. Perfect.",
-      "Your profile name is now part of the lore.",
-      "Posts are for owners. Chat is for chaos.",
-      "No passwords. No weird stuff. Just OAuth.",
-      "If it needs to be secret, it does not belong in public HTML.",
-      "Public CDN code is public.",
-      "Owner mode requires server trust.",
-      "The login gate guards the door, not the source code.",
-      "Today we respect row-level security.",
-      "Supabase is the bouncer. The browser is just the guest list.",
-      "Do not paste service_role keys. Ever.",
-      "Anon key means public key. Public means public.",
-      "A good policy beats a hidden script.",
-      "This tab is wearing a fake mustache.",
-      "Settings saved. The tiny toast has spoken.",
-      "If you can read this, the font loaded.",
-      "The background is doing background things.",
-      "Every great site starts with a questionable idea.",
-      "The panic key is not a personality trait.",
-      "Close tab mode: dramatic exit.",
-      "Blank page mode: vanish protocol.",
-      "Redirect mode: tactical retreat.",
-      "Back mode: browser time travel.",
-      "The stylesheet said no overlap today.",
-      "Buttons should glow responsibly.",
-      "This page contains traces of caffeine.",
-      "The quote pool is now unnecessarily large.",
-      "Never trust a single mirror.",
-      "Quantil, Fastly, GCore: the CDN multiverse.",
-      "If one mirror fails, another takes the wheel.",
-      "The owner email is not a suggestion.",
-      "The database decides roles. The frontend asks nicely.",
-      "Your code is less cursed than yesterday.",
+      "The pixels are negotiating their contract.",
+      "I am not lost; I am exploring the UI aggressively.",
+      "Cache is just yesterday refusing to leave.",
+      "This page has survived more refreshes than most relationships.",
+      "The settings menu is where confidence goes to be tested.",
+      "If the font loaded, we are already winning.",
+      "The browser said maybe, so we called it progress.",
+      "Today we choose elegance, after trying chaos first.",
+      "One more click and you are basically tech support.",
+      "The command panel is not judging you. Much.",
+      "Streamer brain says send it. Engineer brain says backup first.",
+      "The UI is doing its best with the information provided.",
+      "If it works locally, celebrate quietly.",
+      "The safest link is the one you actually checked.",
+      "A good forum starts with one normal post and five weird replies.",
+      "Settings shared successfully, probably with too much confidence.",
+      "Online status: present, confused, glowing orange.",
+      "The bug report was emotional but valid.",
+      "Small buttons, large consequences.",
+      "The terminal has entered the chat.",
       "Progress is still progress if it has bugs.",
-      "The UI is under new management.",
-      "We have entered the polishing arc.",
-      "One hundred quotes? Fine. Have one hundred-ish.",
-      "This line exists because someone asked for random stuff.",
-      "The page is pretending to be professional.",
-      "And honestly, it is pulling it off."
+      "Do not argue with the reload button. It has seen things."
     ];
     const quoteEl = document.getElementById('quote');
     var shown = [];
@@ -7369,7 +7312,7 @@ let DATA = {
         var cur = localStorage.getItem('activeCursor');
         var curSel = document.getElementById('setup-cursor-select');
         if (curSel) {
-          if (!cur) { curSel.value = 'teto'; var cu = document.getElementById('setup-cursor-custom'); if (cu) cu.style.display = 'none'; }
+          if (!cur) { curSel.value = 'system'; var cu = document.getElementById('setup-cursor-custom'); if (cu) cu.style.display = 'none'; }
           else if (cur === 'default') { curSel.value = 'system'; var cu2 = document.getElementById('setup-cursor-custom'); if (cu2) cu2.style.display = 'none'; }
           else if (cur === 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/img/wiicursor.png') { curSel.value = 'default'; var cu3 = document.getElementById('setup-cursor-custom'); if (cu3) cu3.style.display = 'none'; }
           else { curSel.value = 'custom'; var cu4 = document.getElementById('setup-cursor-custom'); if (cu4) cu4.style.display = 'block'; var curl = document.getElementById('setup-cursor-url'); if (curl) curl.value = cur; }
@@ -8402,8 +8345,12 @@ let DATA = {
 <script>
 (function(){
   var commands = [
+    { cmd: '/help', fill: '/help', desc: 'Show every command.' },
+    { cmd: '/role', fill: '/role', desc: 'Show your current role.' },
     { cmd: '/warn username reason', fill: '/warn ', desc: 'Add a warning to a user.' },
     { cmd: '/mute username 10 reason', fill: '/mute ', desc: 'Mute a user for minutes.' },
+    { cmd: '/unmute username reason', fill: '/unmute ', desc: 'Remove a mute.' },
+    { cmd: '/kick username reason', fill: '/kick ', desc: 'Log a kick action.' },
     { cmd: '/ban username reason', fill: '/ban ', desc: 'Ban a user from community actions.' },
     { cmd: '/unban username reason', fill: '/unban ', desc: 'Remove a ban.' }
   ];
@@ -8412,9 +8359,10 @@ let DATA = {
   window.openUZCommandPalette = function(){
     var old=document.getElementById('uz-command-overlay'); if(old) old.remove();
     var overlay=document.createElement('div'); overlay.id='uz-command-overlay'; overlay.className='uz-command-overlay';
-    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /warn, /mute, /ban, or /unban"><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command.</div></div>';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /help, /role, /warn, /mute, /unmute, /kick, /ban..."><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
     document.body.appendChild(overlay);
-    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');
+    var card=overlay.querySelector('.uz-command-card'), header=overlay.querySelector('.uz-command-title');
+    header.onmousedown=function(ev){ if(ev.target && ev.target.tagName==='BUTTON') return; var sx=ev.clientX, sy=ev.clientY, r=card.getBoundingClientRect(); card.style.position='fixed'; card.style.left=r.left+'px'; card.style.top=r.top+'px'; card.style.margin='0'; function move(e){ card.style.left=(r.left+e.clientX-sx)+'px'; card.style.top=(r.top+e.clientY-sy)+'px'; } function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); } document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); };    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');
     function matching(){ var q=input.value.trim().toLowerCase(); return commands.filter(function(c){return !q || c.cmd.toLowerCase().indexOf(q)===0 || c.fill.trim().indexOf(q)===0;}); }
     function render(){ var list=matching(); help.innerHTML=(list.length?list:commands).map(function(c,i){return '<button type="button" class="uz-command-suggestion'+(i===0?' active':'')+'" data-fill="'+esc(c.fill)+'"><span><code>'+esc(c.cmd)+'</code><br>'+esc(c.desc)+'</span><span>Tab</span></button>';}).join(''); Array.prototype.forEach.call(help.querySelectorAll('.uz-command-suggestion'),function(btn){btn.onclick=function(){input.value=btn.dataset.fill; input.focus(); render();};}); }
     async function run(){ var text=input.value.trim(); if(!text){status.textContent='Type a command first.'; return;} if(!window.UZCommunity || !window.UZCommunity.runCommand){status.textContent='Community command system is not loaded yet.'; return;} status.textContent='Running...'; var result=await window.UZCommunity.runCommand(text); status.textContent=(result&&result.message)||'Done.'; if(result&&result.ok) input.value=''; render(); }
