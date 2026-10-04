@@ -51,7 +51,9 @@ body.uz-auth-locked #uz-owner-rift,body.uz-auth-locked #uz-owner-rift *,body.uz-
 .uz-owner-rift em:nth-of-type(5){transform:rotate(143deg) translateY(-5px)}
 .uz-owner-rift em:nth-of-type(6){transform:rotate(206deg) translateY(6px)}
 .uz-owner-rift.open i,.uz-owner-rift.open em{filter:brightness(1.4)}
+.uz-owner-rift.final-open i,.uz-owner-rift.final-open em{opacity:1;filter:brightness(1.75) saturate(1.2)}
 .uz-owner-rift.closing{animation:uzRiftSeal .85s ease forwards}
+.uz-owner-rift.closing i,.uz-owner-rift.closing em{animation:uzRiftFade .85s ease forwards}
 .uz-owner-code-modal.from-rift .uz-owner-code-card{animation:uzOwnerDrop .48s cubic-bezier(.2,.85,.24,1.22) both}
 .uz-owner-code-modal.accepted .uz-owner-code-card{animation:uzOwnerAccept .82s ease forwards}
 .uz-owner-quake{animation:uzOwnerQuake .2s linear}
@@ -59,6 +61,7 @@ body.uz-auth-locked #uz-owner-rift,body.uz-auth-locked #uz-owner-rift *,body.uz-
 @keyframes uzOwnerDrop{0%{opacity:0;transform:translateY(-55vh) rotateX(55deg) scale(.78)}72%{opacity:1;transform:translateY(16px) rotateX(0) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes uzOwnerAccept{0%{filter:brightness(1);transform:scale(1)}42%{filter:brightness(1.7) drop-shadow(0 0 28px #35d07f);transform:scale(1.04)}100%{filter:brightness(0);transform:scale(.08) rotate(540deg);opacity:0}}
 @keyframes uzRiftSeal{0%{opacity:1;filter:brightness(1.4)}60%{opacity:1;--rift-open:.02}100%{opacity:0;filter:brightness(0)}}
+@keyframes uzRiftFade{0%{opacity:1}100%{opacity:0;transform:scaleY(.1)}}
 body.uz-flash-good::after,body.uz-flash-bad::after{content:"";position:fixed;inset:0;z-index:100004;pointer-events:none;animation:uzScreenFlash .58s ease forwards}
 body.uz-flash-good::after{background:radial-gradient(circle,rgba(84,255,157,.5),rgba(15,255,99,.18) 38%,transparent 70%)}
 body.uz-flash-bad::after{background:radial-gradient(circle,rgba(255,55,55,.48),rgba(255,20,20,.2) 38%,transparent 72%)}

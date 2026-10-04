@@ -179,8 +179,10 @@ begin
   elsif action_name = 'unmute' then
     update public.profiles set muted_until = null, staff_note = reason_text where id = target.id;
   elsif action_name = 'ban' then
+    delete from public.role_grants where lower(username) = lower(target.username);
     update public.profiles set role = 'banned', banned_until = until_time, staff_note = reason_text where id = target.id;
   elsif action_name = 'unban' then
+    delete from public.role_grants where lower(username) = lower(target.username);
     update public.profiles set role = 'member', banned_until = null, staff_note = reason_text where id = target.id;
   elsif action_name = 'kick' then
     update public.profiles set kicked_at = now(), kicked_until = until_time, staff_note = reason_text where id = target.id;
@@ -220,6 +222,9 @@ begin
   end if;
   if target.id = auth.uid() then
     raise exception 'owners cannot change their own role here';
+  end if;
+  if target.role = 'owner' and new_role <> 'owner' then
+    raise exception 'owner accounts cannot be demoted here';
   end if;
   insert into public.role_grants(username, role) values (target.username, new_role)
   on conflict (username) do update set role = excluded.role;

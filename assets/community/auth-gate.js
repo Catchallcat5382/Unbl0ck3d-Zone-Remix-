@@ -181,6 +181,7 @@
   function ownerRift(progress, opened) {
     var rift = document.getElementById('uz-owner-rift');
     if (!rift) { rift = document.createElement('div'); rift.id = 'uz-owner-rift'; rift.className = 'uz-owner-rift'; rift.innerHTML = '<i></i><b></b><span></span><em></em><em></em><em></em><em></em><em></em><em></em>'; document.body.appendChild(rift); }
+    rift.classList.remove('closing');
     progress = Math.max(.08, Math.min(1, progress || .08));
     ownerRift.progress = progress;
     rift.style.setProperty('--rift-open', progress);
@@ -209,8 +210,8 @@
     }
     return rift;
   }
-  function closeOwnerRift() { var r = document.getElementById('uz-owner-rift'); if (r) { r.classList.add('closing'); setTimeout(function(){ r.remove(); }, 900); } }
-  function sparkle() { ownerRift(1, true); for (var i = 0; i < 46; i++) { var s = document.createElement('i'); s.className = 'uz-owner-spark'; s.style.setProperty('--spark-x', ((Math.random() * 360) - 180) + 'px'); s.style.setProperty('--spark-y', ((Math.random() * 280) - 140) + 'px'); document.body.appendChild(s); setTimeout(function(el){ return function(){ el.remove(); }; }(s), 950); } }
+  function closeOwnerRift() { clearTimeout(ownerRift.decayStart); clearInterval(ownerRift.decayTimer); var r = document.getElementById('uz-owner-rift'); if (r) { r.classList.add('closing'); clearTimeout(closeOwnerRift.t); closeOwnerRift.t = setTimeout(function(){ var rr = document.getElementById('uz-owner-rift'); if (rr) rr.remove(); }, 900); } }
+  function sparkle() { var r = ownerRift(1, true); if (r) r.classList.add('final-open'); for (var i = 0; i < 46; i++) { var s = document.createElement('i'); s.className = 'uz-owner-spark'; s.style.setProperty('--spark-x', ((Math.random() * 360) - 180) + 'px'); s.style.setProperty('--spark-y', ((Math.random() * 280) - 140) + 'px'); document.body.appendChild(s); setTimeout(function(el){ return function(){ el.remove(); }; }(s), 950); } }
   function ownerGlassFx(reverse) {
     var old = document.getElementById('uz-glass-break');
     if (old) old.remove();
@@ -240,8 +241,9 @@
     var username = 'temporary-owner';
     var chars = '0123456789abcdefUZOWNER';
     var i = 0;
+    var steps = username.length * 2 + 4;
     function tick() {
-      if (i < 24) {
+      if (i < steps) {
         if (user) user.value = username.slice(0, Math.min(username.length, Math.ceil(i / 2)));
         if (pass) pass.value += chars.charAt(Math.floor(Math.random() * chars.length));
         ownerAudio('crack');
