@@ -58,8 +58,8 @@ This is a normal search/URL launcher frontend. It is not a proxy or network bypa
 
 ## No Netlify credits fallback
 
-The wrench-tab button in Unbl0cked Zone now opens the static jsDelivr URL by default:
+The wrench-tab button in Unbl0cked Zone now opens the static raw.githack URL by default:
 
-`https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/uselessgamz-web/public/index.html`
+`https://raw.githack.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/uselessgamz-web/public/index.html`
 
 That means Netlify is optional. Netlify only adds the `/health` function.
