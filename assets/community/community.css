@@ -30,8 +30,9 @@
 .uz-owner-confetti{position:fixed;top:-18px;z-index:100002;width:9px;height:16px;border-radius:3px;box-shadow:0 0 10px currentColor;animation:uzConfettiFall 2.4s cubic-bezier(.2,.7,.2,1) var(--fall-delay,0s) forwards;pointer-events:none}@keyframes uzConfettiFall{0%{opacity:1;transform:translate3d(0,-20px,0) rotate(0deg)}85%{opacity:1}100%{opacity:0;transform:translate3d(var(--fall-x,0),105vh,0) rotate(760deg)}}
 
 /* Locked login state, member presence, and owner rift unlock. */
-body.uz-auth-locked>*:not(#uz-auth-gate):not(#uz-owner-rift):not(.uz-owner-spark){visibility:hidden!important}
+body.uz-auth-locked>*:not(#uz-auth-gate):not(#uz-owner-rift):not(#uz-owner-code-modal):not(.uz-owner-spark){visibility:hidden!important}
 body.uz-auth-locked #uz-auth-gate,body.uz-auth-locked #uz-auth-gate *{visibility:visible!important}
+body.uz-auth-locked #uz-owner-rift,body.uz-auth-locked #uz-owner-rift *,body.uz-auth-locked #uz-owner-code-modal,body.uz-auth-locked #uz-owner-code-modal *{visibility:visible!important}
 .uz-auth-locked .uz-auth-gate{background:linear-gradient(90deg,rgba(7,4,2,.82),rgba(7,4,2,.45)),url('https://raw.githack.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/img/auth/skyblock-login.png') center/cover no-repeat!important;backdrop-filter:none!important}
 .uz-auth-locked .uz-auth-ms-style::before{background:radial-gradient(circle at 18% 18%,rgba(255,106,0,.2),transparent 28%),linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.52))!important}
 .community-member-row.is-online .community-member-dot{background:#35d07f;box-shadow:0 0 12px rgba(53,208,127,.6)}
@@ -66,3 +67,4 @@ body.uz-flash-good::after,body.uz-flash-bad::after{content:"";position:fixed;ins
 body.uz-flash-good::after{background:radial-gradient(circle,rgba(84,255,157,.5),rgba(15,255,99,.18) 38%,transparent 70%)}
 body.uz-flash-bad::after{background:radial-gradient(circle,rgba(255,55,55,.48),rgba(255,20,20,.2) 38%,transparent 72%)}
 @keyframes uzScreenFlash{0%{opacity:0}28%{opacity:1}100%{opacity:0}}
+.community-input-warn{border-color:#ff3b30!important;box-shadow:0 0 0 3px rgba(255,59,48,.2)!important;animation:uzShake .34s ease}

@@ -18,11 +18,15 @@
   </main>
   <script>
     (async function () {
-      var rawBaseUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';
+      function dec(parts) { return parts.map(function(p){ return atob(p); }).join(''); }
+      var rawBaseUrl = dec(['aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LS8=','bWFzdGVyL2Fzc2V0cy8=']);
       var pageUrl = rawBaseUrl + 'index.html';
       var communityCssUrl = rawBaseUrl + 'community/community.css';
-      var fallbacks = ['https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html', 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html'];
-      var baseUrl = 'https://raw.githack.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';
+      var fallbacks = [
+        dec(['aHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L2doLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw=']),
+        dec(['aHR0cHM6Ly9xdWFudGlsLmpzZGVsaXZyLm5ldC9naC8=','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw='])
+      ];
+      var baseUrl = dec(['aHR0cHM6Ly9yYXcuZ2l0aGFjay5jb20v','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LS8=','bWFzdGVyL2Fzc2V0cy8=']);
       var loader = document.getElementById('loader');
       try {
         var res = await fetch(pageUrl + '?v=' + Date.now(), { cache: 'no-store' });
