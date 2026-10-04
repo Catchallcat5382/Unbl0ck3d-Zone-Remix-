@@ -18,7 +18,9 @@
   </main>
   <script>
     (async function () {
-      var pageUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/index.html';
+      var rawBaseUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';
+      var pageUrl = rawBaseUrl + 'index.html';
+      var communityCssUrl = rawBaseUrl + 'community/community.css';
       var fallbacks = ['https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html', 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html'];
       var baseUrl = 'https://raw.githack.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';
       var loader = document.getElementById('loader');
@@ -27,6 +29,14 @@
         for (var i = 0; !res.ok && i < fallbacks.length; i++) res = await fetch(fallbacks[i] + '?v=' + Date.now(), { cache: 'no-store' });
         if (!res.ok) throw new Error('Live build returned HTTP ' + res.status);
         var html = await res.text();
+        try {
+          var cssRes = await fetch(communityCssUrl + '?v=' + Date.now(), { cache: 'no-store' });
+          if (cssRes.ok) {
+            var css = await cssRes.text();
+            html = html.replace(/<link\s+rel=["']stylesheet["']\s+href=["']community\/community\.css["']\s*>/i, '');
+            html = html.replace(/<head([^>]*)>/i, '<head$1><style id="community-inline-css">' + css.replace(/<\/style/gi, '<\\/style') + '</style>');
+          }
+        } catch (cssErr) {}
         if (/<base\s/i.test(html)) html = html.replace(/<base\s[^>]*>/i, '<base href="' + baseUrl + '">');
         else html = html.replace(/<head([^>]*)>/i, '<head$1><base href="' + baseUrl + '">');
         document.open();

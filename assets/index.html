@@ -8391,21 +8391,29 @@ let DATA = {
 </script>
 <script>
 (function(){
-  window.USELESSGAMZ_WEB_URL = window.USELESSGAMZ_WEB_URL || localStorage.getItem('uselessGamzWebUrl') || 'https://raw.githack.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/uselessgamz-web/public/index.html';
   function ensureWebStyles(){
     if (document.getElementById('uz-web-overlay-style')) return;
     var s=document.createElement('style'); s.id='uz-web-overlay-style';
-    s.textContent='.uz-web-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.82);display:grid;grid-template-rows:auto 1fr;padding:18px;backdrop-filter:blur(10px)}.uz-web-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#100907;border:1px solid #ff6a00;border-radius:12px 12px 0 0;padding:10px 12px;color:#fff;box-shadow:0 0 24px rgba(255,106,0,.22)}.uz-web-bar b{color:#ff8a1a}.uz-web-actions{display:flex;gap:8px}.uz-web-actions button,.uz-web-actions a{border:1px solid #ff6a00;background:#0b0706;color:#ffb15d;border-radius:8px;padding:8px 10px;font:700 12px/1 Arial,sans-serif;text-decoration:none;cursor:pointer}.uz-web-actions .primary{background:linear-gradient(135deg,#ffb000,#ff6a00);color:#190700}.uz-web-frame{width:100%;height:100%;border:1px solid #ff6a00;border-top:0;border-radius:0 0 12px 12px;background:#090504}';
+    s.textContent='.uz-web-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:18px;backdrop-filter:blur(10px)}.uz-web-card{width:min(880px,calc(100vw - 34px));background:#100907;border:1px solid #ff6a00;border-radius:14px;box-shadow:0 0 36px rgba(255,106,0,.24);padding:22px;color:#fff}.uz-web-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.uz-web-bar b{color:#ff8a1a;font-size:20px}.uz-web-actions button{border:1px solid #ff6a00;background:#0b0706;color:#ffb15d;border-radius:8px;padding:8px 10px;font:700 12px/1 Arial,sans-serif;cursor:pointer}.uz-web-card h1{margin:0 0 8px;color:#ff7a1a;text-shadow:0 0 20px rgba(255,106,0,.48);font-size:clamp(34px,6vw,64px);text-align:center}.uz-web-card p{color:#d7c8bf;text-align:center}.uz-web-form{display:grid;grid-template-columns:1fr auto;gap:10px;margin:20px auto 12px;max-width:720px;padding:9px;border:1px solid rgba(255,106,0,.55);border-radius:16px;background:rgba(14,9,8,.95)}.uz-web-form input{min-width:0;border:0;outline:0;background:transparent;color:white;padding:14px 15px;font:16px Arial,sans-serif}.uz-web-form button,.uz-web-engine.active{border:0;border-radius:10px;padding:0 22px;background:linear-gradient(135deg,#ffb000,#ff6a00);color:#1a0800;font:900 14px Arial,sans-serif;cursor:pointer}.uz-web-engines{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.uz-web-engine{padding:8px 13px;border-radius:999px;border:1px solid rgba(255,106,0,.45);background:#130c0a;color:#d7bca8;cursor:pointer}.uz-web-status{min-height:22px;margin-top:12px;color:#ffc078;text-align:center}.uz-web-status a{color:#ffb15d;font-weight:900}@media(max-width:600px){.uz-web-form{grid-template-columns:1fr}.uz-web-form button{padding:13px}}';
     document.head.appendChild(s);
+  }
+  function targetFor(value, engine){
+    var looksUrl=/^https?:\/\//i.test(value)||/^[\w-]+(\.[\w-]+)+([/:?#].*)?$/i.test(value);
+    if(looksUrl) return /^https?:\/\//i.test(value)?value:'https://'+value;
+    var engines={google:'https://www.google.com/search?q=',bing:'https://www.bing.com/search?q=',duckduckgo:'https://duckduckgo.com/?q='};
+    return (engines[engine]||engines.duckduckgo)+encodeURIComponent(value);
   }
   window.openUselessGamzWeb = function(){
     ensureWebStyles();
     var old=document.getElementById('uz-web-overlay'); if(old) old.remove();
-    var url=String(window.USELESSGAMZ_WEB_URL||'').trim(); if(!/^https?:\/\//i.test(url)) url='https://'+url;
     var overlay=document.createElement('div'); overlay.id='uz-web-overlay'; overlay.className='uz-web-overlay';
-    overlay.innerHTML='<div class="uz-web-bar"><b>UselessGamz Web</b><div class="uz-web-actions"><a class="primary" href="'+url.replace(/"/g,'%22')+'" target="_blank" rel="noopener noreferrer">Open tab</a><button id="uz-web-close">Close</button></div></div><iframe class="uz-web-frame" src="'+url.replace(/"/g,'%22')+'" referrerpolicy="no-referrer"></iframe>';
+    overlay.innerHTML='<section class="uz-web-card"><div class="uz-web-bar"><b>UselessGamz Web</b><div class="uz-web-actions"><button id="uz-web-close">Close</button></div></div><h1>UselessGamz Web</h1><p>Search or enter a URL. Results open in a normal tab so blocked iframe pages do not break this panel.</p><form class="uz-web-form" id="uz-web-form"><input id="uz-web-input" autocomplete="off" spellcheck="false" placeholder="Search or enter a URL"><button type="submit">Go</button></form><div class="uz-web-engines"><button class="uz-web-engine active" data-engine="duckduckgo">DuckDuckGo</button><button class="uz-web-engine" data-engine="google">Google</button><button class="uz-web-engine" data-engine="bing">Bing</button></div><div class="uz-web-status" id="uz-web-status">Ready.</div></section>';
     document.body.appendChild(overlay);
+    var engine='duckduckgo', input=document.getElementById('uz-web-input'), status=document.getElementById('uz-web-status');
     document.getElementById('uz-web-close').onclick=function(){overlay.remove();};
+    overlay.querySelectorAll('.uz-web-engine').forEach(function(btn){btn.onclick=function(){engine=btn.dataset.engine; overlay.querySelectorAll('.uz-web-engine').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active'); input.focus();};});
+    document.getElementById('uz-web-form').onsubmit=function(e){e.preventDefault(); var value=input.value.trim(); if(!value) return; var url=targetFor(value,engine); var opened=window.open(url,'_blank','noopener,noreferrer'); if(opened){status.textContent='Opened in a normal tab.';} else {status.innerHTML='Popup blocked. <a target="_blank" rel="noopener noreferrer" href="'+url.replace(/"/g,'%22')+'">Open result</a>';}};
+    setTimeout(function(){input.focus();},30);
   };
 })();
 </script>
