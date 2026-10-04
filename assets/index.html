@@ -1773,6 +1773,9 @@
             <div class="community-channel-section"><span>STAFF</span>
               <button class="community-tab secondary" data-community-tab="posts" data-community-channel="announcements"># announcements</button>
             </div>
+            <div class="community-channel-section"><span>VOICE</span>
+              <button class="community-tab secondary" data-community-tab="voice" data-community-channel="voice-lounge"># voice-lounge</button>
+            </div>
             <div class="community-channel-section"><span>PEOPLE</span>
               <button class="community-tab secondary" data-community-tab="members" data-community-channel="members"># members</button>
             </div>
@@ -3210,7 +3213,7 @@
               <option value="cover">Embed URL cover</option>
               <option value="close">Close this tab</option>
               <option value="blank">Blank page</option>
-              <option value="history-back">Go back</option>
+              <option value="history-back">Go back cover</option>
             </select>
             <input type="text" id="panic-url-input" class="settings-input" placeholder="Redirect URL (https://www.google.com)" onchange="savePanicSettings()" style="margin-top:12px;">
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
@@ -4827,7 +4830,7 @@
       return localStorage.getItem('panicUrl') || 'https://www.google.com';
     }
     function getPanicAction() {
-      return localStorage.getItem('panicAction') || 'redirect';
+      return localStorage.getItem('panicAction') || 'history-back';
     }
     function savePanicSettings() {
       var url = document.getElementById('panic-url-input');
@@ -4843,13 +4846,13 @@
     function resetPanicSettings() {
       localStorage.setItem('panicKey', 'Backquote');
       localStorage.setItem('panicUrl', 'https://www.google.com');
-      localStorage.setItem('panicAction', 'redirect');
+      localStorage.setItem('panicAction', 'history-back');
       var inp = document.getElementById('panic-key-input');
       if (inp) inp.value = panicKeyLabel('Backquote');
       var url = document.getElementById('panic-url-input');
       if (url) url.value = 'https://www.google.com';
       var action = document.getElementById('panic-action-select');
-      if (action) action.value = 'redirect';
+      if (action) action.value = 'history-back';
       notifyAutosave('Panic settings reset');
     }
     function togglePanicCover() {
@@ -4944,10 +4947,18 @@
       if (action === 'cover') { togglePanicCover(); return; }
       if (action === 'close') { window.close(); location.href = 'about:blank'; return; }
       if (action === 'blank') { location.href = 'about:blank'; return; }
-      if (action === 'history-back') { if (history.length > 1) history.back(); else window.location.href = getPanicUrl(); return; }
+      if (action === 'history-back') { togglePanicCover(); return; }
       window.location.href = getPanicUrl();
     });
 
+    (function initBottomBarToggle(){
+      var css = document.createElement('style');
+      css.textContent = '#sidebar-toggle{position:fixed;left:50%;bottom:8px;z-index:1000002;transform:translateX(-50%);width:38px;height:24px;border:1px solid var(--accent);border-radius:999px;background:rgba(0,0,0,.82);color:var(--accent);font:900 16px/1 Arial,sans-serif;cursor:pointer;box-shadow:0 0 18px rgba(255,102,0,.32)}body.uz-sidebar-hidden #sidebar{transform:translate(-50%,calc(100% + 36px))!important;opacity:0!important;pointer-events:none!important}body.uz-sidebar-hidden #sidebar-toggle{bottom:10px}';
+      document.head.appendChild(css);
+      function apply(){ document.body.classList.toggle('uz-sidebar-hidden', localStorage.getItem('uzSidebarHidden') === '1'); var b = document.getElementById('sidebar-toggle'); if (b) b.textContent = document.body.classList.contains('uz-sidebar-hidden') ? '^' : 'v'; }
+      function make(){ if (document.getElementById('sidebar-toggle')) { apply(); return; } var btn = document.createElement('button'); btn.id = 'sidebar-toggle'; btn.type = 'button'; btn.setAttribute('aria-label', 'Toggle bottom bar'); btn.onclick = function(){ localStorage.setItem('uzSidebarHidden', document.body.classList.contains('uz-sidebar-hidden') ? '0' : '1'); apply(); }; document.body.appendChild(btn); apply(); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', make); else make();
+    })();
     // Loading Timer & Screen
     var loadingHostnameEl = document.getElementById('loading-hostname');
     if (loadingHostnameEl) loadingHostnameEl.textContent = window.location.hostname;
@@ -5266,7 +5277,19 @@
       "Small buttons, large consequences.",
       "The terminal has entered the chat.",
       "Progress is still progress if it has bugs.",
-      "Do not argue with the reload button. It has seen things."
+      "Do not argue with the reload button. It has seen things.",
+      "What's up, brother? - Sketch",
+      "Special teams, special plays, special players. - Sketch",
+      "Are you serious, right neow? - IShowSpeed",
+      "Broski. Is that a W or an L? - Kai Cenat",
+      "If things never changed, you'd never miss them. - Joe Bartolozzi",
+      "Growth and comfort cannot coexist. You cannot have an easy life and a great character. - Streamer University wisdom",
+      "A diamond is just a piece of coal that never quit. - Whambas",
+      "Maybe your path is harder because your calling is higher. - Twitch community mantra",
+      "Technoblade never dies! - Technoblade",
+      "The best clip starts right after someone says watch this.",
+      "If the squad says one more round, your bedtime has been peer-reviewed.",
+      "A clutch is just panic with good timing."
     ];
     const quoteEl = document.getElementById('quote');
     var shown = [];
@@ -6323,11 +6346,17 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
     }
 
     // Load saved settings
-    if (!localStorage.getItem('lightspeedSchoolName')) localStorage.setItem('lightspeedSchoolName', 'Unblocked Zone');
-    if (!localStorage.getItem('lightspeedTopText')) localStorage.setItem('lightspeedTopText', 'Oops,');
-    if (!localStorage.getItem('lightspeedBottomText')) localStorage.setItem('lightspeedBottomText', 'is not available because it is categorized as Security - Proxy.');
-    if (!localStorage.getItem('lightspeedSystemMsg')) localStorage.setItem('lightspeedSystemMsg', 'You are logged in as guest (IP Address: █████).');
-    if (!localStorage.getItem('scUrl')) localStorage.setItem('scUrl', 'Unblocked Zone');
+    function syncBlockedPageIdentity() {
+      var username = (localStorage.getItem('uzLoginEmail') || 'guest').trim() || 'guest';
+      localStorage.setItem('lightspeedSchoolName', 'Unblocked Zone');
+      localStorage.setItem('lightspeedTopText', 'Oops,');
+      localStorage.setItem('lightspeedBottomText', 'is not available because it is categorized as Security - Proxy.');
+      localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + username + ' (IP Address: hidden).');
+      localStorage.setItem('scUrl', 'Unblocked Zone');
+      localStorage.setItem('scHeading', 'Unblocked Zone');
+      localStorage.setItem('scIp', 'hidden');
+    }
+    syncBlockedPageIdentity();
     var savedAccent = localStorage.getItem('accentColorV2');
     if (savedAccent) setAccent(savedAccent);
     localStorage.removeItem('siteTheme');

@@ -8,6 +8,7 @@
     settings: { tab: 'posts', label: 'settings-share', title: 'Settings Share', note: 'Everyone can upload and copy settings presets.' },
     suggestions: { tab: 'posts', label: 'suggestions', title: 'Suggestions', note: 'Post ideas, bugs, and requests.' },
     announcements: { tab: 'posts', label: 'announcements', title: 'Announcements', note: 'Staff announcement threads.' },
+    'voice-lounge': { tab: 'voice', label: 'voice-lounge', title: 'Voice Lounge', note: 'Join the community voice room. Live mic audio needs WebRTC hosting.' },
     members: { tab: 'members', label: 'members', title: 'Members', note: 'Profiles and role hierarchy.' }
   };
   function $(id) { return document.getElementById(id); }
@@ -119,6 +120,27 @@
   function appendPostText(text) { var body = $('community-post-body'); if (!body) return; body.value = (body.value ? body.value + '\n\n' : '') + text; body.focus(); }
   function attachSettingsPreset() { appendPostText(currentSettingsText()); status('Settings preset added.'); }
   function attachFileToPost(e) { var file = e && e.target && e.target.files ? e.target.files[0] : null; if (!file) return; if (file.size > 250000) { status('File is too large for inline sharing. Upload it somewhere and paste a link.'); return; } var reader = new FileReader(); reader.onload = function(){ appendPostText('Attached file: ' + file.name + '\n' + String(reader.result || '').slice(0, 12000)); status('File attached.'); }; reader.readAsDataURL(file); }
+  function renderVoiceRoom() {
+    var list = $('community-list');
+    if (!list) return;
+    var joined = localStorage.getItem('uzVoiceJoined') === '1';
+    var online = (state.memberRows || []).filter(isOnline);
+    var names = online.map(function(m){ return '<span class="community-voice-pill">' + esc(m.display_name || m.username || 'member') + '</span>'; }).join('') || '<span class="community-voice-empty">Nobody else is showing online yet.</span>';
+    list.innerHTML = '<div class="community-voice-room"><h3>Voice Lounge</h3><p>Voice-room shell is ready. Browser mic streaming still needs WebRTC signaling before real calls can work between different computers.</p><div class="community-voice-status ' + (joined ? 'is-joined' : '') + '">' + (joined ? 'You are in voice.' : 'You are not in voice.') + '</div><div class="community-voice-members">' + names + '</div><button class="community-btn" id="community-voice-toggle" type="button">' + (joined ? 'Leave voice' : 'Join voice') + '</button></div>';
+    var btn = $('community-voice-toggle');
+    if (btn) btn.onclick = function(){ localStorage.setItem('uzVoiceJoined', joined ? '0' : '1'); renderVoiceRoom(); };
+  }
+  function ensureCommunityTools() {
+    var shell = document.querySelector('.community-discord-shell');
+    if (!shell || document.getElementById('community-pop-tools')) return;
+    var tools = document.createElement('div');
+    tools.id = 'community-pop-tools';
+    tools.className = 'community-pop-tools';
+    tools.innerHTML = '<button class="community-btn secondary" id="community-expand-toggle" type="button">Expand</button><button class="community-btn secondary" id="community-popout" type="button">Pop out</button>';
+    shell.insertBefore(tools, shell.firstChild);
+    document.getElementById('community-expand-toggle').onclick = function(){ document.body.classList.toggle('community-expanded'); this.textContent = document.body.classList.contains('community-expanded') ? 'Shrink' : 'Expand'; };
+    document.getElementById('community-popout').onclick = function(){ var w = window.open('about:blank', '_blank'); if (!w) { status('Popup blocked. Use Expand instead.'); return; } w.document.write('<!doctype html><title>Community</title><style>html,body{margin:0;height:100%;background:#050505}</style><iframe src="' + location.href.split('#')[0].replace(/"/g, '%22') + '#community" style="border:0;width:100%;height:100%"></iframe>'); w.document.close(); };
+  }
   function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p>'; }
   function setTab(tab, channel) {
     state.tab = tab || 'chat'; state.channelName = channel || (tab === 'chat' ? 'chat' : state.channelName || 'chat');
@@ -129,6 +151,7 @@
   function stripPostChannel(title) { return String(title || '').replace(/^\[[^\]]+\]\s*/, ''); }
   async function loadItems() {
     var list = $('community-list'); if (!list) return; renderChannelHeader();
+    if (state.tab === 'voice') { renderVoiceRoom(); loadMembers(false); return; }
     if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Check community/config.js.</div>'; return; }
     initClient();
     if (state.tab === 'members') { await loadMembers(true); return; }
@@ -237,8 +260,8 @@
   function warnBlockedInput(el, msg) { status(msg || 'Blocked word found. This will not send.'); if (el) { el.classList.remove('community-input-warn'); void el.offsetWidth; el.classList.add('community-input-warn'); el.focus(); } }
   async function sendMessage() { if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; notifySaved('Message sent'); loadItems(); }
   async function sendPostMessage() { if (!canPost()) { status('You cannot post in this channel.'); return; } if (!state.user) { status('Sign into a real account before publishing.'); return; } var titleEl = $('community-post-title'); var bodyEl = $('community-post-body'); var title = titleEl ? titleEl.value.trim() : ''; var body = bodyEl ? bodyEl.value.trim() : ''; if (!title || !body) return; if (hasBadWord(title + ' ' + body)) { warnBlockedInput(bodyEl || titleEl, 'Blocked word found. This post will not publish.'); return; } initClient(); var res = await state.client.from('posts').insert({ user_id: state.user.id, title: '[' + state.channelName + '] ' + title, body: body }); if (res.error) { status(res.error.message); return; } if (titleEl) titleEl.value = ''; if (bodyEl) bodyEl.value = ''; notifySaved('Posted'); loadItems(); }
-  function subscribe() { if (!ready || !state.client) return; if (state.realtime) state.client.removeChannel(state.realtime); if (state.tab === 'members') return; var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; state.realtime = state.client.channel('uz-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, loadItems).subscribe(); }
+  function subscribe() { if (!ready || !state.client) return; if (state.realtime) state.client.removeChannel(state.realtime); if (state.tab === 'members' || state.tab === 'voice') return; var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; state.realtime = state.client.channel('uz-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, loadItems).subscribe(); }
   window.UZCommunity = { saveProfile: saveProfile, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandText, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
-  window.initCommunity = function () { Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
+  window.initCommunity = function () { ensureCommunityTools(); Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initCommunity); else window.initCommunity();
 }());
