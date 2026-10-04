@@ -14,17 +14,13 @@
 <body>
   <main id="loader">
     <h1>Loading Unbl0cked Zone</h1>
-    <p>Opening the local live build first...</p>
+    <p>Opening the hosted live build. This single file works without an assets folder.</p>
   </main>
   <script>
     (async function () {
-      if (location.protocol === 'file:' && !location.search.includes('remote=1')) {
-        location.replace('assets/index.html?local=' + Date.now());
-        return;
-      }
       var pageUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/index.html';
       var fallbacks = ['https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html', 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html'];
-      var baseUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';
+      var baseUrl = 'https://raw.githack.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';
       var loader = document.getElementById('loader');
       try {
         var res = await fetch(pageUrl + '?v=' + Date.now(), { cache: 'no-store' });
