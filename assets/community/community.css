@@ -83,3 +83,11 @@ body.uz-flash-bad::after{background:radial-gradient(circle,rgba(255,55,55,.48),r
 .uz-banned-card h1{margin:0 0 12px;color:#ff5a4f;font-size:clamp(34px,7vw,68px);line-height:1;text-shadow:0 0 20px rgba(255,59,48,.55)}
 .uz-banned-card p{margin:0 0 12px;color:#ffe1de;font-size:18px;line-height:1.4}
 .uz-banned-card span{display:block;color:#ffb3ad;font-size:13px}
+.community-member-row.is-banned-member{border-color:#ff3b30!important;background:rgba(80,8,8,.24)!important;position:relative;overflow:hidden}
+.community-member-row.is-banned-member::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:3px;background:#ff3b30;box-shadow:0 0 12px rgba(255,59,48,.75);transform:rotate(-7deg)}
+.community-member-row.is-banned-member b,.community-member-row.is-banned-member small{color:#ffb3ad!important}
+.uz-glass-break{position:fixed;inset:0;z-index:100003;pointer-events:none;overflow:hidden;backdrop-filter:brightness(1.18) contrast(1.08)}
+.uz-glass-break i{position:absolute;width:clamp(22px,4vw,74px);height:clamp(18px,3.5vw,62px);background:linear-gradient(135deg,rgba(255,255,255,.75),rgba(110,230,255,.24) 48%,rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.55);clip-path:polygon(12% 0,100% 18%,82% 100%,0 74%);box-shadow:0 0 16px rgba(155,240,255,.35);animation:uzGlassFall 1.05s cubic-bezier(.18,.76,.22,1) forwards}
+.uz-glass-break.reverse i{animation:uzGlassReturn .78s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes uzGlassFall{0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.7)}12%{opacity:1}100%{opacity:0;transform:translate(var(--rx),var(--fall)) rotate(var(--rot)) scale(.95)}}
+@keyframes uzGlassReturn{0%{opacity:0;transform:translate(var(--rx),var(--fall)) rotate(var(--rot)) scale(.95)}35%{opacity:1}100%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.7)}}

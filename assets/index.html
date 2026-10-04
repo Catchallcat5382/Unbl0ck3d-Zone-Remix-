@@ -3207,6 +3207,7 @@
             </div>
             <select id="panic-action-select" class="settings-input" onchange="savePanicSettings()" style="margin-top:12px;">
               <option value="redirect">Redirect to URL</option>
+              <option value="cover">Embed URL cover</option>
               <option value="close">Close this tab</option>
               <option value="blank">Blank page</option>
               <option value="history-back">Go back</option>
@@ -4851,6 +4852,16 @@
       if (action) action.value = 'redirect';
       notifyAutosave('Panic settings reset');
     }
+    function togglePanicCover() {
+      var old = document.getElementById('panic-cover-frame');
+      if (old) { old.classList.toggle('open'); return; }
+      var wrap = document.createElement('div');
+      wrap.id = 'panic-cover-frame';
+      wrap.className = 'panic-cover-frame open';
+      wrap.innerHTML = '<div class="panic-cover-bar"><b>Focus Cover</b><button type="button" id="panic-cover-close">Close</button></div><iframe src="' + getPanicUrl().replace(/"/g, '%22') + '" referrerpolicy="no-referrer"></iframe>';
+      document.body.appendChild(wrap);
+      document.getElementById('panic-cover-close').onclick = function(){ wrap.classList.remove('open'); };
+    }
     function panicKeyLabel(key) {
       var map = {
         'Backquote': '` Backtick',
@@ -4930,6 +4941,7 @@
       e.preventDefault();
       window.__panicBypass = true;
       var action = getPanicAction();
+      if (action === 'cover') { togglePanicCover(); return; }
       if (action === 'close') { window.close(); location.href = 'about:blank'; return; }
       if (action === 'blank') { location.href = 'about:blank'; return; }
       if (action === 'history-back') { if (history.length > 1) history.back(); else window.location.href = getPanicUrl(); return; }
@@ -4947,6 +4959,7 @@
     function startStartupMusic() {
       var bgAudio = window.bgAudio = document.getElementById('bg-music');
       var trackList = window.trackList = [
+        'audio/Bee.mp3',
         'https://quantil.jsdelivr.net/gh/matheveryday25/math@latest/oobe.mp3',
         'https://quantil.jsdelivr.net/gh/matheveryday25/math@latest/far.mp3',
         'https://quantil.jsdelivr.net/gh/matheveryday25/math@latest/chirp.mp3',
@@ -7750,6 +7763,7 @@ let DATA = {
   var HM_VOL_KEY = 'homeMusicVolume';
   var HM_IDX_KEY = 'homeMusicIndex';
   var preloaded = [
+    {name:'Bee', url:'audio/Bee.mp3', type:'pre'},
     {name:'Gribbly - OOBE', url:'https://quantil.jsdelivr.net/gh/matheveryday25/math@latest/oobe.mp3', type:'pre'},
     {name:'C418 - Far', url:'https://quantil.jsdelivr.net/gh/matheveryday25/math@latest/far.mp3', type:'pre'},
     {name:'C418 - Chirp', url:'https://quantil.jsdelivr.net/gh/matheveryday25/math@latest/chirp.mp3', type:'pre'},
@@ -8363,9 +8377,9 @@ let DATA = {
     { cmd: '/help', fill: '/help', desc: 'Show every command.' },
     { cmd: '/role', fill: '/role', desc: 'Show your current role.' },
     { cmd: '/warn username reason', fill: '/warn ', desc: 'Add a warning to a user.' },
-    { cmd: '/mute username 10 reason', fill: '/mute ', desc: 'Mute a user for minutes.' },
+    { cmd: '/mute username 10m reason', fill: '/mute ', desc: 'Mute a user for minutes, hours, days, or permanent.' },
     { cmd: '/unmute username reason', fill: '/unmute ', desc: 'Remove a mute.' },
-    { cmd: '/kick username reason', fill: '/kick ', desc: 'Kick a user back to login.' },
+    { cmd: '/kick username 10m reason', fill: '/kick ', desc: 'Kick a user out and block login for a set time.' },
     { cmd: '/ban username reason', fill: '/ban ', desc: 'Owner only: ban a user from the site.' },
     { cmd: '/unban username reason', fill: '/unban ', desc: 'Owner only: remove a ban.' },
     { cmd: '/setrole username role', fill: '/setrole ', desc: 'Owner only: change a user role.' },
@@ -8373,16 +8387,20 @@ let DATA = {
   ];
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function roleText(){ try { return window.UZCommunity && window.UZCommunity.role ? window.UZCommunity.role() : ((window.UZCurrentProfile||{}).role || (window.UZTempOwnerActive ? 'owner' : 'member')); } catch(e){ return 'member'; } }
+  function ensureCommandStyles(){ if(document.getElementById('uz-command-extra-style')) return; var s=document.createElement('style'); s.id='uz-command-extra-style'; s.textContent='.uz-command-builder{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:8px;margin:10px 0}.uz-command-builder input,.uz-command-builder select{background:#050807;color:#fff;border:1px solid #00ff9d;border-radius:8px;padding:9px;font:13px Arial,sans-serif}.uz-command-builder .wide{grid-column:1/-1}.uz-command-buttons{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px}.uz-command-buttons button{background:rgba(0,255,157,.1);border:1px solid #00ff9d;color:#00ff9d;border-radius:8px;padding:8px 10px;font:800 12px Arial,sans-serif;cursor:pointer}.panic-cover-frame{position:fixed;inset:0;z-index:999998;background:#0b0b0d;display:none;grid-template-rows:auto 1fr}.panic-cover-frame.open{display:grid}.panic-cover-frame iframe{width:100%;height:100%;border:0;background:#fff}.panic-cover-bar{display:flex;align-items:center;justify-content:space-between;background:#111;color:#fff;border-bottom:1px solid var(--accent);padding:8px 12px}.panic-cover-bar button{background:var(--accent);border:0;border-radius:6px;padding:7px 10px;color:#080401;font-weight:800}'; document.head.appendChild(s); }
   window.openUZCommandPalette = function(){
+    ensureCommandStyles();
     var old=document.getElementById('uz-command-overlay'); if(old) old.remove();
     var overlay=document.createElement('div'); overlay.id='uz-command-overlay'; overlay.className='uz-command-overlay';
-    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /help, /role, /setrole, /deleteuser..."><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /help, /warn, /mute, /kick..."><div class="uz-command-builder"><input id="uz-cmd-user" placeholder="username"><select id="uz-cmd-time"><option value="10m">10 min</option><option value="30m">30 min</option><option value="1h">1 hour</option><option value="1d">1 day</option><option value="perm">permanent</option></select><select id="uz-cmd-role"><option>member</option><option>mod</option><option>admin</option><option>owner</option><option>banned</option></select><input id="uz-cmd-reason" placeholder="reason"><div class="uz-command-buttons wide"><button data-build="/warn">Warn</button><button data-build="/mute">Mute</button><button data-build="/unmute">Unmute</button><button data-build="/kick">Kick</button><button data-build="/ban">Ban</button><button data-build="/unban">Unban</button><button data-build="/setrole">Set role</button></div></div><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
     document.body.appendChild(overlay);
     var card=overlay.querySelector('.uz-command-card'), header=overlay.querySelector('.uz-command-title');
     header.onmousedown=function(ev){ if(ev.target && ev.target.tagName==='BUTTON') return; var sx=ev.clientX, sy=ev.clientY, r=card.getBoundingClientRect(); card.style.position='fixed'; card.style.left=r.left+'px'; card.style.top=r.top+'px'; card.style.margin='0'; function move(e){ card.style.left=(r.left+e.clientX-sx)+'px'; card.style.top=(r.top+e.clientY-sy)+'px'; } function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); } document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); };    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');
     function matching(){ var q=input.value.trim().toLowerCase(); return commands.filter(function(c){return !q || c.cmd.toLowerCase().indexOf(q)===0 || c.fill.trim().indexOf(q)===0;}); }
     function render(){ var list=matching(); help.innerHTML=(list.length?list:commands).map(function(c,i){return '<button type="button" class="uz-command-suggestion'+(i===0?' active':'')+'" data-fill="'+esc(c.fill)+'"><span><code>'+esc(c.cmd)+'</code><br>'+esc(c.desc)+'</span><span>Tab</span></button>';}).join(''); Array.prototype.forEach.call(help.querySelectorAll('.uz-command-suggestion'),function(btn){btn.onclick=function(){input.value=btn.dataset.fill; input.focus(); render();};}); }
-    async function run(){ var text=input.value.trim(); if(!text){status.textContent='Type a command first.'; return;} if(!window.UZCommunity || !window.UZCommunity.runCommand){status.textContent='Community command system is not loaded yet.'; return;} status.textContent='Running...'; var result=await window.UZCommunity.runCommand(text); status.textContent=(result&&result.message)||'Done.'; if(result&&result.ok) input.value=''; render(); }
+    function buildCommand(kind){ var u=(document.getElementById('uz-cmd-user').value||'').trim(); var t=(document.getElementById('uz-cmd-time').value||'10m').trim(); var ro=(document.getElementById('uz-cmd-role').value||'member').trim(); var re=(document.getElementById('uz-cmd-reason').value||'').trim(); if(kind==='/setrole') return kind+' '+u+' '+ro; if(kind==='/mute'||kind==='/kick') return kind+' '+u+' '+t+(re?' '+re:''); return kind+' '+u+(re?' '+re:''); }
+    Array.prototype.forEach.call(overlay.querySelectorAll('[data-build]'),function(btn){btn.onclick=function(){input.value=buildCommand(btn.dataset.build); input.focus(); render();};});
+    async function run(){ var text=input.value.trim(); if(!text){status.textContent='Type a command first.'; return;} if(!window.UZCommunity || !window.UZCommunity.runCommand){status.textContent='Community command system is not loaded yet.'; return;} status.textContent='Running...'; var result=await window.UZCommunity.runCommand(text); status.textContent=(result&&result.message)||'Done.'; if(result&&result.ok){ input.value=''; setTimeout(function(){overlay.remove();},450);} render(); }
     input.addEventListener('input',render);
     input.addEventListener('keydown',function(e){ if(e.key==='Escape'){overlay.remove();} if(e.key==='Tab'){e.preventDefault(); var first=help.querySelector('.uz-command-suggestion'); if(first){input.value=first.dataset.fill; render();}} if(e.key==='Enter'){e.preventDefault(); run();} });
     document.getElementById('uz-command-close').onclick=function(){overlay.remove();};

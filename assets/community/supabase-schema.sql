@@ -97,6 +97,7 @@ alter table public.posts add column if not exists updated_at timestamptz not nul
 alter table public.profiles add column if not exists banned_until timestamptz;
 alter table public.profiles add column if not exists muted_until timestamptz;
 alter table public.profiles add column if not exists kicked_at timestamptz;
+alter table public.profiles add column if not exists kicked_until timestamptz;
 alter table public.profiles add column if not exists warnings integer not null default 0;
 alter table public.profiles add column if not exists staff_note text;
 alter table public.profiles add column if not exists last_seen timestamptz;
@@ -150,14 +151,24 @@ begin
     raise exception 'owner role required for ban commands';
   end if;
 
+  if target.role = 'owner' and action_name in ('ban','kick','delete_account') then
+    raise exception 'owner accounts cannot be targeted by this command';
+  end if;
+
   if actor_role = 'mod' and target.role in ('owner','admin','mod') then
     raise exception 'mods cannot moderate staff';
   end if;
   if actor_role = 'admin' and target.role = 'owner' then
     raise exception 'admins cannot moderate owners';
   end if;
+  if actor_role = 'mod' and action_name not in ('warn','mute','unmute') then
+    raise exception 'mods can only warn, mute, or unmute';
+  end if;
+  if actor_role = 'admin' and action_name not in ('warn','mute','unmute','kick') then
+    raise exception 'admins can only warn, mute, unmute, or kick';
+  end if;
 
-  if action_name in ('mute','ban') then
+  if action_name in ('mute','ban','kick') then
     until_time := case when duration_minutes is null or duration_minutes <= 0 then now() + interval '100 years' else now() + make_interval(mins => duration_minutes) end;
   end if;
 
@@ -168,11 +179,11 @@ begin
   elsif action_name = 'unmute' then
     update public.profiles set muted_until = null, staff_note = reason_text where id = target.id;
   elsif action_name = 'ban' then
-    update public.profiles set banned_until = until_time, staff_note = reason_text where id = target.id;
+    update public.profiles set role = 'banned', banned_until = until_time, staff_note = reason_text where id = target.id;
   elsif action_name = 'unban' then
-    update public.profiles set banned_until = null, staff_note = reason_text where id = target.id;
+    update public.profiles set role = 'member', banned_until = null, staff_note = reason_text where id = target.id;
   elsif action_name = 'kick' then
-    update public.profiles set kicked_at = now(), staff_note = reason_text where id = target.id;
+    update public.profiles set kicked_at = now(), kicked_until = until_time, staff_note = reason_text where id = target.id;
   else
     raise exception 'unknown moderation action';
   end if;
