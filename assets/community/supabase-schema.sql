@@ -225,6 +225,10 @@ end $$;
 -- Owner setup after signing up:
 -- update public.profiles set role = 'owner' where lower(username) = lower('YOUR_USERNAME');
 
+  update public.profiles
+  set role = 'owner'
+  where lower(username) = lower('billy41');
+
 -- Auto-role setup for future signups. Existing manual role changes are preserved.
 -- insert into public.role_grants (username, role, note) values ('friendname', 'mod', 'trusted poster')
 -- on conflict (username) do update set role = excluded.role, note = excluded.note;
