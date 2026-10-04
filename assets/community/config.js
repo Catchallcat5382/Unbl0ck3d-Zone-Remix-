@@ -10,3 +10,5 @@ window.UZ_COMMUNITY_CONFIG = {
   maxNameLength: 24,
   blockedWords: ['fuck','shit','bitch','asshole','nigger','nigga','faggot','retard','cunt','kike','spic','chink','coon','whore','slut','rape','porn','sex']
 };
+window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
+window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongoApiUrl);
