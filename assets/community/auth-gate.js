@@ -28,7 +28,15 @@
     options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
     var token = mongoToken();
     if (token) options.headers.Authorization = 'Bearer ' + token;
-    var res = await fetch(mongoApiUrl + path, options);
+    var res;
+    try {
+      res = await fetch(mongoApiUrl + path, options);
+    } catch (e) {
+      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. Start the local server for file:// testing, or deploy server/mongo-api and put that HTTPS URL in community/config.js.');
+      offline.cause = e;
+      offline.offline = true;
+      throw offline;
+    }
     var data = await res.json().catch(function(){ return {}; });
     if (!res.ok) {
       var err = new Error(data.error || 'Mongo API request failed.');

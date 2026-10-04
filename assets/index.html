@@ -8497,8 +8497,6 @@ let DATA = {
   };
 })();
 </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');}</script>
   <script src="community/config.js"></script>
   <script src="community/community.js"></script>
   <script src="community/auth-gate.js"></script>
@@ -8510,7 +8508,7 @@ let DATA = {
     if (cfg.requireLogin === false) return;
     document.body.classList.add('uz-auth-locked');
     var gate=document.createElement('div'); gate.id='uz-auth-gate'; gate.className='uz-auth-gate uz-auth-ms-style uz-auth-fail-visible';
-    gate.innerHTML='<div class="uz-auth-card"><section class="uz-auth-form"><h1>Account service blocked</h1><p class="uz-auth-detail">The login screen could not load because the account scripts or Supabase connection were blocked on this network.</p><div class="uz-auth-setup"><b>Allowed fix</b><span>Try refreshing once, use the latest hosted link, or use a network where Supabase/Auth scripts are allowed. The site will not unlock accounts without the real account service.</span></div><button class="community-btn uz-auth-primary" type="button" onclick="location.reload()">Retry</button></section></div>';
+    gate.innerHTML='<div class="uz-auth-card"><section class="uz-auth-form"><h1>Account service not loaded</h1><p class="uz-auth-detail">The login screen script did not load. This build uses the Mongo account API, not Supabase.</p><div class="uz-auth-setup"><b>Fix</b><span>Refresh once. If this keeps showing, make sure community/auth-gate.js is uploaded with the site and the Mongo API URL in community/config.js is reachable.</span></div><button class="community-btn uz-auth-primary" type="button" onclick="location.reload()">Retry</button></section></div>';
     document.body.appendChild(gate);
   }
   setTimeout(showAuthFallback, 4500);

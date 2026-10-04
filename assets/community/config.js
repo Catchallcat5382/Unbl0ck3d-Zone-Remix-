@@ -1,6 +1,6 @@
 window.UZ_COMMUNITY_CONFIG = {
-  supabaseUrl: 'https://bvgqpqsdyfgxweaqihvs.supabase.co',
-  supabaseAnonKey: 'sb_publishable_0uYYo1yZn5KzvlLGsAxMMw_DePYh78F',
+  supabaseUrl: '',
+  supabaseAnonKey: '',
   authProvider: 'password',
   mongoApiUrl: location.protocol === 'file:' ? 'http://localhost:8787' : 'https://unblocked-zone-mongo-api.onrender.com',
   internalAuthDomain: 'uzlogin.net',
