@@ -32,6 +32,7 @@ const posts = db.collection('posts');
 const audit = db.collection('audit');
 await users.createIndex({ username: 1 }, { unique: true });
 await users.createIndex({ lastSeen: -1 });
+const ownerUsernames = String(process.env.OWNER_USERNAMES || '').split(',').map(v => cleanUsername(v)).filter(Boolean);
 
 function cleanUsername(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 24);
@@ -43,6 +44,7 @@ function publicUser(user) {
     username: user.username,
     displayName: user.displayName || user.username,
     role: user.role || 'member',
+    warnings: user.warnings || 0,
     bannedUntil: user.bannedUntil || null,
     kickedUntil: user.kickedUntil || null,
     mutedUntil: user.mutedUntil || null,
@@ -71,7 +73,7 @@ function requireRole(...roles) {
   return (req, res, next) => roles.includes(req.user.role) ? next() : res.status(403).json({ error: 'Not allowed.' });
 }
 async function log(req, action, detail) {
-  await audit.insertOne({ action, detail, by: req.user?.username || 'system', at: new Date() });
+  await audit.insertOne({ action, detail, by: req.user?.username || 'system', username: req.user?.username || 'system', at: new Date() });
 }
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -82,7 +84,9 @@ app.post('/auth/signup', async (req, res) => {
   if (username.length < 2 || password.length < 6) return res.status(400).json({ error: 'Username or password too short.' });
   const passwordHash = await bcrypt.hash(password, 12);
   try {
-    const result = await users.insertOne({ username, passwordHash, role: 'member', createdAt: new Date(), lastSeen: new Date() });
+    const userCount = await users.estimatedDocumentCount();
+    const role = userCount === 0 || ownerUsernames.includes(username) ? 'owner' : 'member';
+    const result = await users.insertOne({ username, passwordHash, role, warnings: 0, createdAt: new Date(), lastSeen: new Date() });
     const user = await users.findOne({ _id: result.insertedId });
     res.json({ token: tokenFor(user), user: publicUser(user) });
   } catch {
@@ -96,6 +100,7 @@ app.post('/auth/login', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Account does not exist.' });
   if (!(await bcrypt.compare(String(req.body.password || ''), user.passwordHash))) return res.status(401).json({ error: 'Username or password incorrect.' });
   if (user.bannedUntil && new Date(user.bannedUntil) > new Date()) return res.status(403).json({ error: 'This account is banned.', banned: true });
+  if (user.kickedUntil && new Date(user.kickedUntil) > new Date()) return res.status(403).json({ error: 'This account is kicked temporarily.', kicked: true });
   await users.updateOne({ _id: user._id }, { $set: { lastSeen: new Date() } });
   res.json({ token: tokenFor(user), user: publicUser({ ...user, lastSeen: new Date() }) });
 });
@@ -120,14 +125,32 @@ app.post('/messages', auth, async (req, res) => {
   await log(req, 'message', body.slice(0, 80));
   res.json({ ok: true });
 });
+app.patch('/messages/:id', auth, async (req, res) => {
+  const row = await messages.findOne({ _id: new ObjectId(req.params.id) });
+  if (!row) return res.status(404).json({ error: 'Message not found.' });
+  if (String(row.userId) !== String(req.user._id)) return res.status(403).json({ error: 'You can only edit your own messages.' });
+  const body = String(req.body.body || '').slice(0, 1000).trim();
+  if (!body) return res.status(400).json({ error: 'Message required.' });
+  await messages.updateOne({ _id: row._id }, { $set: { body, editedAt: new Date() } });
+  await log(req, 'message-edit', `${row.username}: ${body.slice(0, 80)}`);
+  res.json({ ok: true });
+});
+app.delete('/messages/:id', auth, requireRole('owner', 'admin'), async (req, res) => {
+  const row = await messages.findOne({ _id: new ObjectId(req.params.id) });
+  if (!row) return res.status(404).json({ error: 'Message not found.' });
+  await messages.updateOne({ _id: row._id }, { $set: { deletedAt: new Date(), deletedBody: row.deletedBody || row.body, body: '[deleted]' } });
+  await log(req, 'message-delete', `${row.username}: ${(row.body || '').slice(0, 100)}`);
+  res.json({ ok: true });
+});
 
 app.get('/posts', auth, async (_req, res) => {
   res.json({ posts: await posts.find({}).sort({ createdAt: -1 }).limit(100).toArray() });
 });
-app.post('/posts', auth, requireRole('owner', 'admin', 'mod'), async (req, res) => {
+app.post('/posts', auth, async (req, res) => {
   const title = String(req.body.title || '').slice(0, 120).trim();
   const body = String(req.body.body || '').slice(0, 7000).trim();
   if (!title || !body) return res.status(400).json({ error: 'Title and body required.' });
+  if (/^\[announcements\]/i.test(title) && !['owner', 'admin', 'mod'].includes(req.user.role)) return res.status(403).json({ error: 'Mod, admin, or owner required for announcements.' });
   await posts.insertOne({ userId: req.user._id, username: req.user.username, title, body, createdAt: new Date() });
   await log(req, 'post', title);
   res.json({ ok: true });
@@ -150,6 +173,33 @@ app.post('/staff/moderate', auth, requireRole('owner', 'admin', 'mod'), async (r
   else return res.status(403).json({ error: 'Action not allowed for your role.' });
   await users.updateOne({ _id: targetUser._id }, update);
   await log(req, action, target);
+  res.json({ ok: true });
+});
+
+app.post('/staff/role', auth, requireRole('owner'), async (req, res) => {
+  const target = cleanUsername(req.body.username);
+  const newRole = String(req.body.role || '').toLowerCase();
+  if (!['owner', 'admin', 'mod', 'member', 'banned'].includes(newRole)) return res.status(400).json({ error: 'Invalid role.' });
+  if (target === req.user.username) return res.status(403).json({ error: 'You cannot change your own role.' });
+  const targetUser = await users.findOne({ username: target });
+  if (!targetUser) return res.status(404).json({ error: 'Target not found.' });
+  if (targetUser.role === 'owner') return res.status(403).json({ error: 'Owners cannot change other owners.' });
+  const set = { role: newRole };
+  if (newRole === 'banned') set.bannedUntil = new Date('2099-01-01');
+  if (newRole !== 'banned') set.bannedUntil = null;
+  await users.updateOne({ _id: targetUser._id }, { $set: set });
+  await log(req, 'setrole', `${target} -> ${newRole}`);
+  res.json({ ok: true });
+});
+
+app.post('/staff/delete-user', auth, requireRole('owner'), async (req, res) => {
+  const target = cleanUsername(req.body.username);
+  if (target === req.user.username) return res.status(403).json({ error: 'You cannot delete yourself here.' });
+  const targetUser = await users.findOne({ username: target });
+  if (!targetUser) return res.status(404).json({ error: 'Target not found.' });
+  if (targetUser.role === 'owner') return res.status(403).json({ error: 'Owners cannot delete other owners.' });
+  await users.deleteOne({ _id: targetUser._id });
+  await log(req, 'delete-user', target);
   res.json({ ok: true });
 });
 

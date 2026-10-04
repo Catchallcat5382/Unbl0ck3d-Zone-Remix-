@@ -1778,9 +1778,6 @@
               <button class="community-tab secondary" data-community-tab="posts" data-community-channel="settings"># settings-share</button>
               <button class="community-tab secondary" data-community-tab="posts" data-community-channel="suggestions"># suggestions</button>
             </div>
-            <div class="community-channel-section"><span>STAFF</span>
-              <button class="community-tab secondary" data-community-tab="posts" data-community-channel="announcements"># announcements</button>
-            </div>
             <div class="community-channel-section"><span>VOICE</span>
               <button class="community-tab secondary" data-community-tab="voice" data-community-channel="voice-lounge"># voice-lounge</button>
             </div>
@@ -8419,7 +8416,6 @@ let DATA = {
 <script>
 (function(){
   var commands = [
-    { cmd: '/help', fill: '/help', desc: 'Show every command.' },
     { cmd: '/role', fill: '/role', desc: 'Show your current role.' },
     { cmd: '/warn username reason', fill: '/warn ', desc: 'Add a warning to a user.' },
     { cmd: '/mute username 10m reason', fill: '/mute ', desc: 'Mute a user for minutes, hours, days, or permanent.' },
@@ -8437,7 +8433,7 @@ let DATA = {
     ensureCommandStyles();
     var old=document.getElementById('uz-command-overlay'); if(old) old.remove();
     var overlay=document.createElement('div'); overlay.id='uz-command-overlay'; overlay.className='uz-command-overlay';
-    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /help, /warn, /mute, /kick..."><div class="uz-command-builder"><input id="uz-cmd-user" placeholder="username"><select id="uz-cmd-time"><option value="10m">10 min</option><option value="30m">30 min</option><option value="1h">1 hour</option><option value="1d">1 day</option><option value="perm">permanent</option></select><select id="uz-cmd-role"><option>member</option><option>mod</option><option>admin</option><option>owner</option><option>banned</option></select><input id="uz-cmd-reason" placeholder="reason"><div class="uz-command-buttons wide"><button data-build="/warn">Warn</button><button data-build="/mute">Mute</button><button data-build="/unmute">Unmute</button><button data-build="/kick">Kick</button><button data-build="/ban">Ban</button><button data-build="/unban">Unban</button><button data-build="/setrole">Set role</button></div></div><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /warn, /mute, /kick, /ban, /setrole..."><div class="uz-command-builder"><input id="uz-cmd-user" placeholder="username"><select id="uz-cmd-time"><option value="10m">10 min</option><option value="30m">30 min</option><option value="1h">1 hour</option><option value="1d">1 day</option><option value="perm">permanent</option></select><select id="uz-cmd-role"><option>member</option><option>mod</option><option>admin</option><option>owner</option><option>banned</option></select><input id="uz-cmd-reason" placeholder="reason"><div class="uz-command-buttons wide"><button data-build="/warn">Warn</button><button data-build="/mute">Mute</button><button data-build="/unmute">Unmute</button><button data-build="/kick">Kick</button><button data-build="/ban">Ban</button><button data-build="/unban">Unban</button><button data-build="/setrole">Set role</button></div></div><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
     document.body.appendChild(overlay);
     var card=overlay.querySelector('.uz-command-card'), header=overlay.querySelector('.uz-command-title');
     header.onmousedown=function(ev){ if(ev.target && ev.target.tagName==='BUTTON') return; var sx=ev.clientX, sy=ev.clientY, r=card.getBoundingClientRect(); card.style.position='fixed'; card.style.left=r.left+'px'; card.style.top=r.top+'px'; card.style.margin='0'; function move(e){ card.style.left=(r.left+e.clientX-sx)+'px'; card.style.top=(r.top+e.clientY-sy)+'px'; } function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); } document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); };    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');
@@ -8469,11 +8465,13 @@ let DATA = {
 <script>
 (function(){
   function clean(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
-  window.openUZAuditPanel = function(){
+  window.openUZAuditPanel = async function(){
     var old=document.getElementById('uz-audit-overlay'); if(old) old.remove();
     var logs=[]; try{logs=JSON.parse(localStorage.getItem('uzAuditLog')||'[]')}catch(e){}
+    var cfg=window.UZ_COMMUNITY_CONFIG||{}, api=String(cfg.mongoApiUrl||'').replace(/\/$/,''), token=localStorage.getItem('uzMongoToken')||sessionStorage.getItem('uzMongoToken')||'';
+    if(api&&token){try{var res=await fetch(api+'/audit',{headers:{Authorization:'Bearer '+token}});var data=await res.json();if(res.ok&&data.audit)logs=data.audit;}catch(e){}}
     var overlay=document.createElement('div'); overlay.id='uz-audit-overlay'; overlay.className='uz-command-overlay';
-    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Staff Audit Log</span><button id="uz-audit-close">Close</button></div><div class="uz-command-help">'+(logs.length?logs.map(function(l){return '<button type="button" class="uz-command-suggestion"><span><code>'+clean(l.action||'event')+'</code><br>'+clean(l.detail||'')+'</span><span>'+clean(new Date(l.at||Date.now()).toLocaleString())+'</span></button>';}).join(''):'<div class="community-message">No local audit entries yet. For cross-device staff logs, add a Supabase audit_logs table/RPC.</div>')+'</div><div class="uz-command-status">Passwords are not shown. Supabase Auth protects them and does not expose plaintext passwords.</div></div>';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Staff Audit Log</span><button id="uz-audit-close">Close</button></div><div class="uz-command-help">'+(logs.length?logs.map(function(l){return '<button type="button" class="uz-command-suggestion"><span><code>'+clean(l.action||'event')+'</code><br>'+clean(l.detail||'')+'<br><small>by '+clean(l.by||l.username||'system')+'</small></span><span>'+clean(new Date(l.at||Date.now()).toLocaleString())+'</span></button>';}).join(''):'<div class="community-message">No audit entries yet.</div>')+'</div><div class="uz-command-status">Mongo audit logs usernames and actions. Passwords are hashed and never shown in plaintext.</div></div>';
     document.body.appendChild(overlay); document.getElementById('uz-audit-close').onclick=function(){overlay.remove();}; overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
   };
 })();
