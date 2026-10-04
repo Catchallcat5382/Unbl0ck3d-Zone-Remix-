@@ -18,11 +18,13 @@
   </main>
   <script>
     (async function () {
-      var pageUrl = 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html';
-      var baseUrl = 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/';
+      var pageUrl = 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html';
+      var fallbacks = ['https://cdn.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/index.html'];
+      var baseUrl = 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/';
       var loader = document.getElementById('loader');
       try {
         var res = await fetch(pageUrl + '?v=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok && fallbacks.length) res = await fetch(fallbacks[0] + '?v=' + Date.now(), { cache: 'no-store' });
         if (!res.ok) throw new Error('jsDelivr returned HTTP ' + res.status);
         var html = await res.text();
         if (/<base\s/i.test(html)) html = html.replace(/<base\s[^>]*>/i, '<base href="' + baseUrl + '">');

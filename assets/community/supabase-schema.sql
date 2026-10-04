@@ -222,18 +222,20 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
--- Owner setup after signing up:
--- update public.profiles set role = 'owner' where lower(username) = lower('YOUR_USERNAME');
+-- To setup roles do:
 
-  update public.profiles
-  set role = 'owner'
-  where lower(username) = lower('billy41');
+-- ////////////////////////////////////////////////////////////////
 
--- Auto-role setup for future signups. Existing manual role changes are preserved.
--- insert into public.role_grants (username, role, note) values ('friendname', 'mod', 'trusted poster')
--- on conflict (username) do update set role = excluded.role, note = excluded.note;
--- Lets a signed-in user delete only their own Auth account.
--- This is required because browser code cannot directly delete auth.users safely.
+-- update public.profiles
+-- set role = 'ROLE'
+-- where lower(username) = lower('USERNAME');
+
+-- ////////////////////////////////////////////////////////////////
+
+update public.profiles
+set role = 'owner'
+where lower(username) = lower('billy41');
+
 create or replace function public.delete_current_user()
 returns void
 language plpgsql
