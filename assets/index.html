@@ -1762,23 +1762,23 @@
 
 
       <div class="tab-content" id="community">
-        <div class="community-shell">
-          <section class="community-panel">
+        <div class="community-shell community-discord-shell">
+          <section class="community-panel community-channel-panel">
             <h2>Community</h2>
-            <p>Channels, threads, members, profiles, and staff tools live here.</p>
-            <div id="community-setup" class="community-setup">Community is still connecting. If this stays visible, refresh once or check the account setup.</div>
-            <div id="community-user"></div>
-            <div class="community-status" id="community-status"></div>
+            <div class="community-channel-section"><span>TEXT</span>
+              <button class="community-tab active" data-community-tab="chat" data-community-channel="chat"># general-chat</button>
+              <button class="community-tab secondary" data-community-tab="posts" data-community-channel="settings"># settings-share</button>
+              <button class="community-tab secondary" data-community-tab="posts" data-community-channel="suggestions"># suggestions</button>
+            </div>
+            <div class="community-channel-section"><span>STAFF</span>
+              <button class="community-tab secondary" data-community-tab="posts" data-community-channel="announcements"># announcements</button>
+            </div>
+            <div class="community-channel-section"><span>PEOPLE</span>
+              <button class="community-tab secondary" data-community-tab="members" data-community-channel="members"># members</button>
+            </div>
           </section>
           <section class="community-panel community-grid">
-            <div>
-              <div class="community-tabs">
-                <button class="community-btn community-tab active" data-community-tab="chat">Chat</button>
-                <button class="community-btn secondary community-tab" data-community-tab="forums">Forums</button>
-                <button class="community-btn secondary community-tab" data-community-tab="posts">Posts</button>
-                <button class="community-btn secondary community-tab" data-community-tab="members">Members</button>
-              </div>
-            </div>
+            <div class="community-channel-head" id="community-channel-head"></div>
             <div class="community-list" id="community-list"></div>
             <div>
               <div id="community-chat-form"></div>
@@ -1786,6 +1786,15 @@
               <div id="community-staff-form" class="community-hidden"></div>
             </div>
           </section>
+          <aside class="community-panel community-info-panel">
+            <h2>Community</h2>
+            <p>Channels, threads, profiles, and member roles live here.</p>
+            <div id="community-setup" class="community-setup">Community is still connecting. If this stays visible, refresh once or check the account setup.</div>
+            <div id="community-user"></div>
+            <div class="community-status" id="community-status"></div>
+            <h3>Online / Members</h3>
+            <div id="community-side-members" class="community-side-members"></div>
+          </aside>
         </div>
       </div>
       <div class="tab-content" id="media">
@@ -8352,14 +8361,16 @@ let DATA = {
     { cmd: '/unmute username reason', fill: '/unmute ', desc: 'Remove a mute.' },
     { cmd: '/kick username reason', fill: '/kick ', desc: 'Log a kick action.' },
     { cmd: '/ban username reason', fill: '/ban ', desc: 'Ban a user from community actions.' },
-    { cmd: '/unban username reason', fill: '/unban ', desc: 'Remove a ban.' }
+    { cmd: '/unban username reason', fill: '/unban ', desc: 'Remove a ban.' },
+    { cmd: '/setrole username role', fill: '/setrole ', desc: 'Owner only: change a user role.' },
+    { cmd: '/deleteuser username', fill: '/deleteuser ', desc: 'Owner only: delete a user account.' }
   ];
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function roleText(){ try { return window.UZCommunity && window.UZCommunity.role ? window.UZCommunity.role() : ((window.UZCurrentProfile||{}).role || (window.UZTempOwnerActive ? 'owner' : 'member')); } catch(e){ return 'member'; } }
   window.openUZCommandPalette = function(){
     var old=document.getElementById('uz-command-overlay'); if(old) old.remove();
     var overlay=document.createElement('div'); overlay.id='uz-command-overlay'; overlay.className='uz-command-overlay';
-    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /help, /role, /warn, /mute, /unmute, /kick, /ban..."><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /help, /role, /setrole, /deleteuser..."><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
     document.body.appendChild(overlay);
     var card=overlay.querySelector('.uz-command-card'), header=overlay.querySelector('.uz-command-title');
     header.onmousedown=function(ev){ if(ev.target && ev.target.tagName==='BUTTON') return; var sx=ev.clientX, sy=ev.clientY, r=card.getBoundingClientRect(); card.style.position='fixed'; card.style.left=r.left+'px'; card.style.top=r.top+'px'; card.style.margin='0'; function move(e){ card.style.left=(r.left+e.clientX-sx)+'px'; card.style.top=(r.top+e.clientY-sy)+'px'; } function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); } document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); };    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');

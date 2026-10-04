@@ -1,22 +1,29 @@
 (function () {
   var cfg = window.UZ_COMMUNITY_CONFIG || {};
-  var state = { client: null, user: null, profile: null, tab: 'chat', channel: null, profileByUser: {} };
+  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileByUser: {}, memberRows: [] };
   var ready = Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase);
   var storageKey = 'uzCommunityProfileName';
+  var channelInfo = {
+    chat: { tab: 'chat', label: 'general-chat', title: 'General Chat', note: 'Live chat for everyone signed in.' },
+    settings: { tab: 'posts', label: 'settings-share', title: 'Settings Share', note: 'Everyone can upload and copy settings presets.' },
+    suggestions: { tab: 'posts', label: 'suggestions', title: 'Suggestions', note: 'Post ideas, bugs, and requests.' },
+    announcements: { tab: 'posts', label: 'announcements', title: 'Announcements', note: 'Staff announcement threads.' },
+    members: { tab: 'members', label: 'members', title: 'Members', note: 'Profiles and role hierarchy.' }
+  };
   function $(id) { return document.getElementById(id); }
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function when(ts) { try { return new Date(ts).toLocaleString(); } catch (e) { return ''; } }
   function status(msg) { var el = $('community-status'); if (el) el.textContent = msg || ''; }
+  function isTempOwner() { return window.UZTempOwnerActive === true; }
   function role() { if (isTempOwner()) return 'owner'; var a = state.profile || {}; var b = window.UZCurrentProfile || {}; var rank = { member: 0, mod: 1, admin: 2, owner: 3 }; return (rank[b.role] || 0) > (rank[a.role] || 0) ? b.role : (a.role || b.role || 'member'); }
   function isBanned(profile) { return profile && profile.banned_until && new Date(profile.banned_until) > new Date(); }
   function isMuted(profile) { return profile && profile.muted_until && new Date(profile.muted_until) > new Date(); }
-  function isTempOwner() { return window.UZTempOwnerActive === true; }
-  function mergeProfile(profile) { if (!profile) return; var rank = { member: 0, mod: 1, admin: 2, owner: 3 }; var cur = state.profile || {}; state.profile = Object.assign({}, cur, profile); if ((rank[(window.UZCurrentProfile || {}).role] || 0) > (rank[state.profile.role] || 0)) state.profile.role = window.UZCurrentProfile.role; window.UZCurrentProfile = state.profile; }
-  function isOwner() { return role() === 'owner' || isTempOwner(); }
+  function isOwner() { return role() === 'owner'; }
+  function isRealOwner() { return role() === 'owner' && !isTempOwner() && !!state.user; }
   function isStaff() { return ['owner','admin','mod'].indexOf(role()) !== -1 || isTempOwner(); }
-  function canPost() { return isStaff(); }
-  function canEditPost(row) { return role() === 'owner' || role() === 'admin' || (role() === 'mod' && state.user && row.user_id === state.user.id) || isTempOwner(); }
-  function canDeletePost(row) { return role() === 'owner' || role() === 'admin' || (role() === 'mod' && state.user && row.user_id === state.user.id) || isTempOwner(); }
+  function canPost() { return state.channelName === 'settings' || state.channelName === 'suggestions' || (state.channelName === 'announcements' && isStaff()) || (state.tab === 'posts' && isStaff()); }
+  function canEditPost(row) { return role() === 'owner' || role() === 'admin' || (role() === 'mod' && state.user && row.user_id === state.user.id); }
+  function canDeletePost(row) { return role() === 'owner' || role() === 'admin' || (role() === 'mod' && state.user && row.user_id === state.user.id); }
   function notifySaved(msg) { var n = $('community-save-note') || $('uz-autosave-note'); if (!n) { n = document.createElement('div'); n.id = 'community-save-note'; n.className = 'community-save-note'; document.body.appendChild(n); } n.textContent = msg || 'Saved'; n.classList.add('show'); clearTimeout(notifySaved.t); notifySaved.t = setTimeout(function(){ n.classList.remove('show'); }, 1500); }
   function normalizeName(v) { return String(v || '').replace(/\s+/g, ' ').trim().slice(0, cfg.maxNameLength || 24); }
   function hasBadWord(v) { var s = String(v || '').toLowerCase().replace(/[^a-z0-9]/g, ''); return (cfg.blockedWords || []).some(function (w) { return s.indexOf(String(w).toLowerCase().replace(/[^a-z0-9]/g, '')) !== -1; }); }
@@ -25,122 +32,105 @@
   function getName() { if (isTempOwner() && !state.user) return 'Temporary Owner'; return normalizeName(localStorage.getItem(storageKey + ':' + profileUsername()) || ''); }
   function initClient() { if (ready && !state.client) state.client = window.supabase.createClient(String(cfg.supabaseUrl || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, ''), cfg.supabaseAnonKey); }
   function displayName() { return getName() || (state.profile && (state.profile.display_name || state.profile.username)) || (state.user && state.user.email ? state.user.email.split('@')[0] : 'Member'); }
+  function mergeProfile(profile) { if (!profile) return; var rank = { member: 0, mod: 1, admin: 2, owner: 3 }; var cur = state.profile || {}; state.profile = Object.assign({}, cur, profile); if ((rank[(window.UZCurrentProfile || {}).role] || 0) > (rank[state.profile.role] || 0)) state.profile.role = window.UZCurrentProfile.role; window.UZCurrentProfile = state.profile; }
   function renderSetup() { var setup = $('community-setup'); if (setup) setup.classList.toggle('community-hidden', ready); }
   function renderUser() {
     var box = $('community-user'); if (!box) return;
-    var signed = state.user ? 'Signed in as <b>' + esc((state.profile && state.profile.username) || (state.user.email || 'user').split('@')[0]) + '</b>.' : (isTempOwner() ? 'Using temporary owner mode.' : 'Sign in from the main account gate first.');
-    box.innerHTML = '<div class="community-auth"><p>' + signed + '</p><p>Build your profile from the profile button in the top-right.</p><p>Role: <b>' + esc(role()) + '</b></p><p>Members can chat and read threads. Staff tools appear for mod, admin, and owner accounts.</p></div>';
+    var signed = state.user ? 'Signed in as <b>' + esc((state.profile && state.profile.username) || (state.user.email || 'user').split('@')[0]) + '</b>.' : (isTempOwner() ? 'Using temporary owner mode.' : 'Sign in from the account gate first.');
+    box.innerHTML = '<div class="community-auth"><p>' + signed + '</p><p>Role: <b>' + esc(role()) + '</b></p><p>Pick a channel on the left. Open member cards to view profiles. Owners can adjust roles in Members.</p></div>';
     Array.prototype.forEach.call(document.querySelectorAll('.community-staff-tab,.community-staff-only'), function(btn){ btn.classList.toggle('community-hidden', !isStaff()); });
   }
   async function saveProfile() { var name = displayName(); if (!validName(name)) { status('Pick a clean profile name, 2-' + (cfg.maxNameLength || 24) + ' characters.'); return false; } if (state.user) await upsertProfile(); renderUser(); renderComposer(); return true; }
   async function logout() { if (!state.client) return; await state.client.auth.signOut(); state.user = null; state.profile = null; status('Signed out.'); renderUser(); renderComposer(); loadItems(); if (window.UZAuthGate) window.UZAuthGate.refresh(); }
   async function upsertProfile() { if (!ready || !state.user) return; initClient(); var payload = { id: state.user.id, display_name: displayName() }; var res = await state.client.from('profiles').upsert(payload, { onConflict: 'id' }).select('*').single(); if (!res.error && res.data) mergeProfile(res.data); try { localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + ((state.profile && state.profile.username) || state.user.email || 'user') + ' (IP Address: █████).'); } catch(e) {} if (isBanned(state.profile)) { status('This account is banned.'); if (state.client) await state.client.auth.signOut(); if (window.UZAuthGate) window.UZAuthGate.showLogin('This account is banned.'); } }
   async function refreshSession() { if (!ready) { renderSetup(); renderUser(); renderComposer(); loadItems(); return; } initClient(); var session = await state.client.auth.getSession(); state.user = session.data && session.data.session ? session.data.session.user : null; if (state.user) await upsertProfile(); state.client.auth.onAuthStateChange(async function (_event, sessionData) { state.user = sessionData && sessionData.user ? sessionData.user : null; if (state.user) await upsertProfile(); else state.profile = null; renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); }
-  function renderComposer() { var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return; chat.classList.toggle('community-hidden', state.tab !== 'chat'); post.classList.toggle('community-hidden', state.tab !== 'posts'); staff.classList.toggle('community-hidden', state.tab !== 'staff'); var ok = (state.user && !isBanned(state.profile) && !isMuted(state.profile)) || isTempOwner(); chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message"></textarea><button class="community-btn" id="community-send-chat">Send</button>' : '<div class="community-message community-locked">Sign in first. If you are signed in, switch account and sign back in once.</div>'; post.innerHTML = ok && canPost() ? '<div class="community-post-composer"><input id="community-post-title" maxlength="120" placeholder="Thread title"><textarea id="community-post-body" maxlength="7000" placeholder="Post text, links, updates, settings, or attached file text"></textarea><div class="community-composer-actions"><button class="community-btn secondary" id="community-attach-settings" type="button">Attach settings</button><label class="community-file-label">Attach file<input id="community-file-input" type="file"></label><button class="community-btn" id="community-send-post">Publish thread</button></div></div>' : '<div class="community-message community-locked">Posting is staff-only right now. Members can read and copy threads.</div>'; staff.innerHTML = isStaff() ? '<div class="community-terminal"><div class="community-command-presets"><button class="community-btn secondary" data-command="/help">/help</button><button class="community-btn secondary" data-command="/role">/role</button><button class="community-btn secondary" data-command="/warn ">/warn</button><button class="community-btn secondary" data-command="/mute ">/mute</button><button class="community-btn secondary" data-command="/unmute ">/unmute</button><button class="community-btn secondary" data-command="/kick ">/kick</button><button class="community-btn secondary" data-command="/ban ">/ban</button><button class="community-btn secondary" data-command="/unban ">/unban</button></div><input id="community-command-line" placeholder="/warn username reason"><button class="community-btn" id="community-command-run">Run command</button><p class="community-terminal-help">Try /help, /role, /warn, /mute, /unmute, /kick, /ban, /unban.</p></div>' : ''; var sendChat = $('community-send-chat'); if (sendChat) sendChat.onclick = sendMessage; var sendPost = $('community-send-post'); if (sendPost) sendPost.onclick = sendPostMessage; var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset; var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost; var staffRun = $('community-command-run'); if (staffRun) staffRun.onclick = runStaffCommand; Array.prototype.forEach.call(document.querySelectorAll('[data-command]'), function(btn){ btn.onclick = function(){ var line = $('community-command-line'); if (line) { line.value = btn.dataset.command; line.focus(); } }; }); }
-  function currentSettingsText() {
-    var keys = ['activeCursor','cloakTitle','cloakFavicon','uzRememberMe','panicEnabled','panicKey','startupLoadingEnabled','loadingScreenEnabled','openGamesInBlob','hiddenPageCover'];
-    var out = keys.map(function(k){ return k + ': ' + (localStorage.getItem(k) || ''); }).join('\n');
-    return 'Settings preset from ' + displayName() + '\n```\n' + out + '\n```';
+  function postAllowedMessage() { if (state.channelName === 'announcements') return 'Announcements are staff-only. Members can read and copy.'; return 'Sign in to post here.'; }
+  function renderComposer() {
+    var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
+    chat.classList.toggle('community-hidden', state.tab !== 'chat'); post.classList.toggle('community-hidden', state.tab !== 'posts'); staff.classList.toggle('community-hidden', true);
+    var ok = state.user && !isBanned(state.profile) && !isMuted(state.profile);
+    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><button class="community-btn" id="community-send-chat">Send</button>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
+    var postOk = ok && canPost();
+    var titlePh = state.channelName === 'settings' ? 'Preset name' : (state.channelName === 'suggestions' ? 'Suggestion title' : 'Thread title');
+    var bodyPh = state.channelName === 'settings' ? 'Describe this settings preset, or press Attach settings.' : 'Post text, links, updates, settings, or attached file text';
+    post.innerHTML = postOk ? '<div class="community-post-composer"><input id="community-post-title" maxlength="120" placeholder="' + titlePh + '"><textarea id="community-post-body" maxlength="7000" placeholder="' + bodyPh + '"></textarea><div class="community-composer-actions"><button class="community-btn secondary" id="community-attach-settings" type="button">Attach settings</button><label class="community-file-label">Attach file<input id="community-file-input" type="file"></label><button class="community-btn" id="community-send-post">Publish</button></div></div>' : '<div class="community-message community-locked">' + postAllowedMessage() + '</div>';
+    var sendChat = $('community-send-chat'); if (sendChat) sendChat.onclick = sendMessage;
+    var sendPost = $('community-send-post'); if (sendPost) sendPost.onclick = sendPostMessage;
+    var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
+    var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost;
   }
+  function currentSettingsText() { var keys = ['activeCursor','cloakTitle','cloakFavicon','uzRememberMe','panicEnabled','panicKey','startupLoadingEnabled','loadingScreenEnabled','openGamesInBlob','hiddenPageCover']; var out = keys.map(function(k){ return k + ': ' + (localStorage.getItem(k) || ''); }).join('\n'); return 'Settings preset from ' + displayName() + '\n```\n' + out + '\n```'; }
   function appendPostText(text) { var body = $('community-post-body'); if (!body) return; body.value = (body.value ? body.value + '\n\n' : '') + text; body.focus(); }
-  function attachSettingsPreset() { appendPostText(currentSettingsText()); status('Settings preset added to the thread body.'); }
-  function attachFileToPost(e) { var file = e && e.target && e.target.files ? e.target.files[0] : null; if (!file) return; if (file.size > 250000) { status('File is too large for inline sharing. Upload it somewhere and paste a link.'); return; } var reader = new FileReader(); reader.onload = function(){ appendPostText('Attached file: ' + file.name + '\n' + String(reader.result || '').slice(0, 12000)); status('File attached to thread body.'); }; reader.readAsDataURL(file); }
-  function renderForums() {
-    var forums = [
-      ['general','General Chat','Talk, updates, random questions, and normal threads.'],
-      ['settings','Settings Share','Post settings presets and copy other people\'s setups.'],
-      ['links','Links and Files','Share useful links, file links, and resources.'],
-      ['help','Help Desk','Ask for fixes, bugs, and setup help.'],
-      ['announcements','Announcements','Owner/admin updates and important posts.']
-    ];
-    return '<div class="community-forums">' + forums.map(function(f){ return '<button class="community-forum-card" data-forum="' + f[0] + '"><b># ' + esc(f[1]) + '</b><span>' + esc(f[2]) + '</span></button>'; }).join('') + '</div>';
+  function attachSettingsPreset() { appendPostText(currentSettingsText()); status('Settings preset added.'); }
+  function attachFileToPost(e) { var file = e && e.target && e.target.files ? e.target.files[0] : null; if (!file) return; if (file.size > 250000) { status('File is too large for inline sharing. Upload it somewhere and paste a link.'); return; } var reader = new FileReader(); reader.onload = function(){ appendPostText('Attached file: ' + file.name + '\n' + String(reader.result || '').slice(0, 12000)); status('File attached.'); }; reader.readAsDataURL(file); }
+  function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p>'; }
+  function setTab(tab, channel) {
+    state.tab = tab || 'chat'; state.channelName = channel || (tab === 'chat' ? 'chat' : state.channelName || 'chat');
+    Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ var active = btn.dataset.communityChannel === state.channelName; btn.classList.toggle('active', active); btn.classList.toggle('secondary', !active); });
+    renderChannelHeader(); renderComposer(); loadItems(); subscribe();
   }
-  function wireForums() { Array.prototype.forEach.call(document.querySelectorAll('.community-forum-card'), function(btn){ btn.onclick = function(){ setTab('posts'); setTimeout(function(){ var title = $('community-post-title'); var body = $('community-post-body'); if (title) title.value = '[' + btn.dataset.forum + '] '; if (body && btn.dataset.forum === 'settings') appendPostText(currentSettingsText()); }, 60); }; }); }
-  async function loadMembers() {
-    var list = $('community-list'); if (!list) return;
+  function normalizePostChannel(title) { var m = String(title || '').match(/^\[([^\]]+)\]\s*/); return m ? m[1].toLowerCase() : 'announcements'; }
+  function stripPostChannel(title) { return String(title || '').replace(/^\[[^\]]+\]\s*/, ''); }
+  async function loadItems() {
+    var list = $('community-list'); if (!list) return; renderChannelHeader();
+    if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Check community/config.js.</div>'; return; }
     initClient();
-    var res = await state.client.from('profiles').select('id, username, display_name, role, warnings, banned_until, muted_until').order('role', { ascending: false }).limit(200);
+    if (state.tab === 'members') { await loadMembers(true); return; }
+    var table = state.tab === 'chat' ? 'chat_messages' : 'posts';
+    var res = await state.client.from(table).select('*, profiles(id, display_name, role, email, username, warnings, banned_until, muted_until, staff_note)').order('created_at', { ascending: false }).limit(100);
     if (res.error) { list.innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
-    var order = { owner: 0, admin: 1, mod: 2, member: 3, banned: 4 };
-    var rows = (res.data || []).sort(function(a,b){ return (order[a.role] || 9) - (order[b.role] || 9) || String(a.username || '').localeCompare(String(b.username || '')); });
-    var groups = ['owner','admin','mod','member','banned'];
-    list.innerHTML = groups.map(function(g){ var members = rows.filter(function(r){ return (r.role || 'member') === g; }); if (!members.length) return ''; return '<section class="community-member-group"><h3>' + esc(g.toUpperCase()) + ' - ' + members.length + '</h3>' + members.map(function(m){ return '<article class="community-member-row"><span class="community-member-dot"></span><div><b>' + esc(m.display_name || m.username || 'member') + '</b><small>@' + esc(m.username || 'unknown') + '</small></div><em>' + esc(m.role || 'member') + '</em></article>'; }).join('') + '</section>'; }).join('') || '<div class="community-message">No members yet.</div>';
+    var rows = (res.data || []).slice().reverse();
+    if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
+    state.profileByUser = {}; rows.forEach(function(r){ if (r.profiles && r.user_id) state.profileByUser[String(r.user_id)] = r.profiles; });
+    list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
+    wirePostActions(rows); wireProfileLinks(); list.scrollTop = list.scrollHeight; loadMembers(false);
   }
-  function setTab(tab) { state.tab = tab; Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ var active = btn.dataset.communityTab === tab; btn.classList.toggle('active', active); btn.classList.toggle('secondary', !active); }); renderComposer(); loadItems(); subscribe(); }
-  async function loadItems() { var list = $('community-list'); if (!list) return; if (state.tab === 'forums') { list.innerHTML = renderForums(); wireForums(); return; } if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Paste Supabase settings in community/config.js.</div>'; return; } initClient(); if (state.tab === 'members') { await loadMembers(); return; } if (state.tab === 'staff') { await loadStaffLog(); return; } var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; var res = await state.client.from(table).select('*, profiles(id, display_name, role, email, username, warnings, banned_until, muted_until, staff_note)').order('created_at', { ascending: false }).limit(75); if (res.error) { list.innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; } var rows = (res.data || []).slice().reverse(); state.profileByUser = {}; rows.forEach(function(r){ if (r.profiles && r.user_id) state.profileByUser[String(r.user_id)] = r.profiles; }); list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>'; wirePostActions(rows); wireProfileLinks(); list.scrollTop = list.scrollHeight; }
   function metaEmail(p) { if (!isOwner() || !p.email) return ''; return ' / ' + esc(p.email); }
-  function renderItem(row) { var p = row.profiles || {}; var name = p.display_name || p.username || 'Member'; var r = p.role || 'member'; if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + esc(name) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><h3>' + esc(row.title) + '</h3><div class="community-body">' + esc(row.body) + '</div>' + actions + '</article>'; } return '<article class="community-message"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + esc(name) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="community-body">' + esc(row.body) + '</div></article>'; }
+  function renderItem(row) {
+    var p = row.profiles || {}; var name = p.display_name || p.username || 'Member'; var r = p.role || 'member';
+    if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + esc(name) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><h3>' + esc(stripPostChannel(row.title)) + '</h3><div class="community-body">' + esc(row.body) + '</div>' + actions + '</article>'; }
+    return '<article class="community-message"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + esc(name) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="community-body">' + esc(row.body) + '</div></article>';
+  }
+  async function loadMembers(main) {
+    if (!ready) return; initClient();
+    var res = await state.client.from('profiles').select('id, username, display_name, role, warnings, banned_until, muted_until, staff_note').order('role', { ascending: false }).limit(200);
+    if (res.error) { if (main && $('community-list')) $('community-list').innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
+    state.memberRows = (res.data || []);
+    var html = renderMembers(state.memberRows, main);
+    if (main && $('community-list')) $('community-list').innerHTML = html || '<div class="community-message">No members yet.</div>';
+    var side = $('community-side-members'); if (side) side.innerHTML = renderMembers(state.memberRows, false);
+    wireMemberActions(); wireProfileLinks();
+  }
+  function renderMembers(rows, full) {
+    var order = { owner: 0, admin: 1, mod: 2, member: 3, banned: 4 };
+    rows = (rows || []).slice().sort(function(a,b){ return (order[a.role] || 9) - (order[b.role] || 9) || String(a.username || '').localeCompare(String(b.username || '')); });
+    var groups = ['owner','admin','mod','member','banned'];
+    return groups.map(function(g){ var members = rows.filter(function(r){ return (r.role || 'member') === g; }); if (!members.length) return ''; return '<section class="community-member-group"><h3>' + esc(g.toUpperCase()) + ' - ' + members.length + '</h3>' + members.map(function(m){ var roleControl = full && isRealOwner() ? '<select class="community-role-select" data-user-id="' + esc(m.id) + '" data-username="' + esc(m.username || '') + '"><option' + (m.role === 'owner' ? ' selected' : '') + '>owner</option><option' + (m.role === 'admin' ? ' selected' : '') + '>admin</option><option' + (m.role === 'mod' ? ' selected' : '') + '>mod</option><option' + ((m.role || 'member') === 'member' ? ' selected' : '') + '>member</option><option' + (m.role === 'banned' ? ' selected' : '') + '>banned</option></select>' : '<em>' + esc(m.role || 'member') + '</em>'; return '<article class="community-member-row"><span class="community-member-dot"></span><button class="community-user-link community-member-name" data-user-id="' + esc(m.id) + '"><b>' + esc(m.display_name || m.username || 'member') + '</b><small>@' + esc(m.username || 'unknown') + '</small></button>' + roleControl + '</article>'; }).join('') + '</section>'; }).join('');
+  }
   function wireProfileLinks() { Array.prototype.forEach.call(document.querySelectorAll('.community-user-link'), function(btn){ btn.onclick = function(){ showCommunityProfile(btn.dataset.userId); }; }); }
+  function wireMemberActions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ sel.onchange = async function(){ await changeUserRole(sel.dataset.username, sel.value); }; }); }
+  async function changeUserRole(username, newRole) { if (!isRealOwner()) { status('A real owner account is required to change roles.'); return; } if (!username) return; initClient(); var res = await state.client.rpc('set_user_role', { target_username: username, new_role: newRole }); if (res.error) { status(res.error.message); return; } notifySaved('Role updated'); await loadMembers(state.tab === 'members'); }
+  function findProfile(userId) { return (state.memberRows || []).filter(function(m){ return String(m.id) === String(userId); })[0] || state.profileByUser[String(userId)] || {}; }
   function showCommunityProfile(userId) {
-    var p = state.profileByUser[String(userId)] || {};
-    var existing = document.getElementById('community-profile-pop');
-    if (existing) existing.remove();
-    var modal = document.createElement('div');
-    modal.id = 'community-profile-pop';
-    modal.className = 'community-profile-pop';
+    var p = findProfile(userId); var existing = document.getElementById('community-profile-pop'); if (existing) existing.remove();
+    var modal = document.createElement('div'); modal.id = 'community-profile-pop'; modal.className = 'community-profile-pop';
     var ban = p.banned_until && new Date(p.banned_until) > new Date() ? '<p>Banned until: <b>' + esc(when(p.banned_until)) + '</b></p>' : '';
     var mute = p.muted_until && new Date(p.muted_until) > new Date() ? '<p>Muted until: <b>' + esc(when(p.muted_until)) + '</b></p>' : '';
-    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><h2>' + esc(p.display_name || p.username || 'Member') + '</h2><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p><p>Role: <b>' + esc(p.role || 'member') + '</b></p><p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + '</div>';
-    document.body.appendChild(modal);
-    document.getElementById('community-profile-close').onclick = function(){ modal.remove(); };
+    var ownerTools = isRealOwner() && p.username ? '<div class="community-profile-actions"><button class="community-btn danger" id="community-delete-user">Delete account</button></div>' : '';
+    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><h2>' + esc(p.display_name || p.username || 'Member') + '</h2><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p><p>Role: <b>' + esc(p.role || 'member') + '</b></p><p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + ownerTools + '</div>';
+    document.body.appendChild(modal); document.getElementById('community-profile-close').onclick = function(){ modal.remove(); };
+    var del = document.getElementById('community-delete-user'); if (del) del.onclick = async function(){ await deleteUserByUsername(p.username); modal.remove(); };
     modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
   }
+  async function deleteUserByUsername(username) { if (!isRealOwner()) { status('A real owner account is required to delete accounts.'); return; } var typed = prompt('Type the exact username to delete: ' + username); if (typed !== username) { status('Delete cancelled. Username did not match.'); return; } initClient(); var res = await state.client.rpc('delete_user_by_username', { target_username: username }); if (res.error) { status(res.error.message); return; } notifySaved('Account deleted'); loadMembers(state.tab === 'members'); loadItems(); }
   function postById(rows, id) { return rows.filter(function(r){ return String(r.id) === String(id); })[0]; }
-  function wirePostActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText((row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; var title = prompt('Post title', row.title || ''); if (title == null) return; var body = prompt('Post body', row.body || ''); if (body == null) return; initClient(); var res = await state.client.from('posts').update({ title: title.trim(), body: body.trim(), updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post updated'); loadItems(); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row)) return; if (!confirm('Delete this post?')) return; initClient(); var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post deleted'); loadItems(); } }; }); }
-  function parseStaffCommand(text) {
-    var parts = String(text || '').trim().split(/\s+/);
-    var cmd = (parts.shift() || '').replace(/^\//, '').toLowerCase();
-    if (!cmd) return null;
-    if (['warn','ban','unban'].indexOf(cmd) !== -1) return { action: cmd, target: (parts.shift() || '').toLowerCase(), minutes: null, reason: parts.join(' ') };
-    if (cmd === 'mute') return { action: cmd, target: (parts.shift() || '').toLowerCase(), minutes: parseInt(parts.shift() || '10', 10), reason: parts.join(' ') };
-    return { error: 'Unknown command. Use /warn, /mute, /ban, or /unban.' };
-  }
-  async function runStaffCommandText(text) {
-    if (isTempOwner()) return { ok: false, message: 'Temporary owner can open the command panel, but live commands need a real staff account.' };
-    if (!state.user || !isStaff()) return { ok: false, message: 'Staff account required.' };
-    var parsed = parseStaffCommand(text);
-    if (!parsed) return { ok: false, message: 'Type a command first.' };
-    if (parsed.local) return { ok: true, message: parsed.local };
-    if (parsed.error) return { ok: false, message: parsed.error };
-    if (!parsed.target) return { ok: false, message: 'Add a target username.' };
-    initClient();
-    var res = await state.client.rpc('moderate_user', { target_username: parsed.target, action_name: parsed.action, reason_text: parsed.reason || '', duration_minutes: parsed.minutes || null });
-    if (res.error) return { ok: false, message: res.error.message };
-    notifySaved('Command ran');
-    loadItems();
-    return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target };
-  }
-  async function runStaffCommand() {
-    var line = $('community-command-line');
-    var result = await runStaffCommandText(line ? line.value : '');
-    status(result.message);
-    if (result.ok && line) line.value = '';
-  }
-  async function runStaffAction() {
-    if (!state.user || !isStaff()) { status('Staff account required.'); return; }
-    var target = (($('community-staff-user') || {}).value || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 24);
-    var action = (($('community-staff-action') || {}).value || 'warn');
-    var reason = (($('community-staff-reason') || {}).value || '').trim();
-    var minutesRaw = (($('community-staff-duration') || {}).value || '');
-    var minutes = minutesRaw ? parseInt(minutesRaw, 10) : null;
-    if (!target) { status('Enter a username.'); return; }
-    initClient();
-    var res = await state.client.rpc('moderate_user', { target_username: target, action_name: action, reason_text: reason, duration_minutes: minutes });
-    if (res.error) status(res.error.message); else { notifySaved('Staff action saved'); loadItems(); }
-  }
-  async function loadStaffLog() {
-    var list = $('community-list'); if (!list) return;
-    if (!ready || !isStaff()) { list.innerHTML = '<div class="community-message community-locked">Staff log requires mod, admin, or owner.</div>'; return; }
-    initClient();
-    var res = await state.client.from('moderation_actions').select('*, actor:profiles!moderation_actions_actor_id_fkey(username,role), target:profiles!moderation_actions_target_id_fkey(username,role)').order('created_at', { ascending: false }).limit(50);
-    if (res.error) { list.innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
-    var rows = res.data || [];
-    list.innerHTML = rows.map(function(row){ var actor = row.actor || {}; var target = row.target || {}; return '<article class="community-message"><div class="community-meta"><span>' + esc(row.action) + ' / ' + esc(target.username || 'unknown') + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="community-body">By ' + esc(actor.username || 'staff') + ': ' + esc(row.reason || 'No reason') + (row.duration_minutes ? ' (' + esc(row.duration_minutes) + ' min)' : '') + '</div></article>'; }).join('') || '<div class="community-message">No staff actions yet.</div>';
-  }
-  async function sendMessage() { if (isTempOwner()) { status('Temporary owner mode cannot write to the live database. Sign into a real account to chat.'); return; } if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready. Switch tabs and try again.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { status('Message blocked by word filter.'); return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; notifySaved('Message sent'); loadItems(); }
-  async function sendPostMessage() { if (!canPost()) { status('Staff access required.'); return; } if (isTempOwner() || !state.user) { status('Sign into a real staff account before publishing.'); return; } var titleEl = $('community-post-title'); var bodyEl = $('community-post-body'); var title = titleEl ? titleEl.value.trim() : ''; var body = bodyEl ? bodyEl.value.trim() : ''; if (!title || !body) return; if (hasBadWord(title + ' ' + body)) { status('Post blocked by word filter.'); return; } initClient(); var res = await state.client.from('posts').insert({ user_id: state.user.id, title: title, body: body }); if (res.error) { status(res.error.message); return; } if (titleEl) titleEl.value = ''; if (bodyEl) bodyEl.value = ''; notifySaved('Post published'); loadItems(); }
-  function subscribe() { if (!ready || !state.client) return; if (state.channel) state.client.removeChannel(state.channel); if (['forums','members','staff'].indexOf(state.tab) !== -1) return; var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; state.channel = state.client.channel('uz-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, loadItems).subscribe(); }
-  window.UZCommunity = { saveProfile: saveProfile, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandText, openTerminal: function(){ setTab('staff'); } };
-  window.initCommunity = function () { Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab); }; }); refreshSession(); setTab('chat'); };
+  function wirePostActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; var title = prompt('Post title', stripPostChannel(row.title || '')); if (title == null) return; var body = prompt('Post body', row.body || ''); if (body == null) return; initClient(); var res = await state.client.from('posts').update({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post updated'); loadItems(); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row)) return; if (!confirm('Delete this post?')) return; initClient(); var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post deleted'); loadItems(); } }; }); }
+  function parseStaffCommand(text) { var parts = String(text || '').trim().split(/\s+/); var cmd = (parts.shift() || '').replace(/^\//, '').toLowerCase(); if (!cmd) return null; if (cmd === 'help') return { local: 'Commands: /help, /role, /warn user reason, /mute user minutes reason, /unmute user reason, /kick user reason, /ban user reason, /unban user reason, /setrole user role, /deleteuser user.' }; if (cmd === 'role') return { local: 'Current role: ' + role() }; if (cmd === 'setrole') return { action: 'setrole', target: (parts.shift() || '').toLowerCase(), newRole: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (cmd === 'deleteuser') return { action: 'deleteuser', target: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (['warn','ban','unban','unmute','kick'].indexOf(cmd) !== -1) return { action: cmd, target: (parts.shift() || '').toLowerCase(), minutes: null, reason: parts.join(' ') }; if (cmd === 'mute') return { action: cmd, target: (parts.shift() || '').toLowerCase(), minutes: parseInt(parts.shift() || '10', 10), reason: parts.join(' ') }; return { error: 'Unknown command. Use /help for the list.' }; }
+  async function runStaffCommandText(text) { if (isTempOwner()) return { ok: false, message: 'Temporary owner can open the terminal, but live commands need a real staff account.' }; if (!state.user || !isStaff()) return { ok: false, message: 'Staff account required.' }; var parsed = parseStaffCommand(text); if (!parsed) return { ok: false, message: 'Type a command first.' }; if (parsed.local) return { ok: true, message: parsed.local }; if (parsed.error) return { ok: false, message: parsed.error }; if (!parsed.target) return { ok: false, message: 'Add a target username.' }; initClient(); var res; if (parsed.action === 'setrole') { if (!parsed.newRole) return { ok: false, message: 'Add a role: owner, admin, mod, member, or banned.' }; res = await state.client.rpc('set_user_role', { target_username: parsed.target, new_role: parsed.newRole }); } else if (parsed.action === 'deleteuser') { res = await state.client.rpc('delete_user_by_username', { target_username: parsed.target }); } else { res = await state.client.rpc('moderate_user', { target_username: parsed.target, action_name: parsed.action, reason_text: parsed.reason || '', duration_minutes: parsed.minutes || null }); } if (res.error) return { ok: false, message: res.error.message }; notifySaved('Command ran'); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; }
+  async function sendMessage() { if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { status('Message blocked by word filter.'); return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; notifySaved('Message sent'); loadItems(); }
+  async function sendPostMessage() { if (!canPost()) { status('You cannot post in this channel.'); return; } if (!state.user) { status('Sign into a real account before publishing.'); return; } var titleEl = $('community-post-title'); var bodyEl = $('community-post-body'); var title = titleEl ? titleEl.value.trim() : ''; var body = bodyEl ? bodyEl.value.trim() : ''; if (!title || !body) return; if (hasBadWord(title + ' ' + body)) { status('Post blocked by word filter.'); return; } initClient(); var res = await state.client.from('posts').insert({ user_id: state.user.id, title: '[' + state.channelName + '] ' + title, body: body }); if (res.error) { status(res.error.message); return; } if (titleEl) titleEl.value = ''; if (bodyEl) bodyEl.value = ''; notifySaved('Posted'); loadItems(); }
+  function subscribe() { if (!ready || !state.client) return; if (state.realtime) state.client.removeChannel(state.realtime); if (state.tab === 'members') return; var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; state.realtime = state.client.channel('uz-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, loadItems).subscribe(); }
+  window.UZCommunity = { saveProfile: saveProfile, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandText, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
+  window.initCommunity = function () { Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initCommunity); else window.initCommunity();
 }());
