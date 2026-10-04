@@ -22,6 +22,7 @@
       var rawBaseUrl = dec(['aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LS8=','bWFzdGVyL2Fzc2V0cy8=']);
       var pageUrl = rawBaseUrl + 'index.html';
       var communityCssUrl = rawBaseUrl + 'community/community.css';
+      var scriptFiles = ['community/config.js', 'community/community.js', 'community/auth-gate.js'];
       var fallbacks = [
         dec(['aHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L2doLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw=']),
         dec(['aHR0cHM6Ly9xdWFudGlsLmpzZGVsaXZyLm5ldC9naC8=','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw='])
@@ -33,6 +34,7 @@
         for (var i = 0; !res.ok && i < fallbacks.length; i++) res = await fetch(fallbacks[i] + '?v=' + Date.now(), { cache: 'no-store' });
         if (!res.ok) throw new Error('Live build returned HTTP ' + res.status);
         var html = await res.text();
+        html = html.replace(/<head([^>]*)>/i, '<head$1><script>window.UZ_MONGO_API_URL="https://unblocked-zone-mongo-api.onrender.com";<\/script>');
         try {
           var cssRes = await fetch(communityCssUrl + '?v=' + Date.now(), { cache: 'no-store' });
           if (cssRes.ok) {
@@ -41,6 +43,18 @@
             html = html.replace(/<head([^>]*)>/i, '<head$1><style id="community-inline-css">' + css.replace(/<\/style/gi, '<\\/style') + '</style>');
           }
         } catch (cssErr) {}
+        for (var j = 0; j < scriptFiles.length; j++) {
+          try {
+            var scriptUrl = rawBaseUrl + scriptFiles[j];
+            var scriptRes = await fetch(scriptUrl + '?v=' + Date.now(), { cache: 'no-store' });
+            if (!scriptRes.ok) throw new Error(scriptFiles[j] + ' returned HTTP ' + scriptRes.status);
+            var js = await scriptRes.text();
+            var srcPattern = new RegExp('<script\\s+src=["\\\']' + scriptFiles[j].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('/', '\\/') + '["\\\']\\s*><\\/script>', 'i');
+            html = html.replace(srcPattern, '<script data-inline="' + scriptFiles[j] + '">' + js.replace(/<\/script/gi, '<\\/script') + '<\\/script>');
+          } catch (scriptErr) {
+            throw new Error('Could not load ' + scriptFiles[j] + ': ' + (scriptErr && scriptErr.message ? scriptErr.message : scriptErr));
+          }
+        }
         if (/<base\s/i.test(html)) html = html.replace(/<base\s[^>]*>/i, '<base href="' + baseUrl + '">');
         else html = html.replace(/<head([^>]*)>/i, '<head$1><base href="' + baseUrl + '">');
         document.open();
