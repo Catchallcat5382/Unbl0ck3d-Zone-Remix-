@@ -7229,7 +7229,7 @@ let DATA = {
 
     document.getElementById('cloak-preset').addEventListener('change', function() { applyCloakPreset(this.value); });
 
-    // Apply saved cloak on load without overwriting the saved preset.
+    // Apply saved cloak only after the account gate lets the user into the app.
     function _restoreCloak() {
       var savedPreset = null, savedTitle = null, savedFavicon = null;
       try { savedPreset = localStorage.getItem('cloakPreset'); } catch(e) {}
@@ -7242,18 +7242,15 @@ let DATA = {
         var preset = cloakPresets[savedPreset];
         document.title = preset.title;
         setFavicon(preset.icon);
-      } else if (cloakPresets.classroom) {
-        document.title = cloakPresets.classroom.title;
-        setFavicon(cloakPresets.classroom.icon);
       }
       try { document.getElementById('cloak-preset').value = savedPreset || ''; } catch(e) {}
       try { document.getElementById('cloak-title-input').value = savedTitle || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].title : ''); } catch(e) {}
       try { document.getElementById('cloak-favicon-input').value = savedFavicon || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].icon : ''); } catch(e) {}
       updateCloakPreview(savedFavicon || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].icon : null), savedTitle || (savedPreset && cloakPresets[savedPreset] ? cloakPresets[savedPreset].title : null));
     }
-    _restoreCloak();
-    document.addEventListener('DOMContentLoaded', _restoreCloak);
-    window.addEventListener('load', _restoreCloak);
+    window.restoreSavedCloak = _restoreCloak;
+    try { document.title = 'Unbl0cked Zone'; } catch(e) {}
+    document.addEventListener('DOMContentLoaded', function(){ try { document.title = 'Unbl0cked Zone'; } catch(e) {} });
 
     /* ─── FIRST-TIME SETUP WIZARD ─── */
     (function() {
