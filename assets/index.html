@@ -1517,6 +1517,10 @@
       0%,100%{transform:translateY(0);}
       50%{transform:translateY(-6px);}
     }
+
+    .safe-search-panel{max-width:980px;margin:20px auto 10px;padding:18px;border:1px solid rgba(var(--accent-rgb),.55);border-radius:10px;background:rgba(8,8,10,.82);box-shadow:0 0 26px rgba(var(--accent-rgb),.15)}
+    .safe-search-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.safe-search-head h2{margin:0;color:var(--accent);font-size:24px}.safe-search-head p{margin:6px 0 0;color:#bbb;font-size:13px}.safe-search-form{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:14px}.safe-search-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.safe-search-status{min-height:20px;margin-top:10px;color:#ffd29a;font-size:13px}.safe-search-results{display:grid;gap:10px;margin-top:12px}.safe-result{border:1px solid rgba(var(--accent-rgb),.35);border-radius:8px;padding:12px;background:rgba(255,255,255,.04)}.safe-result a{color:#ffb15d;font-weight:800;text-decoration:none}.safe-result p{margin:6px 0 0;color:#ddd;font-size:13px}.safe-search-bookmarks{margin-top:14px;color:#ddd}.safe-search-bookmarks summary{cursor:pointer;color:#ffb15d;font-weight:800}.safe-bookmark{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid rgba(var(--accent-rgb),.25);border-radius:8px;padding:9px;margin-top:8px}.safe-bookmark a{color:#fff;text-decoration:none;overflow-wrap:anywhere}@media(max-width:680px){.safe-search-form{grid-template-columns:1fr}.safe-search-head{display:grid}}
+
   </style>
 <base target="_blank">
 <base target="_blank">
@@ -2191,6 +2195,30 @@
       </div>
 
       <div class="tab-content" id="tools">
+        <section class="safe-search-panel">
+          <div class="safe-search-head">
+            <div>
+              <h2>Private Search</h2>
+              <p>Search quick DuckDuckGo answers inside this page. Full results open in a new tab when you choose them.</p>
+            </div>
+            <button class="settings-btn" type="button" onclick="clearSafeSearch()">Clear</button>
+          </div>
+          <form class="safe-search-form" onsubmit="runSafeSearch(event)">
+            <input id="safe-search-input" class="settings-input" autocomplete="off" placeholder="Search safely..." />
+            <button class="settings-btn primary" type="submit">Search</button>
+          </form>
+          <div class="safe-search-actions">
+            <button class="settings-btn" type="button" onclick="openSafeSearch('html')">Open Results</button>
+            <button class="settings-btn" type="button" onclick="openSafeSearch('lite')">Open Lite</button>
+            <button class="settings-btn" type="button" onclick="saveSafeBookmark()">Save Link</button>
+          </div>
+          <div id="safe-search-status" class="safe-search-status" aria-live="polite"></div>
+          <div id="safe-search-results" class="safe-search-results"></div>
+          <details class="safe-search-bookmarks">
+            <summary>Saved safe links</summary>
+            <div id="safe-bookmark-list"></div>
+          </details>
+        </section>
 
         <div class="g4mes-section" style="display:flex;gap:18px;padding:10px 36px 30px;justify-content:center;flex-wrap:wrap;">
           <button class="g4mes-btn" onclick="event.preventDefault();fetchTool('https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@latest/assets/html/other/runner.html','Code Editor');">
@@ -8396,3 +8424,23 @@ let DATA = {
   <script src="community/config.js"></script>
   <script src="community/community.js"></script>
   <script src="community/auth-gate.js"></script>
+<script>
+(function(){
+  var blocked = ['porn','pornhub','xvideos','xnxx','sex','hentai','rule34','gore','beheading','rape','cp'];
+  function cleanQuery(q){ return String(q || '').replace(/\s+/g,' ').trim(); }
+  function unsafe(q){ var flat = cleanQuery(q).toLowerCase().replace(/[^a-z0-9]/g,''); return blocked.some(function(w){ return flat.indexOf(w.replace(/[^a-z0-9]/g,'')) !== -1; }); }
+  function esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function status(msg){ var el=document.getElementById('safe-search-status'); if(el) el.textContent=msg||''; }
+  function bookmarks(){ try{return JSON.parse(localStorage.getItem('safeSearchBookmarks')||'[]');}catch(e){return[];} }
+  function saveBookmarks(list){ localStorage.setItem('safeSearchBookmarks', JSON.stringify(list.slice(0,30))); renderSafeBookmarks(); }
+  window.renderSafeBookmarks=function(){ var box=document.getElementById('safe-bookmark-list'); if(!box)return; var list=bookmarks(); box.innerHTML=list.map(function(b,i){return '<div class="safe-bookmark"><a target="_blank" rel="noopener noreferrer" href="'+esc(b.url)+'">'+esc(b.title||b.url)+'</a><button class="settings-btn" onclick="removeSafeBookmark('+i+')">Remove</button></div>';}).join('')||'<p>No saved links yet.</p>'; };
+  window.removeSafeBookmark=function(i){ var list=bookmarks(); list.splice(i,1); saveBookmarks(list); };
+  window.saveSafeBookmark=function(){ var q=cleanQuery((document.getElementById('safe-search-input')||{}).value); if(!q||unsafe(q)){status('That search cannot be saved.');return;} var url='https://duckduckgo.com/?q='+encodeURIComponent(q); var list=bookmarks().filter(function(b){return b.url!==url;}); list.unshift({title:q,url:url,time:Date.now()}); saveBookmarks(list); status('Saved.'); };
+  window.openSafeSearch=function(mode){ var q=cleanQuery((document.getElementById('safe-search-input')||{}).value); if(!q){status('Type something first.');return;} if(unsafe(q)){status('Blocked by safety filter.');return;} var base=mode==='lite'?'https://lite.duckduckgo.com/lite/?q=':'https://duckduckgo.com/?q='; window.open(base+encodeURIComponent(q),'_blank','noopener,noreferrer'); };
+  window.clearSafeSearch=function(){ var input=document.getElementById('safe-search-input'); var res=document.getElementById('safe-search-results'); if(input)input.value=''; if(res)res.innerHTML=''; status('Cleared.'); };
+  window.runSafeSearch=async function(e){ if(e)e.preventDefault(); var q=cleanQuery((document.getElementById('safe-search-input')||{}).value); var resBox=document.getElementById('safe-search-results'); if(!q){status('Type a search first.');return;} if(unsafe(q)){status('Blocked by safety filter.'); if(resBox)resBox.innerHTML=''; return;} status('Searching instant answers...'); if(resBox)resBox.innerHTML=''; try{ var r=await fetch('https://api.duckduckgo.com/?q='+encodeURIComponent(q)+'&format=json&no_redirect=1&no_html=1',{cache:'no-store'}); if(!r.ok)throw new Error('Search API returned '+r.status); var data=await r.json(); var items=[]; if(data.AbstractText)items.push({title:data.Heading||q,text:data.AbstractText,url:data.AbstractURL}); (data.RelatedTopics||[]).slice(0,8).forEach(function(t){ if(t.Text)items.push({title:t.Text.split(' - ')[0],text:t.Text,url:t.FirstURL}); }); if(!items.length){ status('No instant answer. Use Open Results for full search.'); return; } status('Instant answers loaded.'); resBox.innerHTML=items.map(function(it){return '<article class="safe-result"><a target="_blank" rel="noopener noreferrer" href="'+esc(it.url||('https://duckduckgo.com/?q='+encodeURIComponent(q)))+'">'+esc(it.title||q)+'</a><p>'+esc(it.text||'')+'</p></article>';}).join(''); }catch(err){ status('Instant answers unavailable. Use Open Results.'); } };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',renderSafeBookmarks); else renderSafeBookmarks();
+})();
+</script>
+</body>
+</html>
