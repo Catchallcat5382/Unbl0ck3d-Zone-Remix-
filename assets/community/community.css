@@ -81,6 +81,7 @@ body.uz-auth-locked #sidebar,body.uz-auth-locked #sidebar-toggle,body.uz-auth-lo
 .community-deleted-body{color:#ff8f86!important;text-decoration:line-through}
 .community-deleted-tag,.community-edited{display:inline-block;margin-left:6px;color:#ffb15d;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
 .community-deleted-tag{color:#ff6b60}
+.community-attachment-embed{margin-top:10px;border-left:4px solid #ff7a1a;background:rgba(255,106,0,.08);border:1px solid rgba(255,106,0,.32);border-radius:8px;padding:10px;display:grid;gap:6px;max-width:420px}.community-attachment-embed b{color:#ffd29a}.community-attachment-embed small{color:#b8adb0}.community-attachment-embed img{max-width:100%;max-height:240px;border-radius:6px;border:1px solid rgba(255,255,255,.12);object-fit:contain;background:#050507}.community-attachment-embed a{color:#ffd29a;font-weight:800}
 .community-delete-message{border-color:#ff6a6a!important;color:#ffb3b3!important}
 .uz-owner-spark{border-radius:2px!important;background:linear-gradient(135deg,#ffffff,#44e7ff 50%,#35d07f)!important;color:#44e7ff!important}
 .uz-banned-card{width:min(560px,calc(100vw - 36px));background:linear-gradient(160deg,rgba(32,4,4,.94),rgba(9,9,14,.96));border:2px solid #ff3b30;border-radius:18px;padding:34px;color:#fff;text-align:center;box-shadow:0 0 60px rgba(255,59,48,.26),inset 0 1px 0 rgba(255,255,255,.12)}
