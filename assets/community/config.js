@@ -13,9 +13,16 @@ try {
 window.UZ_COMMUNITY_CONFIG = {
   supabaseUrl: '',
   supabaseAnonKey: '',
-  authProvider: 'password',
-  mongoApiUrl: window.UZ_NORMALIZE_API_URL(window.UZ_MONGO_API_URL || localStorage.getItem('uzMongoApiUrl') || 'https://unblocked-zone.onrender.com'),
+  authProvider: 'firebase',
+  firebaseConfig: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    appId: ''
+  },
+  mongoApiUrl: '',
   internalAuthDomain: 'uzlogin.net',
+  ownerUsernames: 'billy41',
   ownerBypassHash: '7e72ea0dcee964fa6f5220219cad4ceaf6e4e8caf27d29fb788dbb6d1eabc90f',
   requireLogin: false,
   minNameLength: 2,
