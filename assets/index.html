@@ -6212,7 +6212,8 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
       localStorage.setItem('loadingTheme', theme);
       var screen = document.getElementById('loading-screen');
       if (!screen) return;
-      loadBlockFromCdn(theme, document.getElementById('cdn-block'));
+      // Keep the block screen local. Remote CDN fragments were overwriting the
+      // selected ClassLink/Lightspeed theme with stale markup.
       screen.classList.remove('goguardian-theme', 'securly-theme', 'classlink-theme');
       if (theme === 'goguardian') screen.classList.add('goguardian-theme');
       if (theme === 'securly') screen.classList.add('securly-theme');
