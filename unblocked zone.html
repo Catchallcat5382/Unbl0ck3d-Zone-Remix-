@@ -19,7 +19,7 @@
   <script>
     (async function () {
       function dec(parts) { return parts.map(function(p){ return atob(p); }).join(''); }
-      var buildVersion = '2026-10-04-unblocked-zone-api';
+      var buildVersion = 'c438078';
       var rawBaseUrl = dec(['aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LS8=','bWFzdGVyL2Fzc2V0cy8=']);
       var pageUrl = rawBaseUrl + 'index.html';
       var communityCssUrl = rawBaseUrl + 'community/community.css';
@@ -28,7 +28,7 @@
         dec(['aHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L2doLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw=']),
         dec(['aHR0cHM6Ly9xdWFudGlsLmpzZGVsaXZyLm5ldC9naC8=','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw='])
       ];
-      var baseUrl = dec(['aHR0cHM6Ly9yYXcuZ2l0aGFjay5jb20v','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LS8=','bWFzdGVyL2Fzc2V0cy8=']);
+      var baseUrl = rawBaseUrl;
       var loader = document.getElementById('loader');
       try {
         var res = await fetch(pageUrl + '?v=' + buildVersion + '-' + Date.now(), { cache: 'no-store' });
