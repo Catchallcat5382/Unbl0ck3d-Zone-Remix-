@@ -18,6 +18,13 @@
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function when(ts) { try { return new Date(ts).toLocaleString(); } catch (e) { return ''; } }
   function status(msg) { var el = $('community-status'); if (el) el.textContent = msg || ''; }
+  function debugLog(label, detail) {
+    try {
+      window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
+      window.UZ_ACCOUNT_DEBUG.push(new Date().toISOString() + ' community-' + label + (detail ? ': ' + detail : ''));
+      if (window.UZ_ACCOUNT_DEBUG.length > 80) window.UZ_ACCOUNT_DEBUG.splice(0, window.UZ_ACCOUNT_DEBUG.length - 80);
+    } catch(e) {}
+  }
   function isTempOwner() { return window.UZTempOwnerActive === true; }
   function role() { if (isTempOwner()) return 'owner'; var a = state.profile || {}; var b = window.UZCurrentProfile || {}; var rank = { member: 0, mod: 1, admin: 2, owner: 3 }; return (rank[b.role] || 0) > (rank[a.role] || 0) ? b.role : (a.role || b.role || 'member'); }
   function isBanned(profile) { return profile && profile.banned_until && new Date(profile.banned_until) > new Date(); }
@@ -44,14 +51,21 @@
     options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
     var token = mongoToken();
     if (token) options.headers.Authorization = 'Bearer ' + token;
+    var controller = window.AbortController ? new AbortController() : null;
+    var timeout = setTimeout(function(){ if (controller) controller.abort(); }, Number(options.timeout || 16000));
+    if (controller) options.signal = controller.signal;
+    delete options.timeout;
     var res;
     try {
       res = await fetch(mongoApiUrl + path, options);
     } catch (e) {
-      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. If this is on the school computer, that network may be blocking the Render API.');
+      debugLog('api-failed', path + ' ' + (e && e.name ? e.name : 'fetch'));
+      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. If this host is blocked, switch the API URL to a different deployed host.');
       offline.cause = e;
       offline.offline = true;
       throw offline;
+    } finally {
+      clearTimeout(timeout);
     }
     var data = await res.json().catch(function(){ return {}; });
     if (!res.ok) { var err = new Error(data.error || 'Mongo API request failed.'); err.status = res.status; err.data = data; throw err; }
@@ -139,6 +153,23 @@
     var sendPost = $('community-send-post'); if (sendPost) sendPost.onclick = sendPostMessage;
     var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
     var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost;
+    wireMentionComplete($('community-post-body'));
+  }
+  function decorateMentions(text) { return esc(text).replace(/@everyone\b/gi, '<span class="community-mention">@everyone</span>'); }
+  function wireMentionComplete(el) {
+    if (!el) return;
+    el.addEventListener('keydown', function(e){
+      if (e.key !== 'Tab') return;
+      var start = el.selectionStart || 0;
+      var before = el.value.slice(0, start);
+      var m = before.match(/(^|\s)@(?:e|ev|eve|ever|every|everyo|everyon)?$/i);
+      if (!m) return;
+      e.preventDefault();
+      var at = before.lastIndexOf('@');
+      el.value = el.value.slice(0, at) + '@everyone ' + el.value.slice(start);
+      var pos = at + '@everyone '.length;
+      el.setSelectionRange(pos, pos);
+    });
   }
   function currentSettingsText() { var keys = ['activeCursor','cloakTitle','cloakFavicon','uzRememberMe','panicEnabled','panicKey','startupLoadingEnabled','loadingScreenEnabled','openGamesInBlob','hiddenPageCover']; var out = keys.map(function(k){ return k + ': ' + (localStorage.getItem(k) || ''); }).join('\n'); return 'Settings preset from ' + displayName() + '\n```\n' + out + '\n```'; }
   function appendPostText(text) { var body = $('community-post-body'); if (!body) return; body.value = (body.value ? body.value + '\n\n' : '') + text; body.focus(); }
@@ -182,11 +213,11 @@
       try {
         var data = await mongoFetch('/posts');
         var rows = (data.posts || []).map(mongoPost).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
-        list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + esc(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button></div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
+        list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + decorateMentions(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button></div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
         Array.prototype.forEach.call(document.querySelectorAll('.community-copy-announcement'), function(btn){ btn.onclick = function(){ var row = rows.filter(function(r){ return String(r.id) === String(btn.dataset.postId); })[0]; if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')); notifySaved('Announcement copied'); }; });
         if (compose) {
           var ok = state.user && isStaff();
-          compose.innerHTML = ok ? '<input id="announcement-title" maxlength="120" placeholder="Announcement title"><textarea id="announcement-body" maxlength="7000" placeholder="Announcement text, links, files, or @everyone"></textarea><details class="announcement-file-drop"><summary>Files</summary><label class="community-file-label">Browse file<input id="announcement-file-input" type="file"></label></details><button class="community-btn" id="announcement-send" type="button">Publish announcement</button>' : '<div class="community-message community-locked">Mod, admin, or owner required to publish announcements.</div>';
+          compose.innerHTML = ok ? '<input id="announcement-title" maxlength="120" placeholder="Announcement title"><textarea id="announcement-body" maxlength="7000" placeholder="Announcement text, links, files, or @everyone. Type @eve then Tab."></textarea><details class="announcement-file-drop"><summary>Files</summary><label class="community-file-label">Browse file<input id="announcement-file-input" type="file"></label></details><button class="community-btn" id="announcement-send" type="button">Publish announcement</button>' : '<div class="community-message community-locked">Mod, admin, or owner required to publish announcements.</div>';
           var file = $('announcement-file-input'); if (file) file.onchange = attachAnnouncementFile;
           var send = $('announcement-send'); if (send) send.onclick = async function(){ var title = ($('announcement-title').value || '').trim(); var body = ($('announcement-body').value || '').trim(); if (!title || !body) return; if (hasBadWord(title + ' ' + body)) { status('Blocked word found. Announcement will not publish.'); return; } try { await mongoFetch('/posts', { method: 'POST', body: JSON.stringify({ title: '[announcements] ' + title, body: body }) }); audit('announcement', title); if (/@everyone\b/i.test(body + ' ' + title)) pingEveryone(title); notifySaved('Announcement posted'); renderAnnouncementsPanel(); } catch(e) { status(e.message); } };
         }
@@ -198,11 +229,11 @@
     if (res.error && handleProfileError(res.error)) res = await state.client.from('posts').select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(60);
     if (res.error) { list.innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
     var rows = (res.data || []).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
-    list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + esc(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button></div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
+    list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + decorateMentions(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button></div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
     Array.prototype.forEach.call(document.querySelectorAll('.community-copy-announcement'), function(btn){ btn.onclick = function(){ var row = rows.filter(function(r){ return String(r.id) === String(btn.dataset.postId); })[0]; if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')); notifySaved('Announcement copied'); }; });
     if (compose) {
       var ok = state.user && isStaff();
-      compose.innerHTML = ok ? '<input id="announcement-title" maxlength="120" placeholder="Announcement title"><textarea id="announcement-body" maxlength="7000" placeholder="Announcement text, links, files, or @everyone"></textarea><details class="announcement-file-drop"><summary>Files</summary><label class="community-file-label">Browse file<input id="announcement-file-input" type="file"></label></details><button class="community-btn" id="announcement-send" type="button">Publish announcement</button>' : '<div class="community-message community-locked">Mod, admin, or owner required to publish announcements.</div>';
+      compose.innerHTML = ok ? '<input id="announcement-title" maxlength="120" placeholder="Announcement title"><textarea id="announcement-body" maxlength="7000" placeholder="Announcement text, links, files, or @everyone. Type @eve then Tab."></textarea><details class="announcement-file-drop"><summary>Files</summary><label class="community-file-label">Browse file<input id="announcement-file-input" type="file"></label></details><button class="community-btn" id="announcement-send" type="button">Publish announcement</button>' : '<div class="community-message community-locked">Mod, admin, or owner required to publish announcements.</div>';
       var file = $('announcement-file-input'); if (file) file.onchange = attachAnnouncementFile;
       var send = $('announcement-send'); if (send) send.onclick = async function(){ var title = ($('announcement-title').value || '').trim(); var body = ($('announcement-body').value || '').trim(); if (!title || !body) return; if (hasBadWord(title + ' ' + body)) { status('Blocked word found. Announcement will not publish.'); return; } var r = await state.client.from('posts').insert({ user_id: state.user.id, title: '[announcements] ' + title, body: body }); if (r.error) { status(r.error.message); return; } audit('announcement', title); if (/@everyone\b/i.test(body + ' ' + title)) pingEveryone(title); notifySaved('Announcement posted'); renderAnnouncementsPanel(); };
     }

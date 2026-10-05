@@ -110,6 +110,12 @@ app.get('/me', auth, async (req, res) => {
   res.json({ user: publicUser({ ...req.user, lastSeen: new Date() }) });
 });
 
+app.delete('/account', auth, async (req, res) => {
+  await users.deleteOne({ _id: req.user._id });
+  await log(req, 'delete-self', req.user.username);
+  res.json({ ok: true });
+});
+
 app.get('/members', auth, async (_req, res) => {
   const rows = await users.find({}, { projection: { passwordHash: 0 } }).sort({ role: 1, username: 1 }).toArray();
   res.json({ members: rows.map(publicUser) });
@@ -207,4 +213,8 @@ app.get('/audit', auth, requireRole('owner', 'admin'), async (_req, res) => {
   res.json({ audit: await audit.find({}).sort({ at: -1 }).limit(300).toArray() });
 });
 
-app.listen(port, () => console.log(`Mongo API listening on ${port}`));
+if (!process.env.VERCEL) {
+  app.listen(port, () => console.log(`Mongo API listening on ${port}`));
+}
+
+export default app;

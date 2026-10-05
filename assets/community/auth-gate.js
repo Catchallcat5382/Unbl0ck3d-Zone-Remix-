@@ -10,6 +10,12 @@
   var konamiIndex = 0;
   var authMode = 'signin';
   var tempOwnerActive = false; window.UZTempOwnerActive = false; window.UZCurrentProfile = null;
+  function debugLog(label, detail) {
+    try {
+      window.UZ_ACCOUNT_DEBUG.push(new Date().toISOString() + ' ' + label + (detail ? ': ' + detail : ''));
+      if (window.UZ_ACCOUNT_DEBUG.length > 80) window.UZ_ACCOUNT_DEBUG.splice(0, window.UZ_ACCOUNT_DEBUG.length - 80);
+    } catch(e) {}
+  }
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function cleanUsername(v) { return String(v || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 24); }
   function authEmail(username) { return cleanUsername(username) + '@' + (cfg.internalAuthDomain || 'uzlogin.net'); }
@@ -47,7 +53,8 @@
     try {
       res = await fetch(mongoApiUrl + path, options);
     } catch (e) {
-      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. If Render was asleep, wait 20 seconds and retry. If this is on the school computer, that network is blocking the Render API.');
+      debugLog('api-fetch-failed', path + ' ' + (e && e.name ? e.name : 'fetch'));
+      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. If this host is blocked, switch the API URL to a different deployed host.');
       offline.cause = e;
       offline.offline = true;
       throw offline;
@@ -66,9 +73,9 @@
     if (!mongoMode || wakeStarted) return;
     wakeStarted = true;
     mongoFetch('/health', { timeout: 45000 }).then(function(){
-      window.UZ_ACCOUNT_DEBUG.push('api-awake');
+      debugLog('api-awake', mongoApiUrl);
     }).catch(function(e){
-      window.UZ_ACCOUNT_DEBUG.push('api-wake-failed:' + (e && e.message ? e.message : 'unknown'));
+      debugLog('api-wake-failed', e && e.message ? e.message : 'unknown');
     });
   }
   function mongoProfileToSession(user) { return user ? { user: { id: user.id, email: user.username + '@' + (cfg.internalAuthDomain || 'uzlogin.net'), user_metadata: { username: user.username } } } : null; }
@@ -101,6 +108,13 @@
   }
   function renderGate(message) {
     if (!cfg.requireLogin) return;
+    var oldUser = document.getElementById('uz-login-user');
+    var oldPass = document.getElementById('uz-login-pass');
+    var oldRemember = document.getElementById('uz-remember-me');
+    var keepUser = oldUser ? oldUser.value : '';
+    var keepPass = oldPass ? oldPass.value : '';
+    var keepRemember = oldRemember ? oldRemember.checked : true;
+    var activeId = document.activeElement && document.activeElement.id;
     document.body.classList.add('uz-auth-locked'); document.body.classList.remove('uz-app-unlocked');
     resetAuthBranding();
     var gate = document.getElementById('uz-auth-gate');
@@ -111,7 +125,14 @@
     var primary = authMode === 'signup' ? 'Create account' : 'Sign in';
     var switchText = authMode === 'signup' ? 'Already have an account? Sign in' : 'Need an account? Create one';
     wakeAccountApi();
-    gate.innerHTML = '<div class="uz-auth-card"><aside class="uz-auth-art"><div class="uz-auth-wordmark">' + logoSvg() + '<div><strong>Unblocked Zone</strong><span>Remix access panel</span></div></div><div class="uz-auth-copy"><b>Choose your route.</b><span>Sign in or create a site account to continue.</span></div></aside><section class="uz-auth-form"><div class="uz-auth-tabs"><button id="uz-tab-signin" class="' + (authMode === 'signin' ? 'active' : '') + '">Sign in</button><button id="uz-tab-signup" class="' + (authMode === 'signup' ? 'active' : '') + '">Create account</button></div><h1>' + title + '</h1><p class="uz-auth-detail">Use your Unblocked Zone account. This is not a school, Google, Microsoft, or ClassLink login.</p>' + setup + recentAccountsHtml() + '<label>Username</label><input id="uz-login-user" autocomplete="username" name="username" maxlength="24" placeholder="Choose a username"><label>Password</label><div class="uz-pass-wrap"><input id="uz-login-pass" autocomplete="current-password" name="password" type="password" placeholder="At least 6 characters"><button type="button" id="uz-pass-eye" aria-label="Show password">&#128065;</button></div><label class="uz-remember-row"><input id="uz-remember-me" type="checkbox" checked> Remember this account for 30 days</label><button class="community-btn uz-auth-primary" id="uz-login-primary"' + disabled + '>' + primary + '</button><button class="uz-auth-switch" id="uz-auth-switch" type="button">' + switchText + '</button><button class="uz-auth-switch" id="uz-forgot-pass" type="button">Forgot password?</button><p class="uz-auth-detail">Passwords are protected with hashing and are not shown in plaintext.</p><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></section></div>';
+    gate.innerHTML = '<div class="uz-auth-card"><aside class="uz-auth-art"><div class="uz-auth-wordmark">' + logoSvg() + '<div><strong>Unblocked Zone</strong><span>Remix access panel</span></div></div><div class="uz-auth-copy"><b>Choose your route.</b><span>Sign in or create a site account to continue.</span></div></aside><section class="uz-auth-form"><div class="uz-auth-tabs"><button id="uz-tab-signin" class="' + (authMode === 'signin' ? 'active' : '') + '">Sign in</button><button id="uz-tab-signup" class="' + (authMode === 'signup' ? 'active' : '') + '">Create account</button></div><h1>' + title + '</h1><p class="uz-auth-detail">Use your Unblocked Zone account. This is not a school, Google, Microsoft, or ClassLink login.</p>' + setup + recentAccountsHtml() + '<label>Username</label><input id="uz-login-user" autocomplete="username" name="username" maxlength="24" placeholder="Choose a username"><label>Password</label><div class="uz-pass-wrap"><input id="uz-login-pass" autocomplete="current-password" name="password" type="password" placeholder="At least 6 characters"><button type="button" id="uz-pass-eye" aria-label="Show password">&#128065;</button></div><label class="uz-remember-row"><input id="uz-remember-me" type="checkbox" checked> Remember this account for 30 days</label><button class="community-btn uz-auth-primary" id="uz-login-primary"' + disabled + '>' + primary + '</button><button class="uz-auth-switch" id="uz-auth-switch" type="button">' + switchText + '</button><button class="uz-auth-switch" id="uz-forgot-pass" type="button">Forgot password?</button><p class="uz-auth-detail">Passwords are protected with hashing and are not shown in plaintext.</p><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p><details class="uz-auth-debug"><summary>Debug</summary><pre id="uz-auth-debug-log">' + esc((window.UZ_ACCOUNT_DEBUG || []).slice(-12).join('\n')) + '</pre></details></section></div>';
+    var userInput = document.getElementById('uz-login-user');
+    var passInput2 = document.getElementById('uz-login-pass');
+    var rememberInput = document.getElementById('uz-remember-me');
+    if (userInput && keepUser) userInput.value = keepUser;
+    if (passInput2 && keepPass) passInput2.value = keepPass;
+    if (rememberInput) rememberInput.checked = keepRemember;
+    if (activeId) { var active = document.getElementById(activeId); if (active) active.focus(); }
     document.getElementById('uz-tab-signin').onclick = function(){ authMode = 'signin'; renderGate(''); };
     document.getElementById('uz-tab-signup').onclick = function(){ authMode = 'signup'; renderGate(''); };
     document.getElementById('uz-auth-switch').onclick = function(){ authMode = authMode === 'signin' ? 'signup' : 'signin'; renderGate(''); };
@@ -140,8 +161,8 @@
   function authFail(msg) { if (msg === 'ACCOUNT_MISSING') { note('Account does not exist. Press <button type="button" id="uz-create-account-error" class="uz-auth-inline-link">Create account</button> below to make one.', true); wireCreateAccountError(); } else note(msg || 'That did not work. Check the username and password.'); screenFlash('bad'); ownerAudio('bad'); var card = document.querySelector('.uz-auth-card'); if (card) { card.classList.remove('uz-auth-shake'); void card.offsetWidth; card.classList.add('uz-auth-shake'); } }
   async function accountExists(username) { if (mongoMode) return true; try { var found = await client.from('profiles').select('id').eq('username', username).maybeSingle(); return !!(found && found.data && found.data.id); } catch(e) { return true; } }
   function loginErrorMessage(username, exists) { return exists ? 'Username or password incorrect. Try again, or press Forgot password if this is your account.' : 'ACCOUNT_MISSING'; }
-  async function signIn() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } if (mongoMode) { try { setBusy('Signing in...'); var data = await mongoFetch('/auth/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 45000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { setBusy(''); if (e.data && e.data.banned) renderBannedGate(username); else authFail(e.status === 404 ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } setBusy('Signing in...'); var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); setBusy(''); if (res.error) { removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
-  async function signUp() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } if (mongoMode) { try { setBusy('Creating account...'); var data = await mongoFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 45000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { setBusy(''); authFail(e.message || 'Could not create account.'); } return; } setBusy('Creating account...'); var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); setBusy(''); if (res.error) { authFail(res.error.message); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
+  async function signIn() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } debugLog('signin-start', username); if (mongoMode) { try { setBusy('Signing in...'); var data = await mongoFetch('/auth/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 16000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { debugLog('signin-failed', e.message || 'unknown'); setBusy(''); if (e.data && e.data.banned) renderBannedGate(username); else authFail(e.status === 404 ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } setBusy('Signing in...'); var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); setBusy(''); if (res.error) { removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
+  async function signUp() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } debugLog('signup-start', username); if (mongoMode) { try { setBusy('Creating account...'); var data = await mongoFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 16000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { debugLog('signup-failed', e.message || 'unknown'); setBusy(''); authFail(e.message || 'Could not create account.'); } return; } setBusy('Creating account...'); var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); setBusy(''); if (res.error) { authFail(res.error.message); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
 
   function updateProfileReady() {
     var mount = document.getElementById('uz-profile-menu');
@@ -186,7 +207,7 @@
     if (passBtn) passBtn.onclick = async function () { await forgotPassword(); }; wireProfileSwitchAccounts();
     var del = document.getElementById('uz-profile-delete');
     if (del) del.onclick = async function () { await deleteAccount(username); };
-    document.getElementById('uz-profile-logout').onclick = async function () { tempOwnerActive = false; window.UZTempOwnerActive = false; sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); if (client && !mongoMode) await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); location.reload(); };
+    document.getElementById('uz-profile-logout').onclick = async function () { tempOwnerActive = false; window.UZTempOwnerActive = false; sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); if (client && !mongoMode) await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); if (window.UZCommunity && window.UZCommunity.logout) await window.UZCommunity.logout(); renderProfile(null, null); renderGate('Signed out.'); };
   }
   function openProfileSettings(username, name, avatar, owner, temporary) {
     var existing = document.getElementById('uz-profile-modal');
@@ -206,7 +227,7 @@
     if (typed !== username) { note('Account deletion cancelled. Username did not match.'); return; }
     var again = confirm('Delete account "' + username + '"? This cannot be undone.');
     if (!again) return;
-    if (mongoMode) { note('Ask an owner to delete Mongo accounts from the member profile actions.'); return; }
+    if (mongoMode) { try { await mongoFetch('/account', { method: 'DELETE', timeout: 16000 }); } catch(e) { note(e.message || 'Account deletion failed.'); return; } localStorage.removeItem(profileKey('uzCommunityProfileName', username)); localStorage.removeItem(profileKey('uzCommunityAvatar', username)); removeRecentAccount(username); localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); renderProfile(null, null); renderGate('Account deleted.'); return; }
     try { await client.from('profiles').delete().eq('id', (await client.auth.getUser()).data.user.id); } catch(e) {}
     var res = await client.rpc('delete_current_user');
     if (res.error) { note('Account deletion needs the Supabase delete_current_user function from the updated schema.'); return; }
