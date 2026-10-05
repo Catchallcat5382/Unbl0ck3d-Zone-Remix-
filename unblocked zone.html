@@ -35,7 +35,7 @@
         for (var i = 0; !res.ok && i < fallbacks.length; i++) res = await fetch(fallbacks[i] + '?v=' + buildVersion + '-' + Date.now(), { cache: 'no-store' });
         if (!res.ok) throw new Error('Live build returned HTTP ' + res.status);
         var html = await res.text();
-        html = html.replace(/<head([^>]*)>/i, '<head$1><script>(function(){var u=localStorage.getItem("uzMongoApiUrl")||"https://unblocked-zone.onrender.com";u=String(u).replace(/\\/+$/,"").replace("onrendered.com","onrender.com").replace("https://zone.onrender.com","https://unblocked-zone.onrender.com");if(localStorage.getItem("uzMongoApiUrl")&&localStorage.getItem("uzMongoApiUrl")!==u)localStorage.setItem("uzMongoApiUrl",u);window.UZ_MONGO_API_URL=u;}());<\/script>');
+        html = html.replace(/<head([^>]*)>/i, '<head$1><script>(function(){var u=localStorage.getItem("uzMongoApiUrl")||"https://unblocked-zone.onrender.com";u=String(u).replace(/\\/+$/,"").replace("onrendered.com","onrender.com").replace("https://zone.onrender.com","https://unblocked-zone.onrender.com");if(u.indexOf("https://bullbestyoutuber.s3.us-east-1.amazonaws.com/index.html")===0)u="https://unblocked-zone.onrender.com";if(localStorage.getItem("uzMongoApiUrl")&&localStorage.getItem("uzMongoApiUrl")!==u)localStorage.setItem("uzMongoApiUrl",u);window.UZ_MONGO_API_URL=u;}());<\/script>');
         try {
           var cssRes = await fetch(communityCssUrl + '?v=' + buildVersion + '-' + Date.now(), { cache: 'no-store' });
           if (cssRes.ok) {
@@ -62,7 +62,9 @@
         document.write(html);
         document.close();
       } catch (err) {
-        loader.innerHTML = '<h1>Loader failed</h1><p>The account system could not be attached to the single-file loader.</p><p class="err">' + String(err && err.message ? err.message : err).replace(/[&<>]/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c];}) + '</p><p class="err">API URL: ' + String(localStorage.getItem("uzMongoApiUrl")||"https://unblocked-zone.onrender.com").replace("onrendered.com","onrender.com").replace("https://zone.onrender.com","https://unblocked-zone.onrender.com").replace(/[&<>]/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c];}) + '</p><button onclick="location.reload()">Retry</button>';
+        var shownApi = String(localStorage.getItem("uzMongoApiUrl")||"https://unblocked-zone.onrender.com").replace("onrendered.com","onrender.com").replace("https://zone.onrender.com","https://unblocked-zone.onrender.com");
+        if (shownApi.indexOf("https://bullbestyoutuber.s3.us-east-1.amazonaws.com/index.html") === 0) shownApi = "https://unblocked-zone.onrender.com";
+        loader.innerHTML = '<h1>Loader failed</h1><p>The account system could not be attached to the single-file loader.</p><p class="err">' + String(err && err.message ? err.message : err).replace(/[&<>]/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c];}) + '</p><p class="err">API URL: ' + shownApi.replace(/[&<>]/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c];}) + '</p><button onclick="location.reload()">Retry</button>';
       }
     })();
   </script>

@@ -1,7 +1,8 @@
 window.UZ_NORMALIZE_API_URL = function(value) {
   var url = String(value || '').trim().replace(/\/+$/, '');
   url = url.replace('onrendered.com', 'onrender.com');
-  url = url.replace('https://zone.onrender.com', 'https://bullbestyoutuber.s3.us-east-1.amazonaws.com/index.html?route=%2Fsearch%3Fquery%3DaHR0cHM6Ly91bmJsb2NrZWQtem9uZS5vbnJlbmRlci5jb20vaGVhbHRo');
+  url = url.replace('https://zone.onrender.com', 'https://unblocked-zone.onrender.com');
+  if (/^https:\/\/bullbestyoutuber\.s3\.us-east-1\.amazonaws\.com\/index\.html/i.test(url)) url = 'https://unblocked-zone.onrender.com';
   return url;
 };
 try {
@@ -13,7 +14,7 @@ window.UZ_COMMUNITY_CONFIG = {
   supabaseUrl: '',
   supabaseAnonKey: '',
   authProvider: 'password',
-  mongoApiUrl: window.UZ_NORMALIZE_API_URL(window.UZ_MONGO_API_URL || localStorage.getItem('uzMongoApiUrl') || 'https://bullbestyoutuber.s3.us-east-1.amazonaws.com/index.html?route=%2Fsearch%3Fquery%3DaHR0cHM6Ly91bmJsb2NrZWQtem9uZS5vbnJlbmRlci5jb20vaGVhbHRo'),
+  mongoApiUrl: window.UZ_NORMALIZE_API_URL(window.UZ_MONGO_API_URL || localStorage.getItem('uzMongoApiUrl') || 'https://unblocked-zone.onrender.com'),
   internalAuthDomain: 'uzlogin.net',
   ownerBypassHash: '7e72ea0dcee964fa6f5220219cad4ceaf6e4e8caf27d29fb788dbb6d1eabc90f',
   requireLogin: true,
