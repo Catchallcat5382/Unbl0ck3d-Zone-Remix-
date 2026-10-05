@@ -184,7 +184,7 @@
     }
     var data = doc.data() || {};
     data.id = user.uid;
-    if (data.role === 'deleted') { try { removeRecentAccount(username); await client.auth.signOut(); } catch(e) {} renderGate('This account was deleted.'); return null; }
+    if (data.role === 'deleted') { try { removeRecentAccount(username); localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(username)); await client.auth.signOut(); } catch(e) {} renderGate('This account was deleted.'); return null; }
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
   }

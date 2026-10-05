@@ -291,7 +291,7 @@
 
     /* ClassLink theme */
     #loading-screen .cl-content { display: none; width: 100%; height: 100%; overflow: hidden; position: relative; }
-    #loading-screen.classlink-theme { background: #E2F0FD; justify-content: flex-start; align-items: flex-start; }
+    #loading-screen.classlink-theme { background: #E2F0FD url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAUVBMVEVHcEwAitcAitcAitcAitcAitcAitcAitcAitcAitcAitcAitcAh9b///8AgtUAfNPY6ffw9/xrreIdkNnB3PNYpeCpzu5CnN14tOWEuuaZxeqAQzbeAAAAC3RSTlMAtuCdWvFzjRPQCoLl6zkAAAEWSURBVDiNzVLZcoQwDAPKubFyJxz//6E1XSDeHbaPneopY2kcWXZV/Uu0fTv+Qn+pHV3/iW/UgeadGfueG9fqwvRCP6afWqsEWsmrG9RCcHYmrakohOCo6OTcQiyje4He4Gbmk/N6H1UIuoO3xhD3yUgkPTy9U4IzHt5ENWPZP+nGF4faIegVPm4m4rDal2wVLYgUVLJQK9ZzFs5iPJ4B8GG1ADKyFqMeDXS2CERmY8VqShb9uR3KEcHQYuG4gQ4lzjPD5GAd4HhSn6M/TTSnQJECUjCWgzL54jmt6VJ4zjEsRvs4l4XUVdmwntmAtXaRC2vFDe1LmmeS9POuJlEgyV5XNUzqFlO5qcfQDgLjMDI+3fXf4xtCrxthVq2kiAAAAABJRU5ErkJggg==') center/cover no-repeat; justify-content: flex-start; align-items: flex-start; }
     #loading-screen.classlink-theme .cl-content { display: block; }
     #loading-screen.classlink-theme .ls-content { display: none; }
     #loading-screen.classlink-theme .gg-content { display: none; }
@@ -3234,7 +3234,7 @@
               <option value="cover">Embed URL cover</option>
               <option value="close">Close this tab</option>
               <option value="blank">Blank page</option>
-              <option value="history-back">Go back cover</option>
+              <option value="history-back" disabled>Go back cover (replaced by Embed URL cover)</option>
             </select>
             <input type="text" id="panic-url-input" class="settings-input" placeholder="Redirect URL (https://www.google.com)" onchange="savePanicSettings()" style="margin-top:12px;">
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
@@ -3553,6 +3553,7 @@
             <option value="classroom">Google Classroom</option>
             <option value="desmostest">Desmos Testing</option>
             <option value="desmos">Desmos</option>
+            <option value="classlink">CBSD data</option>
           </select>
           <div class="setup-actions">
             <button class="setup-btn-ghost" onclick="setupGo(6)">Back</button>
@@ -4853,7 +4854,8 @@
       return localStorage.getItem('panicUrl') || 'https://www.google.com';
     }
     function getPanicAction() {
-      return localStorage.getItem('panicAction') || 'history-back';
+      var action = localStorage.getItem('panicAction') || 'cover';
+      return action === 'history-back' || action === 'redirect' ? 'cover' : action;
     }
     function savePanicSettings() {
       var url = document.getElementById('panic-url-input');
@@ -8126,7 +8128,8 @@ let DATA = {
   var stealthCovers = {
     classroom: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/load/class.png',
     desmostest: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/load/test.png',
-    desmos: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/load/calc.png'
+    desmos: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/load/calc.png',
+    classlink: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAUVBMVEVHcEwAitcAitcAitcAitcAitcAitcAitcAitcAitcAitcAitcAitcAh9b///8AgtUAfNPY6ffw9/xrreIdkNnB3PNYpeCpzu5CnN14tOWEuuaZxeqAQzbeAAAAC3RSTlMAtuCdWvFzjRPQCoLl6zkAAAEWSURBVDiNzVLZcoQwDAPKubFyJxz//6E1XSDeHbaPneopY2kcWXZV/Uu0fTv+Qn+pHV3/iW/UgeadGfueG9fqwvRCP6afWqsEWsmrG9RCcHYmrakohOCo6OTcQiyje4He4Gbmk/N6H1UIuoO3xhD3yUgkPTy9U4IzHt5ENWPZP+nGF4faIegVPm4m4rDal2wVLYgUVLJQK9ZzFs5iPJ4B8GG1ADKyFqMeDXS2CERmY8VqShb9uR3KEcHQYuG4gQ4lzjPD5GAd4HhSn6M/TTSnQJECUjCWgzL54jmt6VJ4zjEsRvs4l4XUVdmwntmAtXaRC2vFDe1LmmeS9POuJlEgyV5XNUzqFlO5qcfQDgLjMDI+3fXf4xtCrxthVq2kiAAAAABJRU5ErkJggg=='
   };
   function setStealthCover(name) {
     if (!stealthCovers[name]) name = 'classroom';
@@ -9190,7 +9193,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     }
     var data = doc.data() || {};
     data.id = user.uid;
-    if (data.role === 'deleted') { try { removeRecentAccount(username); await client.auth.signOut(); } catch(e) {} renderGate('This account was deleted.'); return null; }
+    if (data.role === 'deleted') { try { removeRecentAccount(username); localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(username)); await client.auth.signOut(); } catch(e) {} renderGate('This account was deleted.'); return null; }
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
   }
