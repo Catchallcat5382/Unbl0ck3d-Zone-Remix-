@@ -1,6 +1,7 @@
 window.UZ_NORMALIZE_API_URL = function(value) {
   var url = String(value || '').trim().replace(/\/+$/, '');
   url = url.replace('onrendered.com', 'onrender.com');
+  url = url.replace('https://zone.onrender.com', 'https://unblocked-zone.onrender.com');
   return url;
 };
 try {
