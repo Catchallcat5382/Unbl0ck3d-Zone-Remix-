@@ -48,7 +48,7 @@
     try {
       res = await fetch(mongoApiUrl + path, options);
     } catch (e) {
-      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. Start the local server for file:// testing, or deploy server/mongo-api and put that HTTPS URL in community/config.js.');
+      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. If this is on the school computer, that network may be blocking the Render API.');
       offline.cause = e;
       offline.offline = true;
       throw offline;

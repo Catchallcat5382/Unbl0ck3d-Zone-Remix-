@@ -25,19 +25,34 @@
   function authUrl() { return String(cfg.supabaseUrl || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, ''); }
   function initClient() { if (!mongoMode && ready && !client) client = window.supabase.createClient(authUrl(), cfg.supabaseAnonKey); }
   function mongoToken() { return localStorage.getItem('uzMongoToken') || sessionStorage.getItem('uzMongoToken') || ''; }
+  var wakeStarted = false;
+  function setBusy(text) {
+    var btn = document.getElementById('uz-login-primary');
+    if (!btn) return;
+    if (!btn.dataset.originalText) btn.dataset.originalText = btn.textContent || 'Continue';
+    btn.disabled = !!text;
+    btn.textContent = text || btn.dataset.originalText;
+    btn.classList.toggle('is-loading', !!text);
+  }
   async function mongoFetch(path, options) {
     options = options || {};
     options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
     var token = mongoToken();
     if (token) options.headers.Authorization = 'Bearer ' + token;
+    var controller = window.AbortController ? new AbortController() : null;
+    var timeout = setTimeout(function(){ if (controller) controller.abort(); }, Number(options.timeout || 20000));
+    if (controller) options.signal = controller.signal;
+    delete options.timeout;
     var res;
     try {
       res = await fetch(mongoApiUrl + path, options);
     } catch (e) {
-      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. Start the local server for file:// testing, or deploy server/mongo-api and put that HTTPS URL in community/config.js.');
+      var offline = new Error('Mongo account API is not reachable at ' + mongoApiUrl + '. If Render was asleep, wait 20 seconds and retry. If this is on the school computer, that network is blocking the Render API.');
       offline.cause = e;
       offline.offline = true;
       throw offline;
+    } finally {
+      clearTimeout(timeout);
     }
     var data = await res.json().catch(function(){ return {}; });
     if (!res.ok) {
@@ -46,6 +61,15 @@
       throw err;
     }
     return data;
+  }
+  function wakeAccountApi() {
+    if (!mongoMode || wakeStarted) return;
+    wakeStarted = true;
+    mongoFetch('/health', { timeout: 45000 }).then(function(){
+      window.UZ_ACCOUNT_DEBUG.push('api-awake');
+    }).catch(function(e){
+      window.UZ_ACCOUNT_DEBUG.push('api-wake-failed:' + (e && e.message ? e.message : 'unknown'));
+    });
   }
   function mongoProfileToSession(user) { return user ? { user: { id: user.id, email: user.username + '@' + (cfg.internalAuthDomain || 'uzlogin.net'), user_metadata: { username: user.username } } } : null; }
   function note(msg, html) { var el = document.getElementById('uz-auth-error'); if (!el) return; if (html) el.innerHTML = msg || ''; else el.textContent = msg || ''; }
@@ -86,6 +110,7 @@
     var title = authMode === 'signup' ? 'Create your account' : 'Welcome back';
     var primary = authMode === 'signup' ? 'Create account' : 'Sign in';
     var switchText = authMode === 'signup' ? 'Already have an account? Sign in' : 'Need an account? Create one';
+    wakeAccountApi();
     gate.innerHTML = '<div class="uz-auth-card"><aside class="uz-auth-art"><div class="uz-auth-wordmark">' + logoSvg() + '<div><strong>Unblocked Zone</strong><span>Remix access panel</span></div></div><div class="uz-auth-copy"><b>Choose your route.</b><span>Sign in or create a site account to continue.</span></div></aside><section class="uz-auth-form"><div class="uz-auth-tabs"><button id="uz-tab-signin" class="' + (authMode === 'signin' ? 'active' : '') + '">Sign in</button><button id="uz-tab-signup" class="' + (authMode === 'signup' ? 'active' : '') + '">Create account</button></div><h1>' + title + '</h1><p class="uz-auth-detail">Use your Unblocked Zone account. This is not a school, Google, Microsoft, or ClassLink login.</p>' + setup + recentAccountsHtml() + '<label>Username</label><input id="uz-login-user" autocomplete="username" name="username" maxlength="24" placeholder="Choose a username"><label>Password</label><div class="uz-pass-wrap"><input id="uz-login-pass" autocomplete="current-password" name="password" type="password" placeholder="At least 6 characters"><button type="button" id="uz-pass-eye" aria-label="Show password">&#128065;</button></div><label class="uz-remember-row"><input id="uz-remember-me" type="checkbox" checked> Remember this account for 30 days</label><button class="community-btn uz-auth-primary" id="uz-login-primary"' + disabled + '>' + primary + '</button><button class="uz-auth-switch" id="uz-auth-switch" type="button">' + switchText + '</button><button class="uz-auth-switch" id="uz-forgot-pass" type="button">Forgot password?</button><p class="uz-auth-detail">Passwords are protected with hashing and are not shown in plaintext.</p><p class="uz-auth-error" id="uz-auth-error">' + esc(message || '') + '</p></section></div>';
     document.getElementById('uz-tab-signin').onclick = function(){ authMode = 'signin'; renderGate(''); };
     document.getElementById('uz-tab-signup').onclick = function(){ authMode = 'signup'; renderGate(''); };
@@ -115,8 +140,8 @@
   function authFail(msg) { if (msg === 'ACCOUNT_MISSING') { note('Account does not exist. Press <button type="button" id="uz-create-account-error" class="uz-auth-inline-link">Create account</button> below to make one.', true); wireCreateAccountError(); } else note(msg || 'That did not work. Check the username and password.'); screenFlash('bad'); ownerAudio('bad'); var card = document.querySelector('.uz-auth-card'); if (card) { card.classList.remove('uz-auth-shake'); void card.offsetWidth; card.classList.add('uz-auth-shake'); } }
   async function accountExists(username) { if (mongoMode) return true; try { var found = await client.from('profiles').select('id').eq('username', username).maybeSingle(); return !!(found && found.data && found.data.id); } catch(e) { return true; } }
   function loginErrorMessage(username, exists) { return exists ? 'Username or password incorrect. Try again, or press Forgot password if this is your account.' : 'ACCOUNT_MISSING'; }
-  async function signIn() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } if (mongoMode) { try { var data = await mongoFetch('/auth/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }) }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { if (e.data && e.data.banned) renderBannedGate(username); else authFail(e.status === 404 ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); if (res.error) { removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
-  async function signUp() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } if (mongoMode) { try { var data = await mongoFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ username: username, password: password }) }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { authFail(e.message || 'Could not create account.'); } return; } var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); if (res.error) { authFail(res.error.message); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
+  async function signIn() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } if (mongoMode) { try { setBusy('Signing in...'); var data = await mongoFetch('/auth/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 45000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { setBusy(''); if (e.data && e.data.banned) renderBannedGate(username); else authFail(e.status === 404 ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } setBusy('Signing in...'); var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); setBusy(''); if (res.error) { removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
+  async function signUp() { if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } if (mongoMode) { try { setBusy('Creating account...'); var data = await mongoFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 45000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); window.UZCurrentProfile = data.user; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); location.reload(); } catch(e) { setBusy(''); authFail(e.message || 'Could not create account.'); } return; } setBusy('Creating account...'); var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); setBusy(''); if (res.error) { authFail(res.error.message); return; } screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); var profile = await ensureProfile(res.data.user); if (profile) location.reload(); }
 
   function updateProfileReady() {
     var mount = document.getElementById('uz-profile-menu');
