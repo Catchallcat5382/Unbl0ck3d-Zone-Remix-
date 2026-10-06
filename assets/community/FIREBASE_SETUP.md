@@ -147,7 +147,8 @@ service cloud.firestore {
         )
       );
 
-      allow delete: if owner() || request.auth.uid == uid;
+      allow delete: if owner() && request.auth.uid != uid;
+      allow delete: if request.auth.uid == uid;
     }
 
     match /deletedAccounts/{uid} {
