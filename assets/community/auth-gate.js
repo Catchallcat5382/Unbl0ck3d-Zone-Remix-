@@ -44,6 +44,7 @@
   var cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
   function queueFirebaseSetting(username, key, value) {
     if (!firebaseMode || !client || !client.auth || !client.db || window.__uzRestoringAccountSettings) return;
+    if (/^(accentColorV2|bgMode|siteTheme)$/.test(key) && !window.__uzUserSettingsChange) return;
     var user = client.auth.currentUser;
     username = cleanUsername(username);
     if (!user || !username || cleanUsername(usernameFromUser(user)) !== username) return;
@@ -100,7 +101,7 @@
     if (cloudSettings && typeof cloudSettings === 'object') {
       ACCOUNT_SETTING_KEYS.forEach(function (key) {
         try {
-          if (cloudSettings[key] != null) localStorage.setItem(accountSettingKey(username, key), String(cloudSettings[key]));
+          if (cloudSettings[key] != null && !(savedTheme && savedTheme[key] != null)) localStorage.setItem(accountSettingKey(username, key), String(cloudSettings[key]));
         } catch (e) {}
       });
     }
@@ -133,6 +134,37 @@
       });
     }
   }
+  // Appearance controls commit the user's choice independently of renderer setup.
+  function captureAppearanceChoice(event) {
+    var target = event.target;
+    if (!target || !target.closest) return;
+    var control = target.closest('button, select');
+    if (!control) return;
+    var key = '', value = '';
+    if (event.type === 'change' && /^(bg-select|setup-bg-select)$/.test(control.id)) { key = 'bgMode'; value = control.value; }
+    else if (event.type === 'change' && control.id === 'theme-select') { key = 'siteTheme'; value = control.value; }
+    else if (event.type === 'click') {
+      var action = control.getAttribute('onclick') || '';
+      var color = action.match(/setAccent\('([^']+)'\)/);
+      if (color) { key = 'accentColorV2'; value = color[1]; }
+      else if (action.indexOf('setAccent(') !== -1) {
+        key = 'accentColorV2';
+        var input = document.getElementById('custom-color-input');
+        var picker = document.getElementById('custom-color-picker');
+        value = (input && input.value) || (picker && picker.value) || '';
+      }
+    }
+    if (!key || !value) return;
+    window.__uzUserSettingsChange = true;
+    try {
+      localStorage.setItem(key, value);
+      if (window.UZSaveThemeSetting) window.UZSaveThemeSetting(key, value);
+      window.UZPersistAccountSetting(key, value);
+      debugLog('settings-user-choice', key + '=' + value);
+    } finally { window.__uzUserSettingsChange = false; }
+  }
+  document.addEventListener('click', captureAppearanceChoice, true);
+  document.addEventListener('change', captureAppearanceChoice, true);
   function clearActiveSettings() {
     window.__uzSettingsReady = false;
     ACCOUNT_SETTING_KEYS.forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });

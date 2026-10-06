@@ -13,7 +13,9 @@ class Storage {
   key(i) { return [...this.values.keys()][i] || null; }
 }
 const localStorage = new Storage();
-const context = vm.createContext({ Storage, localStorage, sessionStorage: new Storage(), window: {}, setTimeout: () => 0, clearTimeout() {}, console });
+const listeners = {};
+const document = { addEventListener(type, handler) { listeners[type] = handler; } };
+const context = vm.createContext({ Storage, localStorage, sessionStorage: new Storage(), document, window: {}, setTimeout: () => 0, clearTimeout() {}, console });
 localStorage.setItem('uzLoginEmail', 'alice');
 vm.runInContext(bootstrap, context);
 vm.runInContext(core, context);
@@ -38,4 +40,9 @@ localStorage.setItem('uzacct:alice:activeCursor', 'custom.png');
 context.window.restore('alice');
 assert.equal(localStorage.getItem('activeCursor'), 'custom.png');
 assert.equal(localStorage.getItem('uzacct:settings:alice:activeCursor'), 'custom.png');
+listeners.click({ type: 'click', target: { closest: () => ({ getAttribute: () => "setAccent('#00ff9d')" }) } });
+listeners.change({ type: 'change', target: { closest: () => ({ id: 'bg-select', value: 'topography' }) } });
+context.window.restore('alice', { accentColorV2: '#ff6600', bgMode: 'starfield' });
+assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
+assert.equal(localStorage.getItem('bgMode'), 'topography');
 console.log('PASS: settings survive restoration, missing backups migrate, and accounts remain isolated.');
