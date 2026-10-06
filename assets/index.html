@@ -12,6 +12,8 @@
       try {
         if (window.__uzScopedStorage) return;
         window.__uzScopedStorage = true;
+        window.__uzSettingsReady = false;
+        window.__uzRestoringAccountSettings = false;
         var rawGet = Storage.prototype.getItem;
         var rawSet = Storage.prototype.setItem;
         var rawRemove = Storage.prototype.removeItem;
@@ -24,9 +26,14 @@
           var u = user();
           return u ? 'uzacct:' + u + ':' + k : k;
         }
+        function durableSettingExists(k) {
+          var u = user();
+          return !!(u && k && rawGet.call(localStorage, 'uzacct:settings:' + u + ':' + String(k)) !== null);
+        }
         Storage.prototype.getItem = function (k) { return rawGet.call(this, this === localStorage ? scoped(k) : k); };
         Storage.prototype.setItem = function (k, v) {
           var key = this === localStorage ? scoped(k) : k;
+          if (this === localStorage && key !== k && !window.__uzSettingsReady && !window.__uzRestoringAccountSettings && durableSettingExists(k)) return;
           var result = rawSet.call(this, key, v);
           // Auth-gate installs this hook after the bundle loads so account settings
           // are copied to their durable per-user record immediately, not only on exit.
@@ -6222,6 +6229,14 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
                  .replace(/(^|[^-\w])html(?=\s*[,{:])/g, '$1#cdn-block')
                  .replace(/(^|[^-\w])body(?=\s*[,{:])/g, '$1#cdn-block');
         s.innerHTML = '<style>' + css + '</style>' + d.body.innerHTML;
+        if (typeof window.loadLightspeedText === 'function') window.loadLightspeedText();
+        var accountName = String(localStorage.getItem('uzLoginEmail') || 'user').trim().split('@')[0] || 'user';
+        var accountNode = s.querySelector('#loading-account-name');
+        if (accountNode) accountNode.textContent = accountName;
+        var systemNode = s.querySelector('.loading-system-msg');
+        if (systemNode && /^You are logged in as\s+/i.test(systemNode.textContent || '')) {
+          systemNode.textContent = 'You are logged in as ' + accountName + ' (IP Address: hidden).';
+        }
         s.classList.remove('hidden');
       }).catch(function () {
         var s = document.getElementById('cdn-block');
@@ -6408,18 +6423,23 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
     // Load saved settings
     function syncBlockedPageIdentity() {
       var username = (localStorage.getItem('uzLoginEmail') || 'guest').trim() || 'guest';
-      localStorage.setItem('lightspeedSchoolName', 'Unblocked Zone');
-      localStorage.setItem('lightspeedTopText', 'Oops,');
-      localStorage.setItem('lightspeedBottomText', 'is not available because it is categorized as Security - Proxy.');
-      localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + username + ' (IP Address: hidden).');
-      localStorage.setItem('scUrl', 'Unblocked Zone');
-      localStorage.setItem('scHeading', 'Unblocked Zone');
-      localStorage.setItem('scIp', 'hidden');
+      var defaults = {
+        lightspeedSchoolName: 'Unblocked Zone',
+        lightspeedTopText: 'Oops,',
+        lightspeedBottomText: 'is not available because it is categorized as Security - Proxy.',
+        lightspeedSystemMsg: 'You are logged in as ' + username + ' (IP Address: hidden).',
+        scUrl: 'Unblocked Zone',
+        scHeading: 'Unblocked Zone',
+        scIp: 'hidden'
+      };
+      Object.keys(defaults).forEach(function (key) {
+        var current = localStorage.getItem(key);
+        if (current === null || (key === 'lightspeedSystemMsg' && /^You are logged in as\s+/i.test(current))) localStorage.setItem(key, defaults[key]);
+      });
     }
     syncBlockedPageIdentity();
     var savedAccent = localStorage.getItem('accentColorV2');
     if (savedAccent) setAccent(savedAccent);
-    localStorage.removeItem('siteTheme');
     var savedTheme = localStorage.getItem('loadingTheme') || 'lightspeed';
     setLoadingTheme(savedTheme);
 
@@ -9457,6 +9477,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function restoreAccountSettings(username) {
     username = cleanUsername(username);
     if (!username) return;
+    window.__uzRestoringAccountSettings = true;
     ACCOUNT_SETTING_KEYS.forEach(function (key) {
       try {
         var value = localStorage.getItem(accountSettingKey(username, key));
@@ -9464,14 +9485,18 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         else localStorage.setItem(key, value);
       } catch (e) {}
     });
+    window.__uzSettingsReady = true;
+    window.__uzRestoringAccountSettings = false;
     try {
       if (typeof window.setAccent === 'function') window.setAccent(localStorage.getItem('accentColorV2') || '#ff6600');
       if (typeof window.setBackground === 'function') window.setBackground(localStorage.getItem('bgMode') || 'starfield', true);
       if (typeof window.applyCustomCursor === 'function') window.applyCustomCursor();
-      if (typeof window.applyLightspeedText === 'function') window.applyLightspeedText();
+      if (typeof window.rehydrateSettings === 'function') window.rehydrateSettings();
+      else if (typeof window.loadLightspeedText === 'function') window.loadLightspeedText();
     } catch (e) {}
   }
   function clearActiveSettings() {
+    window.__uzSettingsReady = false;
     ACCOUNT_SETTING_KEYS.forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
     ['lightspeedSchoolName', 'lightspeedTopText', 'lightspeedBottomText', 'lightspeedSystemMsg', 'scUrl', 'scHeading', 'scIp'].forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
     try {
@@ -9510,7 +9535,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         scIp: 'hidden'
       };
       Object.keys(defaults).forEach(function (key) {
-        if (localStorage.getItem(key) === null) localStorage.setItem(key, defaults[key]);
+        var current = localStorage.getItem(key);
+        if (current === null || (key === 'lightspeedSystemMsg' && /^You are logged in as\s+/i.test(current))) localStorage.setItem(key, defaults[key]);
       });
     } catch (e) {}
   }

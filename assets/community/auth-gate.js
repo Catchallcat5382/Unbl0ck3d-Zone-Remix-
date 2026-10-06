@@ -61,6 +61,7 @@
   function restoreAccountSettings(username) {
     username = cleanUsername(username);
     if (!username) return;
+    window.__uzRestoringAccountSettings = true;
     ACCOUNT_SETTING_KEYS.forEach(function (key) {
       try {
         var value = localStorage.getItem(accountSettingKey(username, key));
@@ -68,14 +69,18 @@
         else localStorage.setItem(key, value);
       } catch (e) {}
     });
+    window.__uzSettingsReady = true;
+    window.__uzRestoringAccountSettings = false;
     try {
       if (typeof window.setAccent === 'function') window.setAccent(localStorage.getItem('accentColorV2') || '#ff6600');
       if (typeof window.setBackground === 'function') window.setBackground(localStorage.getItem('bgMode') || 'starfield', true);
       if (typeof window.applyCustomCursor === 'function') window.applyCustomCursor();
-      if (typeof window.applyLightspeedText === 'function') window.applyLightspeedText();
+      if (typeof window.rehydrateSettings === 'function') window.rehydrateSettings();
+      else if (typeof window.loadLightspeedText === 'function') window.loadLightspeedText();
     } catch (e) {}
   }
   function clearActiveSettings() {
+    window.__uzSettingsReady = false;
     ACCOUNT_SETTING_KEYS.forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
     ['lightspeedSchoolName', 'lightspeedTopText', 'lightspeedBottomText', 'lightspeedSystemMsg', 'scUrl', 'scHeading', 'scIp'].forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
     try {
@@ -114,7 +119,8 @@
         scIp: 'hidden'
       };
       Object.keys(defaults).forEach(function (key) {
-        if (localStorage.getItem(key) === null) localStorage.setItem(key, defaults[key]);
+        var current = localStorage.getItem(key);
+        if (current === null || (key === 'lightspeedSystemMsg' && /^You are logged in as\s+/i.test(current))) localStorage.setItem(key, defaults[key]);
       });
     } catch (e) {}
   }
