@@ -284,10 +284,7 @@
   async function ensureFirebaseProfile(user, username, allowCreate, cleanupPassword) {
     initClient();
     username = cleanUsername(username || usernameFromUser(user));
-    if (allowCreate == null) {
-      var createdAt = user && user.metadata && user.metadata.creationTime ? new Date(user.metadata.creationTime).getTime() : 0;
-      allowCreate = Number.isFinite(createdAt) && Date.now() - createdAt < 120000;
-    }
+    if (allowCreate == null) allowCreate = authMode === 'signup';
     var ref = client.db.collection('profiles').doc(user.uid);
     var deletedRef = client.db.collection('deletedAccounts').doc(user.uid);
     var deletedMarker = null;
