@@ -161,6 +161,31 @@ app.post('/posts', auth, async (req, res) => {
   await log(req, 'post', title);
   res.json({ ok: true });
 });
+app.patch('/posts/:id', auth, async (req, res) => {
+  let id;
+  try { id = new ObjectId(req.params.id); } catch { return res.status(400).json({ error: 'Invalid post id.' }); }
+  const row = await posts.findOne({ _id: id });
+  if (!row) return res.status(404).json({ error: 'Post not found.' });
+  const isStaff = ['owner', 'admin', 'mod'].includes(req.user.role);
+  if (!isStaff && String(row.userId) !== String(req.user._id)) return res.status(403).json({ error: 'You can only edit your own posts.' });
+  const title = String(req.body.title || '').slice(0, 120).trim();
+  const body = String(req.body.body || '').slice(0, 7000).trim();
+  if (!title || !body) return res.status(400).json({ error: 'Title and body required.' });
+  await posts.updateOne({ _id: id }, { $set: { title, body, updatedAt: new Date() } });
+  await log(req, 'post-edit', `${row.username}: ${title}`);
+  res.json({ ok: true });
+});
+app.delete('/posts/:id', auth, async (req, res) => {
+  let id;
+  try { id = new ObjectId(req.params.id); } catch { return res.status(400).json({ error: 'Invalid post id.' }); }
+  const row = await posts.findOne({ _id: id });
+  if (!row) return res.status(404).json({ error: 'Post not found.' });
+  const isStaff = ['owner', 'admin', 'mod'].includes(req.user.role);
+  if (!isStaff && String(row.userId) !== String(req.user._id)) return res.status(403).json({ error: 'You can only delete your own posts.' });
+  await posts.deleteOne({ _id: id });
+  await log(req, 'post-delete', `${row.username}: ${row.title}`);
+  res.json({ ok: true });
+});
 
 app.post('/staff/moderate', auth, requireRole('owner', 'admin', 'mod'), async (req, res) => {
   const target = cleanUsername(req.body.username);

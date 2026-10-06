@@ -67,6 +67,7 @@ body.uz-flash-good::after{background:radial-gradient(circle,rgba(84,255,157,.5),
 body.uz-flash-bad::after{background:radial-gradient(circle,rgba(255,55,55,.48),rgba(255,20,20,.2) 38%,transparent 72%)}
 @keyframes uzScreenFlash{0%{opacity:0}28%{opacity:1}100%{opacity:0}}
 .community-input-warn{border-color:#ff3b30!important;box-shadow:0 0 0 3px rgba(255,59,48,.2)!important;animation:uzShake .34s ease}
+.uz-notification-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}.uz-notification-item.is-read{opacity:.58}.uz-notification-actions{display:flex;gap:4px}.uz-notification-actions button{border:1px solid rgba(255,106,0,.55);background:transparent;color:#ffb15d;border-radius:5px;padding:3px 6px;font:700 10px Arial,sans-serif;cursor:pointer}
 
 /* Latest auth/community fixes. */
 body.uz-auth-locked #sidebar,body.uz-auth-locked #sidebar-toggle,body.uz-auth-locked #uz-notification-tray,body.uz-auth-locked #announcements-ping,html.loading-active #sidebar-toggle,html.loading-active #uz-notification-tray{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
