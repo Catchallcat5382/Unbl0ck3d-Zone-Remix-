@@ -59,7 +59,7 @@
         <div class="bottom-text">is not available because it is categorized as Security - Proxy.</div>
       </div>
       <div class="loading-system-msg">
-        You are logged in as █████ (IP Address: █████).
+        You are logged in as <span id="loading-account-name">user</span> (IP Address: █████).
       </div>
     </div>
     
@@ -82,6 +82,8 @@
       try {
         var user = localStorage.getItem('uzLoginEmail') || 'user';
         var account = user.indexOf('@') >= 0 ? user.split('@')[0] : user;
+        var accountName = document.getElementById('loading-account-name');
+        if (accountName) accountName.textContent = account;
         var msg = document.querySelector('.loading-system-msg');
         if (msg) msg.textContent = 'You are logged in as ' + account + ' (IP Address: hidden).';
       } catch (e) {}
