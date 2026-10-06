@@ -46,7 +46,10 @@ service cloud.firestore {
 
     match /deletedAccounts/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || owner());
-      allow create, update, delete: if owner();
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.username is string;
+      allow update, delete: if owner();
     }
 
     match /messages/{id} {

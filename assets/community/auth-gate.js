@@ -275,47 +275,21 @@
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
   }
-  // Keep the Firebase profile gate authoritative for accounts created before the permanent-delete fix.
-  async function ensureFirebaseProfile(user, username) {
-    initClient();
-    username = cleanUsername(username || usernameFromUser(user));
-    var ref = client.db.collection('profiles').doc(user.uid);
-    var doc = await ref.get();
-    if (!doc.exists) {
-      await ref.set({ id: user.uid, username: username, display_name: username, role: 'member', warnings: 0, email: user.email || '', created_at: new Date().toISOString(), last_seen: new Date().toISOString() });
-      doc = await ref.get();
-    } else {
-      await ref.set({ last_seen: new Date().toISOString(), email: user.email || '' }, { merge: true });
-      doc = await ref.get();
-    }
-    var data = doc.data() || {};
-    data.id = user.uid;
-    if (data.role === 'deleted') {
-      try { await ref.delete(); } catch (e) { debugLog('deleted-profile-cleanup-failed', e.message || 'unknown'); }
-      try { removeRecentAccount(username); await client.auth.signOut(); } catch (e2) {}
-      renderGate('This account was deleted. Create a new account to continue.');
-      return null;
-    }
-    if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) {
-      try { localStorage.setItem('uzBannedAccount:' + username, '1'); } catch (e3) {}
-      renderBannedGate(username);
-      return null;
-    }
-    return data;
-  }
   async function finishLogin(username, session, profile) {
     setBusy('');
     username = cleanUsername(username);
     debugLog('login-finish', username);
-    // Set the active account before restoring settings so the storage shim scopes every read/write correctly.
+    // Save the old account while its storage scope is still active, then switch and restore the new scope.
+    var previousUsername = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
+    if (previousUsername && previousUsername !== username) saveAccountSettings(previousUsername);
     localStorage.setItem('uzLoginEmail', username);
-    prepareAccountSettings(username);
+    setLightspeed(username);
+    restoreAccountSettings(username);
     window.UZCurrentProfile = profile || window.UZCurrentProfile || null;
     screenFlash('good');
     ownerAudio('good');
     sessionStorage.setItem('uzSessionOk', 'true');
     saveRecentAccount(username);
-    setLightspeed(username);
     clearGate();
     renderProfile(session || mongoProfileToSession(profile), profile || window.UZCurrentProfile);
     var refreshKey = 'uzAccountRefresh:' + username;
@@ -393,29 +367,14 @@
     if (!ready || isTempOwner()) return;
     var typed = prompt('Type your exact username to delete this account:');
     if (typed !== username) { note('Account deletion cancelled. Username did not match.'); return; }
-    var again = confirm('Delete account "' + username + '"? This cannot be undone.');
-    if (!again) return;
-    if (firebaseMode) { var profileRef; var profileSnapshot; var profileRemoved = false; try { initClient(); var user = client.auth.currentUser; if (!user) { note('This account is no longer signed in. Reload the page and sign in again.'); return; } var uid = user.uid; profileRef = client.db.collection('profiles').doc(uid); try { profileSnapshot = await profileRef.get(); await profileRef.delete(); profileRemoved = true; } catch (profileError) { debugLog('firebase-profile-delete-failed', profileError.message || 'unknown'); } var password; try { await user.delete(); } catch (firstError) { if (firstError.code !== 'auth/requires-recent-login') throw firstError; password = prompt('Firebase needs a recent sign-in. Enter your password once to confirm deletion:'); if (!password) { if (profileRemoved && profileSnapshot && profileSnapshot.exists) await profileRef.set(profileSnapshot.data()); note('Account deletion cancelled.'); return; } var credential = client.auth.EmailAuthProvider.credential(user.email, password); await user.reauthenticateWithCredential(credential); await user.delete(); } localStorage.removeItem(profileKey('uzCommunityProfileName', username)); localStorage.removeItem(profileKey('uzCommunityAvatar', username)); ACCOUNT_SETTING_KEYS.forEach(function (key) { localStorage.removeItem(accountSettingKey(username, key)); }); removeRecentAccount(username); localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(username)); localStorage.removeItem('uzLoginEmail'); sessionStorage.removeItem('uzSessionOk'); try { await client.auth.signOut(); } catch (e) {} window.UZCurrentProfile = null; clearActiveSettings(); renderProfile(null, null); authMode = 'signin'; renderGate('Account deleted permanently.'); } catch(e) { if (profileRemoved && profileSnapshot && profileSnapshot.exists && profileRef) { try { await profileRef.set(profileSnapshot.data()); } catch (restoreError) { debugLog('firebase-profile-restore-failed', restoreError.message || 'unknown'); } } note(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Incorrect password. The account was not deleted.' : (e.message || 'Account deletion failed.')); } return; }
-    if (mongoMode) { try { await mongoFetch('/account', { method: 'DELETE', timeout: 16000 }); } catch(e) { note(e.message || 'Account deletion failed.'); return; } localStorage.removeItem(profileKey('uzCommunityProfileName', username)); localStorage.removeItem(profileKey('uzCommunityAvatar', username)); ACCOUNT_SETTING_KEYS.forEach(function (key) { localStorage.removeItem(accountSettingKey(username, key)); }); removeRecentAccount(username); localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); window.UZCurrentProfile = null; clearActiveSettings(); renderProfile(null, null); renderGate('Account deleted.'); return; }
-    try { await client.from('profiles').delete().eq('id', (await client.auth.getUser()).data.user.id); } catch(e) {}
-    var res = await client.rpc('delete_current_user');
-    if (res.error) { note('Account deletion needs the Supabase delete_current_user function from the updated schema.'); return; }
-    localStorage.removeItem(profileKey('uzCommunityProfileName', username));
-    localStorage.removeItem(profileKey('uzCommunityAvatar', username)); removeRecentAccount(username);
-    await client.auth.signOut();
-    localStorage.removeItem('uzLoginEmail');
-    location.reload();
-  }
-  // Delete the Firebase Auth user and its profile document as one verified operation.
-  async function deleteAccount(username) {
-    if (!ready || isTempOwner()) return;
-    var typed = prompt('Type your exact username to delete this account:');
-    if (typed !== username) { note('Account deletion cancelled. Username did not match.'); return; }
     if (!confirm('Delete account "' + username + '"? This cannot be undone.')) return;
     if (firebaseMode) {
       var ref = null;
       var snapshot = null;
       var profileDeleted = false;
+      var deletedRef = null;
+      var deletionMarkerCreated = false;
+      var authDeleted = false;
       authTransition = true;
       try {
         initClient();
@@ -423,6 +382,9 @@
         if (!user) throw new Error('This account is no longer signed in.');
         ref = client.db.collection('profiles').doc(user.uid);
         snapshot = await ref.get();
+        deletedRef = client.db.collection('deletedAccounts').doc(user.uid);
+        await deletedRef.set({ username: username, deleted_at: new Date().toISOString() });
+        deletionMarkerCreated = true;
         await ref.delete();
         profileDeleted = true;
         var afterDelete = await ref.get();
@@ -437,6 +399,7 @@
           await user.reauthenticateWithCredential(credential);
           await user.delete();
         }
+        authDeleted = true;
         localStorage.removeItem(profileKey('uzCommunityProfileName', username));
         localStorage.removeItem(profileKey('uzCommunityAvatar', username));
         ACCOUNT_SETTING_KEYS.forEach(function (key) { localStorage.removeItem(accountSettingKey(username, key)); });
@@ -454,6 +417,9 @@
         authMode = 'signin';
         renderGate('Account deleted permanently.');
       } catch (e) {
+        if (!authDeleted && deletionMarkerCreated && deletedRef) {
+          try { await deletedRef.delete(); } catch (markerError) { debugLog('deleted-marker-rollback-failed', markerError.message || 'unknown'); }
+        }
         if (profileDeleted && snapshot && snapshot.exists && ref) {
           try { await ref.set(snapshot.data()); } catch (restoreError) { debugLog('profile-restore-failed', restoreError.message || 'unknown'); }
         }
@@ -589,7 +555,7 @@
     setTimeout(tick, 160);
   }
   async function showOwnerPrompt() { if (!document.body.classList.contains('uz-auth-locked')) return; initClient(); if (mongoMode && mongoToken()) { localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); renderGate('Signed out. Enter the owner code while logged out.'); return; } if (firebaseMode && client && client.auth.currentUser) { await client.auth.signOut(); sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); authMode = 'signin'; renderGate('Signed out. Enter the owner code while logged out.'); return; } if (client && !mongoMode && !firebaseMode) { try { var s = await client.auth.getSession(); if (s.data && s.data.session) { await client.auth.signOut(); sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); renderGate('Signed out. Enter the owner code while logged out.'); return; } } catch(e) {} } var existing = document.getElementById('uz-owner-code-modal'); if (existing) existing.remove(); ownerRift(1, true); ownerGlassFx(false); var modal = document.createElement('div'); modal.id = 'uz-owner-code-modal'; modal.className = 'uz-owner-code-modal from-rift'; modal.innerHTML = '<div class="uz-owner-code-card"><h2>Owner unlock</h2><p>Enter your 32-character temporary owner code. This unlock lasts until refresh or tab close.</p><input id="uz-owner-code-input" type="password" maxlength="64" autocomplete="off" placeholder="32-character raw code"><div class="community-row"><button class="community-btn" id="uz-owner-code-submit">Unlock</button><button class="community-btn secondary" id="uz-owner-code-cancel">Cancel</button></div><p id="uz-owner-code-error" class="uz-auth-error"></p></div>'; document.body.appendChild(modal); var input = document.getElementById('uz-owner-code-input'); var err = document.getElementById('uz-owner-code-error'); async function submit() { var code = input.value.trim(); if (code.length === 64 && /^[a-f0-9]{64}$/i.test(code)) { err.textContent = 'Enter the raw unlock code, not the stored hash.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); modal.classList.add('uz-auth-shake'); return; } if (code.length !== 32) { err.textContent = 'Enter the 32-character raw unlock code.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); modal.classList.add('uz-auth-shake'); return; } if (!bypassCodeReady()) { err.textContent = 'Owner unlock is not configured yet.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); return; } var codeHash = await sha256Hex(code); if (codeHash !== cfg.ownerBypassHash) { err.textContent = 'Wrong code.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); input.value = ''; input.focus(); modal.classList.remove('uz-auth-shake'); void modal.offsetWidth; modal.classList.add('uz-auth-shake'); return; } sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); modal.classList.add('accepted'); modal.remove(); fakeOwnerLogin(function(){ window.UZCurrentProfile = { username: 'temporary-owner', role: 'owner' }; tempOwnerActive = true; window.UZTempOwnerActive = true; setLightspeed('temporary-owner'); screenFlash('good'); sparkle(); setTimeout(function(){ closeOwnerRift(); check(); }, 820); }); } document.getElementById('uz-owner-code-submit').onclick = submit; document.getElementById('uz-owner-code-cancel').onclick = function () { modal.remove(); closeOwnerRift(); }; input.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); if (e.key === 'Escape') { modal.remove(); closeOwnerRift(); } }); setTimeout(function(){ input.focus(); }, 180); }
-  async function check() { if (authTransition) return; if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } initClient(); if (!cfg.requireLogin && !firebaseMode && (!mongoMode || !mongoToken())) { clearGate(); renderProfile(null, null); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } if (!ready) { renderProfile(null, null); renderGate(''); return; } if (firebaseMode) { var fbUser = client.auth.currentUser; var locked = siteBannedName(); var storedName = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); var fbName = cleanUsername(usernameFromUser(fbUser)); if (fbUser && storedName && fbName && storedName !== fbName) { authTransition = true; try { await client.auth.signOut(); } catch (e) {} authTransition = false; fbUser = null; localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); } if (!fbUser) { renderProfile(null, null); if (locked) renderBannedGate(locked); else renderGate(''); return; } var fbProfile = await ensureFirebaseProfile(fbUser, fbName); if (!fbProfile) { setBusy(''); return; } try { localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(fbProfile.username)); } catch(e) {} prepareAccountSettings(fbProfile.username); setLightspeed(fbProfile.username); clearGate(); renderProfile(firebaseProfileToSession(fbUser, fbProfile), fbProfile); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } var locked = siteBannedName(); if (locked) { renderProfile(null, null); renderBannedGate(locked); return; } if (mongoMode) { if (!mongoToken()) { renderProfile(null, null); renderGate(''); return; } try { var mine = await mongoFetch('/me'); window.UZCurrentProfile = mine.user; prepareAccountSettings(mine.user.username); setLightspeed(mine.user.username); clearGate(); renderProfile(mongoProfileToSession(mine.user), mine.user); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); } catch(e) { var oldName = localStorage.getItem('uzLoginEmail') || 'this account'; localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); if (e.data && e.data.banned) renderBannedGate(oldName); else if (cfg.requireLogin) renderGate(e.message || 'Sign in again.'); else { clearGate(); renderProfile(null, null); } } return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } if (localStorage.getItem('uzRememberMe') !== 'true' && sessionStorage.getItem('uzSessionOk') !== 'true') { await client.auth.signOut(); renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); if (profile && profile.banned_until && new Date(profile.banned_until) > new Date()) { await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); renderBannedGate(username); return; } prepareAccountSettings(username); setLightspeed(username); clearGate(); renderProfile(session, profile); }
+  async function check() { if (authTransition) return; if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } initClient(); if (!cfg.requireLogin && !firebaseMode && (!mongoMode || !mongoToken())) { clearGate(); renderProfile(null, null); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } if (!ready) { renderProfile(null, null); renderGate(''); return; } if (firebaseMode) { var fbUser = client.auth.currentUser; var locked = siteBannedName(); var storedName = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); var fbName = cleanUsername(usernameFromUser(fbUser)); if (fbUser && storedName && fbName && storedName !== fbName) { authTransition = true; try { await client.auth.signOut(); } catch (e) {} authTransition = false; fbUser = null; localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); } if (!fbUser) { renderProfile(null, null); if (locked) renderBannedGate(locked); else renderGate(''); return; } var fbProfile = await ensureFirebaseProfile(fbUser, fbName); if (!fbProfile) { setBusy(''); return; } try { localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(fbProfile.username)); } catch(e) {} setLightspeed(fbProfile.username); prepareAccountSettings(fbProfile.username); clearGate(); renderProfile(firebaseProfileToSession(fbUser, fbProfile), fbProfile); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } var locked = siteBannedName(); if (locked) { renderProfile(null, null); renderBannedGate(locked); return; } if (mongoMode) { if (!mongoToken()) { renderProfile(null, null); renderGate(''); return; } try { var mine = await mongoFetch('/me'); window.UZCurrentProfile = mine.user; setLightspeed(mine.user.username); prepareAccountSettings(mine.user.username); clearGate(); renderProfile(mongoProfileToSession(mine.user), mine.user); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); } catch(e) { var oldName = localStorage.getItem('uzLoginEmail') || 'this account'; localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); if (e.data && e.data.banned) renderBannedGate(oldName); else if (cfg.requireLogin) renderGate(e.message || 'Sign in again.'); else { clearGate(); renderProfile(null, null); } } return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } if (localStorage.getItem('uzRememberMe') !== 'true' && sessionStorage.getItem('uzSessionOk') !== 'true') { await client.auth.signOut(); renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); if (profile && profile.banned_until && new Date(profile.banned_until) > new Date()) { await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); renderBannedGate(username); return; } setLightspeed(username); prepareAccountSettings(username); clearGate(); renderProfile(session, profile); }
   document.addEventListener('keydown', function (e) { if (!document.body.classList.contains('uz-auth-locked')) { konamiIndex = 0; return; } var key = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (key === konami[konamiIndex]) { konamiIndex++; ownerRift(konamiIndex / konami.length, false); } else { konamiIndex = key === konami[0] ? 1 : 0; if (konamiIndex) ownerRift(konamiIndex / konami.length, false); } if (konamiIndex === konami.length) { konamiIndex = 0; showOwnerPrompt(); } }, true);
   window.UZAuthGate = { refresh: check, showBanned: renderBannedGate, showLogin: function(msg){ tempOwnerActive=false; window.UZTempOwnerActive=false; renderGate(msg || ''); } };
   window.UZ_ACCOUNT_DEBUG.push('auth-gate-ready');
