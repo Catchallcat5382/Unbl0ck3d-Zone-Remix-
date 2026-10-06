@@ -150,6 +150,11 @@ service cloud.firestore {
       allow delete: if owner() || request.auth.uid == uid;
     }
 
+    match /deletedAccounts/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || owner());
+      allow create, update, delete: if owner();
+    }
+
     match /messages/{id} {
       allow read: if signedIn();
 

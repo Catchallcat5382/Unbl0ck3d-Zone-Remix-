@@ -251,6 +251,14 @@
   async function ensureFirebaseProfile(user, username) {
     initClient();
     username = cleanUsername(username || usernameFromUser(user));
+    try {
+      var deletedMarker = await client.db.collection('deletedAccounts').doc(user.uid).get();
+      if (deletedMarker.exists) {
+        try { removeRecentAccount(username); await client.auth.signOut(); } catch (e0) {}
+        renderGate('This account was deleted. Create a new account to continue.');
+        return null;
+      }
+    } catch (eMarker) { debugLog('deleted-marker-check-skipped', eMarker.message || 'unknown'); }
     var ref = client.db.collection('profiles').doc(user.uid);
     var doc = await ref.get();
     if (!doc.exists) {

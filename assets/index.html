@@ -9056,9 +9056,16 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         var target = await firebaseFindUser(username);
         if (!target) { status('Target not found.'); return false; }
         if (target.data.role === 'owner') { status('Owners cannot delete other owners.'); return false; }
-        await target.ref.delete();
-        var check = await target.ref.get();
-        if (check.exists) throw new Error('Firebase did not confirm profile deletion.');
+        var deletedRef = state.client.db.collection('deletedAccounts').doc(target.id);
+        await deletedRef.set({ username: target.data.username || username, deleted_at: new Date().toISOString(), deleted_by: state.user.id });
+        try {
+          await target.ref.delete();
+          var check = await target.ref.get();
+          if (check.exists) throw new Error('Firebase did not confirm profile deletion.');
+        } catch (deleteError) {
+          try { await deletedRef.delete(); } catch (rollbackError) {}
+          throw deleteError;
+        }
         notifySaved('Account profile deleted');
         await loadMembers(state.tab === 'members');
         await loadItems();
@@ -9349,6 +9356,14 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   async function ensureFirebaseProfile(user, username) {
     initClient();
     username = cleanUsername(username || usernameFromUser(user));
+    try {
+      var deletedMarker = await client.db.collection('deletedAccounts').doc(user.uid).get();
+      if (deletedMarker.exists) {
+        try { removeRecentAccount(username); await client.auth.signOut(); } catch (e0) {}
+        renderGate('This account was deleted. Create a new account to continue.');
+        return null;
+      }
+    } catch (eMarker) { debugLog('deleted-marker-check-skipped', eMarker.message || 'unknown'); }
     var ref = client.db.collection('profiles').doc(user.uid);
     var doc = await ref.get();
     if (!doc.exists) {

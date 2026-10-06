@@ -479,9 +479,16 @@
         var target = await firebaseFindUser(username);
         if (!target) { status('Target not found.'); return false; }
         if (target.data.role === 'owner') { status('Owners cannot delete other owners.'); return false; }
-        await target.ref.delete();
-        var check = await target.ref.get();
-        if (check.exists) throw new Error('Firebase did not confirm profile deletion.');
+        var deletedRef = state.client.db.collection('deletedAccounts').doc(target.id);
+        await deletedRef.set({ username: target.data.username || username, deleted_at: new Date().toISOString(), deleted_by: state.user.id });
+        try {
+          await target.ref.delete();
+          var check = await target.ref.get();
+          if (check.exists) throw new Error('Firebase did not confirm profile deletion.');
+        } catch (deleteError) {
+          try { await deletedRef.delete(); } catch (rollbackError) {}
+          throw deleteError;
+        }
         notifySaved('Account profile deleted');
         await loadMembers(state.tab === 'members');
         await loadItems();
