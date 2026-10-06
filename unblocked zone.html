@@ -32,13 +32,13 @@
       var loader = document.getElementById('loader');
       try {
         var cacheKey = '?v=' + buildVersion;
-        var res = await fetch(pageUrl + cacheKey, { cache: 'force-cache' });
-        for (var i = 0; !res.ok && i < fallbacks.length; i++) res = await fetch(fallbacks[i] + cacheKey, { cache: 'force-cache' });
+        var res = await fetch(pageUrl + cacheKey, { cache: 'no-store' });
+        for (var i = 0; !res.ok && i < fallbacks.length; i++) res = await fetch(fallbacks[i] + cacheKey, { cache: 'no-store' });
         if (!res.ok) throw new Error('Live build returned HTTP ' + res.status);
         var html = await res.text();
         html = html.replace(/<head([^>]*)>/i, '<head$1><script>(function(){var u=localStorage.getItem("uzMongoApiUrl")||"https://unblocked-zone.onrender.com";u=String(u).replace(/\\/+$/,"").replace("onrendered.com","onrender.com").replace("https://zone.onrender.com","https://unblocked-zone.onrender.com");if(u.indexOf("https://bullbestyoutuber.s3.us-east-1.amazonaws.com/index.html")===0)u="https://unblocked-zone.onrender.com";if(localStorage.getItem("uzMongoApiUrl")&&localStorage.getItem("uzMongoApiUrl")!==u)localStorage.setItem("uzMongoApiUrl",u);window.UZ_MONGO_API_URL=u;}());<\/script>');
         try {
-            var cssRes = await fetch(communityCssUrl + cacheKey, { cache: 'force-cache' });
+            var cssRes = await fetch(communityCssUrl + cacheKey, { cache: 'no-store' });
           if (cssRes.ok) {
             var css = await cssRes.text();
             html = html.replace(/<link\s+rel=["']stylesheet["']\s+href=["']community\/community\.css["']\s*>/i, '');
@@ -48,7 +48,7 @@
         for (var j = 0; j < scriptFiles.length; j++) {
           try {
             var scriptUrl = rawBaseUrl + scriptFiles[j];
-            var scriptRes = await fetch(scriptUrl + cacheKey, { cache: 'force-cache' });
+            var scriptRes = await fetch(scriptUrl + cacheKey, { cache: 'no-store' });
             if (!scriptRes.ok) throw new Error(scriptFiles[j] + ' returned HTTP ' + scriptRes.status);
             var js = await scriptRes.text();
             var srcPattern = new RegExp('<script\\s+src=["\\\']' + scriptFiles[j].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('/', '\\/') + '["\\\']\\s*><\\/script>', 'i');
