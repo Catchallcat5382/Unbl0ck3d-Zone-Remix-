@@ -1,10 +1,11 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $htmlPath = Join-Path $root 'assets\index.html'
-$config = Get-Content (Join-Path $root 'assets\community\config.js') -Raw
-$community = Get-Content (Join-Path $root 'assets\community\community.js') -Raw
-$auth = Get-Content (Join-Path $root 'assets\community\auth-gate.js') -Raw
-$html = Get-Content $htmlPath -Raw
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$config = [System.IO.File]::ReadAllText((Join-Path $root 'assets\community\config.js'), $utf8)
+$community = [System.IO.File]::ReadAllText((Join-Path $root 'assets\community\community.js'), $utf8)
+$auth = [System.IO.File]::ReadAllText((Join-Path $root 'assets\community\auth-gate.js'), $utf8)
+$html = [System.IO.File]::ReadAllText($htmlPath, $utf8)
 $bundle = @"
   <script>window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || []; window.UZ_ACCOUNT_DEBUG.push('inline-account-bundle-start');</script>
   <script data-inline="community/config.js">
@@ -24,5 +25,5 @@ $end = if ($authStart -ge 0) { $html.IndexOf('</script>', $authStart, [System.St
 if ($start -lt 0 -or $authStart -lt 0 -or $end -lt 0) { throw 'Inline bundle markers not found in assets/index.html' }
 $end += '</script>'.Length
 $newHtml = $html.Substring(0, $start) + $bundle.TrimEnd("`r", "`n") + $html.Substring($end)
-[System.IO.File]::WriteAllText($htmlPath, $newHtml.TrimEnd("`r", "`n") + "`n")
+[System.IO.File]::WriteAllText($htmlPath, $newHtml.TrimEnd("`r", "`n") + "`n", $utf8)
 Write-Host "Inline bundle rebuilt: $htmlPath"
