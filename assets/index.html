@@ -75,7 +75,12 @@
           }
           return result;
         };
-        Storage.prototype.removeItem = function (k) { return rawRemove.call(this, this === localStorage ? scoped(k) : k); };
+        Storage.prototype.removeItem = function (k) {
+          var key = this === localStorage ? scoped(k) : k;
+          var result = rawRemove.call(this, key);
+          if (this === localStorage && key !== k && window.__uzSettingsReady && !window.__uzRestoringAccountSettings && window.UZPersistAccountSetting) window.UZPersistAccountSetting(String(k), null);
+          return result;
+        };
         Storage.prototype.key = function (i) { return rawKey.call(this, i); };
       } catch (e) {}
     })();
@@ -8063,10 +8068,15 @@ let DATA = {
       } catch (e) {}
 
       try {
-        if (has('cloakPreset')) { try { applyCloakPreset(get('cloakPreset')); } catch (e2) {} }
-        else if (document.getElementById('cloak-title-input')) {
-          if (typeof _restoreCloak === 'function') _restoreCloak();
-        }
+        var preset = cloakPresets[get('cloakPreset')];
+        var cloakTitle = get('cloakCustomTitle') || get('cloakTitle') || (preset && preset.title);
+        var cloakIcon = get('cloakCustomFavicon') || get('cloakFavicon') || (preset && preset.icon);
+        if (cloakTitle) document.title = cloakTitle;
+        if (cloakIcon) setFavicon(cloakIcon);
+        setVal('cloak-title-input', cloakTitle);
+        setVal('cloak-favicon-input', cloakIcon);
+        setVal('cloak-preset', get('cloakPreset'));
+        updateCloakPreview(cloakIcon || '', cloakTitle || '');
       } catch (e) {}
     }
 
@@ -9569,7 +9579,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       clearTimeout(cloudSettingsWrite.timer);
       cloudSettingsWrite = { timer: null, uid: user.uid, username: username, values: {} };
     }
-    cloudSettingsWrite.values[key] = String(value);
+    cloudSettingsWrite.values[key] = value === null ? null : String(value);
     clearTimeout(cloudSettingsWrite.timer);
     var flushDelay = /^(accentColorV2|bgMode|siteTheme)$/.test(key) ? 0 : 250;
     cloudSettingsWrite.timer = setTimeout(function () {
@@ -9592,7 +9602,10 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (ACCOUNT_SETTING_KEYS.indexOf(key) === -1) return;
     var username = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
     if (!username) return;
-    try { localStorage.setItem(accountSettingKey(username, key), String(value)); } catch (e) {}
+    try {
+      if (value === null) localStorage.removeItem(accountSettingKey(username, key));
+      else localStorage.setItem(accountSettingKey(username, key), String(value));
+    } catch (e) {}
     queueFirebaseSetting(username, key, value);
   };
   function saveAccountSettings(username) {
@@ -9618,7 +9631,10 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (cloudSettings && typeof cloudSettings === 'object') {
       ACCOUNT_SETTING_KEYS.forEach(function (key) {
         try {
-          if (cloudSettings[key] != null && !(savedTheme && savedTheme[key] != null)) localStorage.setItem(accountSettingKey(username, key), String(cloudSettings[key]));
+          if (Object.prototype.hasOwnProperty.call(cloudSettings, key) && cloudSettings[key] === null) {
+            localStorage.removeItem(accountSettingKey(username, key));
+            localStorage.removeItem(key);
+          } else if (cloudSettings[key] != null && !(savedTheme && savedTheme[key] != null)) localStorage.setItem(accountSettingKey(username, key), String(cloudSettings[key]));
         } catch (e) {}
       });
     }

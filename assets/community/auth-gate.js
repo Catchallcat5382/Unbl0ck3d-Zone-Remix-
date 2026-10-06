@@ -96,7 +96,7 @@
       clearTimeout(cloudSettingsWrite.timer);
       cloudSettingsWrite = { timer: null, uid: user.uid, username: username, values: {} };
     }
-    cloudSettingsWrite.values[key] = String(value);
+    cloudSettingsWrite.values[key] = value === null ? null : String(value);
     clearTimeout(cloudSettingsWrite.timer);
     var flushDelay = /^(accentColorV2|bgMode|siteTheme)$/.test(key) ? 0 : 250;
     cloudSettingsWrite.timer = setTimeout(function () {
@@ -119,7 +119,10 @@
     if (ACCOUNT_SETTING_KEYS.indexOf(key) === -1) return;
     var username = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
     if (!username) return;
-    try { localStorage.setItem(accountSettingKey(username, key), String(value)); } catch (e) {}
+    try {
+      if (value === null) localStorage.removeItem(accountSettingKey(username, key));
+      else localStorage.setItem(accountSettingKey(username, key), String(value));
+    } catch (e) {}
     queueFirebaseSetting(username, key, value);
   };
   function saveAccountSettings(username) {
@@ -145,7 +148,10 @@
     if (cloudSettings && typeof cloudSettings === 'object') {
       ACCOUNT_SETTING_KEYS.forEach(function (key) {
         try {
-          if (cloudSettings[key] != null && !(savedTheme && savedTheme[key] != null)) localStorage.setItem(accountSettingKey(username, key), String(cloudSettings[key]));
+          if (Object.prototype.hasOwnProperty.call(cloudSettings, key) && cloudSettings[key] === null) {
+            localStorage.removeItem(accountSettingKey(username, key));
+            localStorage.removeItem(key);
+          } else if (cloudSettings[key] != null && !(savedTheme && savedTheme[key] != null)) localStorage.setItem(accountSettingKey(username, key), String(cloudSettings[key]));
         } catch (e) {}
       });
     }
