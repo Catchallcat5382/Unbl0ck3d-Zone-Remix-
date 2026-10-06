@@ -9497,7 +9497,23 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var persistence = rememberWanted() ? window.firebase.auth.Auth.Persistence.LOCAL : window.firebase.auth.Auth.Persistence.SESSION;
     await client.auth.setPersistence(persistence);
   }
-  function setLightspeed(name) { try { localStorage.setItem('uzLoginEmail', name || ''); localStorage.setItem('lightspeedSchoolName', 'Unblocked Zone'); localStorage.setItem('lightspeedTopText', 'Oops,'); localStorage.setItem('lightspeedBottomText', 'is not available because it is categorized as Security - Proxy.'); localStorage.setItem('lightspeedSystemMsg', 'You are logged in as ' + (name || 'user') + ' (IP Address: hidden).'); localStorage.setItem('scUrl', 'Unblocked Zone'); localStorage.setItem('scHeading', 'Unblocked Zone'); localStorage.setItem('scIp', 'hidden'); } catch (e) {} }
+  function setLightspeed(name) {
+    try {
+      localStorage.setItem('uzLoginEmail', name || '');
+      var defaults = {
+        lightspeedSchoolName: 'Unblocked Zone',
+        lightspeedTopText: 'Oops,',
+        lightspeedBottomText: 'is not available because it is categorized as Security - Proxy.',
+        lightspeedSystemMsg: 'You are logged in as ' + (name || 'user') + ' (IP Address: hidden).',
+        scUrl: 'Unblocked Zone',
+        scHeading: 'Unblocked Zone',
+        scIp: 'hidden'
+      };
+      Object.keys(defaults).forEach(function (key) {
+        if (localStorage.getItem(key) === null) localStorage.setItem(key, defaults[key]);
+      });
+    } catch (e) {}
+  }
   function isTempOwner() { return tempOwnerActive === true || window.UZTempOwnerActive === true; }
   function bypassCodeReady() { return typeof cfg.ownerBypassHash === 'string' && /^[a-f0-9]{64}$/i.test(cfg.ownerBypassHash); }
   async function sha256Hex(value) { var data = new TextEncoder().encode(value); var digest = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(digest)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join(''); }
