@@ -62,6 +62,12 @@
     username = cleanUsername(username);
     if (!username) return;
     window.__uzRestoringAccountSettings = true;
+    try {
+      var savedTheme = typeof window.UZReadThemeSettings === 'function' ? window.UZReadThemeSettings(username) : null;
+      ['accentColorV2', 'bgMode', 'siteTheme'].forEach(function (key) {
+        if (savedTheme && savedTheme[key] != null) localStorage.setItem(accountSettingKey(username, key), String(savedTheme[key]));
+      });
+    } catch (e) {}
     ACCOUNT_SETTING_KEYS.forEach(function (key) {
       try {
         var value = localStorage.getItem(accountSettingKey(username, key));

@@ -26,6 +26,39 @@
           var u = user();
           return u ? 'uzacct:' + u + ':' + k : k;
         }
+        function themeSnapshotKey(username) { return 'uzacct:theme:' + String(username || '').toLowerCase().replace(/[^a-z0-9_.-]/g, ''); }
+        function readThemeSnapshot(username) {
+          try {
+            var value = rawGet.call(localStorage, themeSnapshotKey(username));
+            var parsed = value ? JSON.parse(value) : {};
+            return parsed && typeof parsed === 'object' ? parsed : {};
+          } catch (e) { return {}; }
+        }
+        function writeThemeSnapshot(username, value) {
+          try { rawSet.call(localStorage, themeSnapshotKey(username), JSON.stringify(value || {})); } catch (e) {}
+        }
+        window.UZReadThemeSettings = function (username) { return readThemeSnapshot(username || user()); };
+        window.UZSaveThemeSetting = function (key, value) {
+          var username = user();
+          if (!username || !/^(accentColorV2|bgMode|siteTheme)$/.test(String(key || ''))) return;
+          var snapshot = readThemeSnapshot(username);
+          if (!window.__uzSettingsReady && !window.__uzRestoringAccountSettings && snapshot[String(key)] != null) return;
+          snapshot[String(key)] = String(value);
+          writeThemeSnapshot(username, snapshot);
+        };
+        // Migrate the currently active account's old scoped values before any
+        // startup code has a chance to apply a default over them.
+        (function () {
+          var username = user();
+          if (!username) return;
+          var snapshot = readThemeSnapshot(username);
+          var changed = false;
+          ['accentColorV2', 'bgMode', 'siteTheme'].forEach(function (key) {
+            var value = rawGet.call(localStorage, 'uzacct:' + username + ':' + key);
+            if (value !== null && snapshot[key] == null) { snapshot[key] = value; changed = true; }
+          });
+          if (changed) writeThemeSnapshot(username, snapshot);
+        })();
         function durableSettingExists(k) {
           var u = user();
           return !!(u && k && rawGet.call(localStorage, 'uzacct:settings:' + u + ':' + String(k)) !== null);
@@ -4475,7 +4508,10 @@
     }
 
     function setBackground(mode, silent) {
-      if (mode !== 'perf-static') localStorage.setItem('bgMode', mode);
+      if (mode !== 'perf-static') {
+        localStorage.setItem('bgMode', mode);
+        if (typeof window.UZSaveThemeSetting === 'function') window.UZSaveThemeSetting('bgMode', mode);
+      }
       const bgCanvas = document.getElementById('bg-canvas');
       const sfBg = document.getElementById('starfield-bg');
       const tCanvas = document.getElementById('topography-canvas');
@@ -6192,6 +6228,7 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
         el.style.background = soft;
       });
       localStorage.setItem('accentColorV2', color);
+      if (typeof window.UZSaveThemeSetting === 'function') window.UZSaveThemeSetting('accentColorV2', color);
       localStorage.removeItem('accentColor');
       if (noiseInitialized) { stopNoise(); startNoise(); }
     }
@@ -6202,10 +6239,12 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
         var saved = localStorage.getItem('accentColorV2') || '#ff6600';
         if (typeof setAccent === 'function') setAccent(saved);
         localStorage.setItem('siteTheme', 'midnight');
+        if (typeof window.UZSaveThemeSetting === 'function') window.UZSaveThemeSetting('siteTheme', 'midnight');
       } else {
         var saved2 = localStorage.getItem('accentColorV2') || '#ff6600';
         if (typeof setAccent === 'function') setAccent(saved2);
         localStorage.setItem('siteTheme', 'default');
+        if (typeof window.UZSaveThemeSetting === 'function') window.UZSaveThemeSetting('siteTheme', 'default');
       }
       var sel = document.getElementById('theme-select');
       if (sel) sel.value = theme;
@@ -9496,6 +9535,12 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     username = cleanUsername(username);
     if (!username) return;
     window.__uzRestoringAccountSettings = true;
+    try {
+      var savedTheme = typeof window.UZReadThemeSettings === 'function' ? window.UZReadThemeSettings(username) : null;
+      ['accentColorV2', 'bgMode', 'siteTheme'].forEach(function (key) {
+        if (savedTheme && savedTheme[key] != null) localStorage.setItem(accountSettingKey(username, key), String(savedTheme[key]));
+      });
+    } catch (e) {}
     ACCOUNT_SETTING_KEYS.forEach(function (key) {
       try {
         var value = localStorage.getItem(accountSettingKey(username, key));
