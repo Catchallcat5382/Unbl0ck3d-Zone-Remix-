@@ -6177,18 +6177,19 @@ var glow = 'rgba(' + r + ',' + g + ',' + b + ',0.5)';
       if (sel) sel.value = theme;
     }
     var BLOCK_FRAMES = {
-      lightspeed: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/lightspeed.html',    //gay67
-      goguardian: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/goguardian.html',
-      securly: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/securly.html',
-      classlink: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/classlink.html',
-      lightspeedclassroom: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/lightspeedteach.html'
+      lightspeed: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/lightspeed.html',    //gay67
+      goguardian: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/goguardian.html',
+      securly: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/securly.html',
+      classlink: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/classlink.html',
+      lightspeedclassroom: 'https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/lightspeedteach.html'
     };
     function loadBlockFromCdn(theme, slot) {
       var url = BLOCK_FRAMES[theme];
       if (!url || !slot) return;
       if (slot.getAttribute('data-src') === url) return;
       slot.setAttribute('data-src', url);
-      fetch(url).then(function (r) { return r.text(); }).then(function (html) {
+      var requestUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();
+      fetch(requestUrl).then(function (r) { return r.text(); }).then(function (html) {
         var s = document.getElementById('cdn-block');
         if (!s) return;
         var d = new DOMParser().parseFromString(html, 'text/html');
