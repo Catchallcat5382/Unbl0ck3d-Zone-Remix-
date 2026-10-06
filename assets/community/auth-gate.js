@@ -32,7 +32,9 @@
     'sidebarPosition', 'uzSidebarHidden', 'activeCursor', 'customCursor', 'musicOnStartup', 'startupLoadingScreen', 'startupBlockScreen',
     'g4mesVolume', 'g4mesTabMode', 'favoriteg4mes', 'crosshairEnabled', 'crosshairStyle', 'crosshairSize', 'crosshairColor',
     'crosshairCustomRaw', 'panicEnabled', 'panicKey', 'panicUrl', 'panicAction', 'stealthCover', 'stretchedRes', 'perfMode',
-    'cloakPreset', 'cloakCustomTitle', 'cloakCustomFavicon', 'openGamesInBlob', 'uzVoiceMuted', 'uzVoiceDeafened'
+    'cloakPreset', 'cloakCustomTitle', 'cloakCustomFavicon', 'openGamesInBlob', 'uzVoiceMuted', 'uzVoiceDeafened',
+    'accentColor', 'cdnMirror', 'adLayout', 'lightspeedSchoolName', 'lightspeedTopText', 'lightspeedBottomText',
+    'lightspeedSystemMsg', 'scUrl', 'scHeading', 'scIp'
   ];
   function accountSettingKey(username, key) { return 'uzacct:settings:' + cleanUsername(username) + ':' + key; }
   function saveAccountSettings(username) {
@@ -163,6 +165,7 @@
   async function signOutClient() {
     var current = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
     if (current) saveAccountSettings(current);
+    if (current) sessionStorage.removeItem('uzAccountRefresh:' + current);
     authTransition = true;
     sessionStorage.removeItem('uzSessionOk');
     localStorage.removeItem('uzMongoToken');
@@ -264,7 +267,32 @@
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
   }
-  async function finishLogin(username, session, profile) { setBusy(''); debugLog('login-finish', username); prepareAccountSettings(username); window.UZCurrentProfile = profile || window.UZCurrentProfile || null; screenFlash('good'); ownerAudio('good'); localStorage.setItem('uzLoginEmail', username); sessionStorage.setItem('uzSessionOk', 'true'); saveRecentAccount(username); setLightspeed(username); clearGate(); renderProfile(session || mongoProfileToSession(profile), profile || window.UZCurrentProfile); if (window.UZCommunity && window.UZCommunity.refresh) { try { await window.UZCommunity.refresh(); } catch(e) { debugLog('community-refresh-failed', e.message || 'unknown'); } } }
+  async function finishLogin(username, session, profile) {
+    setBusy('');
+    username = cleanUsername(username);
+    debugLog('login-finish', username);
+    // Set the active account before restoring settings so the storage shim scopes every read/write correctly.
+    localStorage.setItem('uzLoginEmail', username);
+    prepareAccountSettings(username);
+    window.UZCurrentProfile = profile || window.UZCurrentProfile || null;
+    screenFlash('good');
+    ownerAudio('good');
+    sessionStorage.setItem('uzSessionOk', 'true');
+    saveRecentAccount(username);
+    setLightspeed(username);
+    clearGate();
+    renderProfile(session || mongoProfileToSession(profile), profile || window.UZCurrentProfile);
+    var refreshKey = 'uzAccountRefresh:' + username;
+    var shouldRefreshPage = sessionStorage.getItem(refreshKey) !== '1';
+    if (shouldRefreshPage) {
+      sessionStorage.setItem(refreshKey, '1');
+      location.reload();
+      return;
+    }
+    if (window.UZCommunity && window.UZCommunity.refresh) {
+      try { await window.UZCommunity.refresh(); } catch(e) { debugLog('community-refresh-failed', e.message || 'unknown'); }
+    }
+  }
   async function signIn() { var locked = siteBannedName(); if (locked) { renderBannedGate(locked); return; } if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } debugLog('signin-start', username); if (firebaseMode) { authTransition = true; try { setBusy('Signing in...'); await setFirebasePersistence(); var cred = await client.auth.signInWithEmailAndPassword(authEmail(username), password); var profile = await ensureFirebaseProfile(cred.user, username); if (profile) await finishLogin(username, firebaseProfileToSession(cred.user, profile), profile); else setBusy(''); authTransition = false; } catch(e) { authTransition = false; debugLog('firebase-signin-failed', e.message || 'unknown'); setBusy(''); removeRecentAccount(username); authFail((e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } if (mongoMode) { try { setBusy('Signing in...'); var data = await mongoFetch('/auth/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 16000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); await finishLogin(username, mongoProfileToSession(data.user), data.user); } catch(e) { debugLog('signin-failed', e.message || 'unknown'); setBusy(''); if (e.data && e.data.banned) renderBannedGate(username); else authFail(e.status === 404 ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } setBusy('Signing in...'); var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); if (res.error) { setBusy(''); removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } var profile = await ensureProfile(res.data.user); if (profile) await finishLogin(username, res.data.session || { user: res.data.user }, profile); else setBusy(''); }
   async function signUp() { var locked = siteBannedName(); if (locked) { renderBannedGate(locked); return; } if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } debugLog('signup-start', username); if (firebaseMode) { authTransition = true; try { setBusy('Creating account...'); await setFirebasePersistence(); var cred = await client.auth.createUserWithEmailAndPassword(authEmail(username), password); if (cred.user.updateProfile) await cred.user.updateProfile({ displayName: username }).catch(function(){}); var profile = await ensureFirebaseProfile(cred.user, username); if (profile) await finishLogin(username, firebaseProfileToSession(cred.user, profile), profile); else setBusy(''); authTransition = false; } catch(e) { authTransition = false; debugLog('firebase-signup-failed', e.message || 'unknown'); setBusy(''); authFail(e.code === 'auth/email-already-in-use' ? 'Account already exists. Use Sign in instead.' : (e.message || 'Could not create account.')); } return; } if (mongoMode) { try { setBusy('Creating account...'); var data = await mongoFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 16000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); await finishLogin(username, mongoProfileToSession(data.user), data.user); } catch(e) { debugLog('signup-failed', e.message || 'unknown'); setBusy(''); authFail(e.message || 'Could not create account.'); } return; } setBusy('Creating account...'); var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); if (res.error) { setBusy(''); authFail(res.error.message); return; } var profile = await ensureProfile(res.data.user); if (profile) await finishLogin(username, res.data.session || { user: res.data.user }, profile); else setBusy(''); }
 
