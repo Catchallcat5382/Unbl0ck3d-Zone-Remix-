@@ -53,6 +53,7 @@
     }
     cloudSettingsWrite.values[key] = String(value);
     clearTimeout(cloudSettingsWrite.timer);
+    var flushDelay = /^(accentColorV2|bgMode|siteTheme)$/.test(key) ? 0 : 250;
     cloudSettingsWrite.timer = setTimeout(function () {
       var pending = cloudSettingsWrite;
       cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
@@ -66,7 +67,7 @@
           window.UZCurrentProfile.settings = Object.assign({}, window.UZCurrentProfile.settings || {}, pending.values);
         }
       }).catch(function (e) { debugLog('settings-save-failed', e && e.message ? e.message : 'unknown'); });
-    }, 250);
+    }, flushDelay);
   }
   window.UZPersistAccountSetting = function (key, value) {
     key = String(key || '');
@@ -166,7 +167,7 @@
     try {
       localStorage.setItem('uzLoginEmail', name || '');
       var defaults = {
-        lightspeedSchoolName: 'Unblocked Zone',
+        lightspeedSchoolName: 'Central Bucks School District',
         lightspeedTopText: 'Oops,',
         lightspeedBottomText: 'is not available because it is categorized as Security - Proxy.',
         lightspeedSystemMsg: 'You are logged in as ' + (name || 'user') + ' (IP Address: hidden).',
@@ -176,7 +177,7 @@
       };
       Object.keys(defaults).forEach(function (key) {
         var current = localStorage.getItem(key);
-        if (current === null || (key === 'lightspeedSystemMsg' && /^You are logged in as\s+/i.test(current))) localStorage.setItem(key, defaults[key]);
+        if (current === null || (key === 'lightspeedSchoolName' && current === 'Unblocked Zone') || (key === 'lightspeedSystemMsg' && /^You are logged in as\s+/i.test(current))) localStorage.setItem(key, defaults[key]);
       });
     } catch (e) {}
   }
