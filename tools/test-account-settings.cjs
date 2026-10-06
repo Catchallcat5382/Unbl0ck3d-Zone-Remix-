@@ -58,4 +58,17 @@ context.window.UZImportAccountSettings({ accentColorV2: '#00ff9d', bgMode: 'topo
 assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
 assert.equal(localStorage.getItem('bgMode'), 'topography');
 assert.equal(rendered, 1);
+context.window.UZImportAccountSettings({ 'uzacct:billy41:accentColorV2': '#00ff9d', 'uzacct:billy41:bgMode': 'topography', 'uzacct:settings:billy41:accentColorV2': '#ff6600', 'uzacct:settings:billy41:bgMode': 'starfield', 'uzacct:alice:accentColorV2': '#ff6600' }, 'billy41');
+assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
+assert.equal(localStorage.getItem('bgMode'), 'topography');
+assert.equal(localStorage.getItem('uzLoginEmail'), 'alice');
+if (process.argv[2]) {
+  const backup = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+  context.window.UZImportAccountSettings(backup.settings, 'billy41');
+  assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
+  assert.equal(localStorage.getItem('bgMode'), 'topography');
+  context.window.restore('alice', { accentColorV2: '#ff6600', bgMode: 'starfield' });
+  assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
+  assert.equal(localStorage.getItem('bgMode'), 'topography');
+}
 console.log('PASS: imported settings persist, legacy keys normalize, and accounts remain isolated.');

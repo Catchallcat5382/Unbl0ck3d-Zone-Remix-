@@ -49,14 +49,23 @@
     });
     return values;
   };
-  window.UZImportAccountSettings = function (values) {
+  window.UZSettingsBackupAccounts = function (values) {
+    var names = [];
+    Object.keys(values).forEach(function (key) {
+      var match = key.match(/^uzacct:(?:settings:)?([^:]+):/);
+      if (match && match[1] !== 'theme' && names.indexOf(match[1]) === -1) names.push(match[1]);
+    });
+    return names;
+  };
+  window.UZImportAccountSettings = function (values, sourceAccount) {
     var normalized = {};
     var ranks = {};
-    var current = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
+    var current = cleanUsername(sourceAccount || localStorage.getItem('uzLoginEmail') || '');
     Object.keys(values).forEach(function (original) {
       var key = original.replace(/^uzacct:settings:[^:]+:/, '').replace(/^uzacct:[^:]+:/, '');
       var account = original.match(/^uzacct:(?:settings:)?([^:]+):/);
-      var rank = original === key ? 4 : account && account[1] === current ? 3 : 1;
+      if (sourceAccount && account && account[1] !== current) return;
+      var rank = original === key ? 4 : account && account[1] === current ? (original.indexOf('uzacct:settings:') === 0 ? 2 : 3) : 1;
       if (ACCOUNT_SETTING_KEYS.indexOf(key) !== -1 && values[original] != null && (ranks[key] == null || rank > ranks[key])) {
         normalized[key] = String(values[original]);
         ranks[key] = rank;
