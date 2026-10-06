@@ -25,5 +25,10 @@ $end = if ($authStart -ge 0) { $html.IndexOf('</script>', $authStart, [System.St
 if ($start -lt 0 -or $authStart -lt 0 -or $end -lt 0) { throw 'Inline bundle markers not found in assets/index.html' }
 $end += '</script>'.Length
 $newHtml = $html.Substring(0, $start) + $bundle.TrimEnd("`r", "`n") + $html.Substring($end)
-[System.IO.File]::WriteAllText($htmlPath, $newHtml.TrimEnd("`r", "`n") + "`n", $utf8)
+$normalizedLines = $newHtml -split "`r?`n" | ForEach-Object { $_.TrimEnd() }
+while ($normalizedLines.Count -gt 0 -and $normalizedLines[-1] -eq '') {
+  if ($normalizedLines.Count -eq 1) { $normalizedLines = @(); break }
+  $normalizedLines = @($normalizedLines[0..($normalizedLines.Count - 2)])
+}
+[System.IO.File]::WriteAllLines($htmlPath, $normalizedLines, $utf8)
 Write-Host "Inline bundle rebuilt: $htmlPath"
