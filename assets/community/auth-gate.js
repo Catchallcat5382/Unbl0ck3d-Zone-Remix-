@@ -41,6 +41,30 @@
     'uzNotifications', 'uzAuditLog'
   ];
   function accountSettingKey(username, key) { return 'uzacct:settings:' + cleanUsername(username) + ':' + key; }
+  window.UZExportAccountSettings = function () {
+    var values = {};
+    ACCOUNT_SETTING_KEYS.forEach(function (key) {
+      var value = localStorage.getItem(key);
+      if (value !== null) values[key] = value;
+    });
+    return values;
+  };
+  window.UZImportAccountSettings = function (values) {
+    var normalized = {};
+    Object.keys(values).forEach(function (original) {
+      var key = original.replace(/^uzacct:settings:[^:]+:/, '').replace(/^uzacct:[^:]+:/, '');
+      if (ACCOUNT_SETTING_KEYS.indexOf(key) !== -1 && values[original] != null) normalized[key] = String(values[original]);
+    });
+    window.__uzUserSettingsChange = true;
+    try {
+      Object.keys(normalized).forEach(function (key) {
+        localStorage.setItem(key, normalized[key]);
+        if (window.UZSaveThemeSetting) window.UZSaveThemeSetting(key, normalized[key]);
+        window.UZPersistAccountSetting(key, normalized[key]);
+      });
+    } finally { window.__uzUserSettingsChange = false; }
+    return Object.keys(normalized).length;
+  };
   var cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
   function queueFirebaseSetting(username, key, value) {
     if (!firebaseMode || !client || !client.auth || !client.db || window.__uzRestoringAccountSettings) return;

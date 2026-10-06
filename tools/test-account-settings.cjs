@@ -45,4 +45,11 @@ listeners.change({ type: 'change', target: { closest: () => ({ id: 'bg-select', 
 context.window.restore('alice', { accentColorV2: '#ff6600', bgMode: 'starfield' });
 assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
 assert.equal(localStorage.getItem('bgMode'), 'topography');
-console.log('PASS: settings survive restoration, missing backups migrate, and accounts remain isolated.');
+context.window.UZImportAccountSettings({ 'uzacct:other:accentColorV2': '#7b2cbf', 'uzacct:settings:other:bgMode': 'waves', sidebarPosition: 'right', uzLoginEmail: 'other' });
+context.window.restore('alice', { accentColorV2: '#ff6600', bgMode: 'starfield' });
+assert.equal(localStorage.getItem('accentColorV2'), '#7b2cbf');
+assert.equal(localStorage.getItem('bgMode'), 'waves');
+assert.equal(localStorage.getItem('sidebarPosition'), 'right');
+assert.equal(localStorage.getItem('uzLoginEmail'), 'alice');
+assert.equal(context.window.UZExportAccountSettings().accentColorV2, '#7b2cbf');
+console.log('PASS: imported settings persist, legacy keys normalize, and accounts remain isolated.');

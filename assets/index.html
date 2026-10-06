@@ -7919,11 +7919,7 @@ let DATA = {
     /*  SETTINGS BACKUP / RESTORE  */
     function exportSettingsTxt() {
       try {
-        var data = {};
-        for (var i = 0; i < localStorage.length; i++) {
-          var k = localStorage.key(i);
-          data[k] = localStorage.getItem(k);
-        }
+        var data = window.UZExportAccountSettings();
         var jo = {
           app: 'unblockedzone',
           version: 20260920,
@@ -7955,18 +7951,9 @@ let DATA = {
           var parsed = JSON.parse(reader.result);
           var data = parsed && parsed.settings ? parsed.settings : parsed;
           if (!data || typeof data !== 'object') { alert('Invalid settings file.'); return; }
-          var count = 0;
-          for (var k in data) {
-            if (Object.prototype.hasOwnProperty.call(data, k)) {
-              try {
-                if (data[k] === null) localStorage.removeItem(k);
-                else localStorage.setItem(k, data[k]);
-                count++;
-              } catch (e2) {}
-            }
-          }
-          alert('Loaded ' + count + ' settings.');
+          var count = window.UZImportAccountSettings(data);
           rehydrateSettings();
+          alert('Loaded ' + count + ' settings.');
         } catch (e) {
           alert('Could not load settings: ' + e.message);
         }
@@ -9514,6 +9501,30 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     'uzNotifications', 'uzAuditLog'
   ];
   function accountSettingKey(username, key) { return 'uzacct:settings:' + cleanUsername(username) + ':' + key; }
+  window.UZExportAccountSettings = function () {
+    var values = {};
+    ACCOUNT_SETTING_KEYS.forEach(function (key) {
+      var value = localStorage.getItem(key);
+      if (value !== null) values[key] = value;
+    });
+    return values;
+  };
+  window.UZImportAccountSettings = function (values) {
+    var normalized = {};
+    Object.keys(values).forEach(function (original) {
+      var key = original.replace(/^uzacct:settings:[^:]+:/, '').replace(/^uzacct:[^:]+:/, '');
+      if (ACCOUNT_SETTING_KEYS.indexOf(key) !== -1 && values[original] != null) normalized[key] = String(values[original]);
+    });
+    window.__uzUserSettingsChange = true;
+    try {
+      Object.keys(normalized).forEach(function (key) {
+        localStorage.setItem(key, normalized[key]);
+        if (window.UZSaveThemeSetting) window.UZSaveThemeSetting(key, normalized[key]);
+        window.UZPersistAccountSetting(key, normalized[key]);
+      });
+    } finally { window.__uzUserSettingsChange = false; }
+    return Object.keys(normalized).length;
+  };
   var cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
   function queueFirebaseSetting(username, key, value) {
     if (!firebaseMode || !client || !client.auth || !client.db || window.__uzRestoringAccountSettings) return;
