@@ -163,14 +163,16 @@
   async function signOutClient() {
     var current = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
     if (current) saveAccountSettings(current);
+    authTransition = true;
     sessionStorage.removeItem('uzSessionOk');
     localStorage.removeItem('uzMongoToken');
     sessionStorage.removeItem('uzMongoToken');
     if (window.UZCommunity && window.UZCommunity.logout) { try { await window.UZCommunity.logout(); } catch (e) {} }
-    if (client && client.auth && !mongoMode) { authTransition = true; try { await client.auth.signOut(); } catch (e) {} authTransition = false; }
+    if (client && client.auth && !mongoMode) { try { await client.auth.signOut(); } catch (e) {} }
     localStorage.removeItem('uzLoginEmail');
     window.UZCurrentProfile = null;
     clearActiveSettings();
+    authTransition = false;
   }
   function wireProfileSwitchAccounts() { Array.prototype.forEach.call(document.querySelectorAll('.uz-switch-account-option'), function(btn){ btn.onclick = async function(){ var username = btn.dataset.username || ''; await signOutClient(); authMode = 'signin'; renderGate(username ? 'Sign in to switch to ' + username + '.' : 'Sign in with another account.'); var input = document.getElementById('uz-login-user'); if (input) input.value = username; var pass = document.getElementById('uz-login-pass'); if (pass) pass.focus(); }; }); var plain = document.getElementById('uz-switch-account'); if (plain) plain.onclick = async function(){ await signOutClient(); authMode = 'signin'; renderGate('Sign in with another account.'); }; }
   async function ensureProfile(user) { if (!ready || !user) return null; if (mongoMode) return window.UZCurrentProfile || null; var username = usernameFromUser(user); var localDisplay = getName(username); var payload = { id: user.id, username: username }; if (localDisplay) payload.display_name = localDisplay; var res = await client.from('profiles').upsert(payload, { onConflict: 'id' }).select('*').single(); if (res.error) { note(res.error.message || 'Profile could not be saved.'); return null; } if (res.data && res.data.banned_until && new Date(res.data.banned_until) > new Date()) { try { localStorage.setItem('uzBannedAccount:' + cleanUsername(username), '1'); await client.auth.signOut(); } catch(e) {} renderBannedGate(username); return null; } try { localStorage.removeItem('uzBannedAccount:' + cleanUsername(username)); } catch(e) {} if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return res.data || null; }
