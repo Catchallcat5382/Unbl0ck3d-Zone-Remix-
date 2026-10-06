@@ -147,7 +147,7 @@ service cloud.firestore {
         )
       );
 
-      allow delete: if owner() && request.auth.uid != uid;
+      allow delete: if owner() || request.auth.uid == uid;
     }
 
     match /messages/{id} {
