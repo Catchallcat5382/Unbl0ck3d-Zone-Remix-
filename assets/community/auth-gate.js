@@ -267,6 +267,34 @@
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
   }
+  // Keep the Firebase profile gate authoritative for accounts created before the permanent-delete fix.
+  async function ensureFirebaseProfile(user, username) {
+    initClient();
+    username = cleanUsername(username || usernameFromUser(user));
+    var ref = client.db.collection('profiles').doc(user.uid);
+    var doc = await ref.get();
+    if (!doc.exists) {
+      await ref.set({ id: user.uid, username: username, display_name: username, role: 'member', warnings: 0, email: user.email || '', created_at: new Date().toISOString(), last_seen: new Date().toISOString() });
+      doc = await ref.get();
+    } else {
+      await ref.set({ last_seen: new Date().toISOString(), email: user.email || '' }, { merge: true });
+      doc = await ref.get();
+    }
+    var data = doc.data() || {};
+    data.id = user.uid;
+    if (data.role === 'deleted') {
+      try { await ref.delete(); } catch (e) { debugLog('deleted-profile-cleanup-failed', e.message || 'unknown'); }
+      try { removeRecentAccount(username); await client.auth.signOut(); } catch (e2) {}
+      renderGate('This account was deleted. Create a new account to continue.');
+      return null;
+    }
+    if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) {
+      try { localStorage.setItem('uzBannedAccount:' + username, '1'); } catch (e3) {}
+      renderBannedGate(username);
+      return null;
+    }
+    return data;
+  }
   async function finishLogin(username, session, profile) {
     setBusy('');
     username = cleanUsername(username);
@@ -370,6 +398,79 @@
     localStorage.removeItem('uzLoginEmail');
     location.reload();
   }
+  // Delete the Firebase Auth user and its profile document as one verified operation.
+  async function deleteAccount(username) {
+    if (!ready || isTempOwner()) return;
+    var typed = prompt('Type your exact username to delete this account:');
+    if (typed !== username) { note('Account deletion cancelled. Username did not match.'); return; }
+    if (!confirm('Delete account "' + username + '"? This cannot be undone.')) return;
+    if (firebaseMode) {
+      var ref = null;
+      var snapshot = null;
+      var profileDeleted = false;
+      authTransition = true;
+      try {
+        initClient();
+        var user = client.auth.currentUser;
+        if (!user) throw new Error('This account is no longer signed in.');
+        ref = client.db.collection('profiles').doc(user.uid);
+        snapshot = await ref.get();
+        await ref.delete();
+        profileDeleted = true;
+        var afterDelete = await ref.get();
+        if (afterDelete.exists) throw new Error('Firebase did not confirm profile deletion.');
+        try {
+          await user.delete();
+        } catch (firstError) {
+          if (firstError.code !== 'auth/requires-recent-login') throw firstError;
+          var password = prompt('Firebase needs one recent password check to permanently delete this account:');
+          if (!password) throw new Error('Account deletion cancelled.');
+          var credential = client.auth.EmailAuthProvider.credential(user.email, password);
+          await user.reauthenticateWithCredential(credential);
+          await user.delete();
+        }
+        localStorage.removeItem(profileKey('uzCommunityProfileName', username));
+        localStorage.removeItem(profileKey('uzCommunityAvatar', username));
+        ACCOUNT_SETTING_KEYS.forEach(function (key) { localStorage.removeItem(accountSettingKey(username, key)); });
+        removeRecentAccount(username);
+        localStorage.removeItem('uzSiteBanned');
+        localStorage.removeItem('uzSiteBannedUid');
+        localStorage.removeItem('uzBannedAccount:' + cleanUsername(username));
+        localStorage.removeItem('uzLoginEmail');
+        sessionStorage.removeItem('uzSessionOk');
+        sessionStorage.removeItem('uzAccountRefresh:' + cleanUsername(username));
+        try { await client.auth.signOut(); } catch (e) {}
+        window.UZCurrentProfile = null;
+        clearActiveSettings();
+        renderProfile(null, null);
+        authMode = 'signin';
+        renderGate('Account deleted permanently.');
+      } catch (e) {
+        if (profileDeleted && snapshot && snapshot.exists && ref) {
+          try { await ref.set(snapshot.data()); } catch (restoreError) { debugLog('profile-restore-failed', restoreError.message || 'unknown'); }
+        }
+        note(e.message || 'Account deletion failed.');
+      } finally {
+        authTransition = false;
+      }
+      return;
+    }
+    if (mongoMode) {
+      try {
+        await mongoFetch('/account', { method: 'DELETE', timeout: 16000 });
+        localStorage.removeItem('uzLoginEmail');
+        sessionStorage.removeItem('uzSessionOk');
+        sessionStorage.removeItem('uzAccountRefresh:' + cleanUsername(username));
+        removeRecentAccount(username);
+        clearActiveSettings();
+        renderProfile(null, null);
+        renderGate('Account deleted permanently.');
+      } catch (e2) { note(e2.message || 'Account deletion failed.'); }
+      return;
+    }
+    note('Account deletion is only available after Firebase is configured.');
+  }
+
   function ownerAudio(kind) {
     try {
       var Ctx = window.AudioContext || window.webkitAudioContext;
