@@ -51,9 +51,16 @@
   };
   window.UZImportAccountSettings = function (values) {
     var normalized = {};
+    var ranks = {};
+    var current = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
     Object.keys(values).forEach(function (original) {
       var key = original.replace(/^uzacct:settings:[^:]+:/, '').replace(/^uzacct:[^:]+:/, '');
-      if (ACCOUNT_SETTING_KEYS.indexOf(key) !== -1 && values[original] != null) normalized[key] = String(values[original]);
+      var account = original.match(/^uzacct:(?:settings:)?([^:]+):/);
+      var rank = original === key ? 4 : account && account[1] === current ? 3 : 1;
+      if (ACCOUNT_SETTING_KEYS.indexOf(key) !== -1 && values[original] != null && (ranks[key] == null || rank > ranks[key])) {
+        normalized[key] = String(values[original]);
+        ranks[key] = rank;
+      }
     });
     window.__uzUserSettingsChange = true;
     try {
@@ -63,6 +70,10 @@
         window.UZPersistAccountSetting(key, normalized[key]);
       });
     } finally { window.__uzUserSettingsChange = false; }
+    window.__uzRestoringAccountSettings = true;
+    try {
+      if (typeof window.rehydrateSettings === 'function') window.rehydrateSettings();
+    } finally { window.__uzRestoringAccountSettings = false; }
     return Object.keys(normalized).length;
   };
   var cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
@@ -144,7 +155,6 @@
       if (savedSiteTheme && typeof window.setSiteTheme === 'function') window.setSiteTheme(savedSiteTheme);
       if (typeof window.setAccent === 'function') window.setAccent(localStorage.getItem('accentColorV2') || '#ff6600');
       if (typeof window.setBackground === 'function') window.setBackground(localStorage.getItem('bgMode') || 'starfield', true);
-      if (typeof window.applyCustomCursor === 'function') window.applyCustomCursor();
       if (typeof window.rehydrateSettings === 'function') window.rehydrateSettings();
       else if (typeof window.loadLightspeedText === 'function') window.loadLightspeedText();
     } catch (e) { debugLog('settings-render-failed', e.message || 'unknown'); }
