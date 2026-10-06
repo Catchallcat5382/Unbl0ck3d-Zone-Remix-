@@ -41,12 +41,40 @@
     'uzNotifications', 'uzAuditLog'
   ];
   function accountSettingKey(username, key) { return 'uzacct:settings:' + cleanUsername(username) + ':' + key; }
+  var cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
+  function queueFirebaseSetting(username, key, value) {
+    if (!firebaseMode || !client || !client.auth || !client.db || window.__uzRestoringAccountSettings) return;
+    var user = client.auth.currentUser;
+    username = cleanUsername(username);
+    if (!user || !username || cleanUsername(usernameFromUser(user)) !== username) return;
+    if (cloudSettingsWrite.uid !== user.uid || cloudSettingsWrite.username !== username) {
+      clearTimeout(cloudSettingsWrite.timer);
+      cloudSettingsWrite = { timer: null, uid: user.uid, username: username, values: {} };
+    }
+    cloudSettingsWrite.values[key] = String(value);
+    clearTimeout(cloudSettingsWrite.timer);
+    cloudSettingsWrite.timer = setTimeout(function () {
+      var pending = cloudSettingsWrite;
+      cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
+      var current = client && client.auth && client.auth.currentUser;
+      if (!current || current.uid !== pending.uid || !Object.keys(pending.values).length) return;
+      client.db.collection('profiles').doc(pending.uid).set({
+        settings: pending.values,
+        settings_updated_at: new Date().toISOString()
+      }, { merge: true }).then(function () {
+        if (window.UZCurrentProfile && cleanUsername(window.UZCurrentProfile.username) === pending.username) {
+          window.UZCurrentProfile.settings = Object.assign({}, window.UZCurrentProfile.settings || {}, pending.values);
+        }
+      }).catch(function (e) { debugLog('settings-save-failed', e && e.message ? e.message : 'unknown'); });
+    }, 250);
+  }
   window.UZPersistAccountSetting = function (key, value) {
     key = String(key || '');
     if (ACCOUNT_SETTING_KEYS.indexOf(key) === -1) return;
     var username = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
     if (!username) return;
     try { localStorage.setItem(accountSettingKey(username, key), String(value)); } catch (e) {}
+    queueFirebaseSetting(username, key, value);
   };
   function saveAccountSettings(username) {
     username = cleanUsername(username);
@@ -58,7 +86,7 @@
       } catch (e) {}
     });
   }
-  function restoreAccountSettings(username) {
+  function restoreAccountSettings(username, cloudSettings, repeated) {
     username = cleanUsername(username);
     if (!username) return;
     window.__uzRestoringAccountSettings = true;
@@ -68,6 +96,13 @@
         if (savedTheme && savedTheme[key] != null) localStorage.setItem(accountSettingKey(username, key), String(savedTheme[key]));
       });
     } catch (e) {}
+    if (cloudSettings && typeof cloudSettings === 'object') {
+      ACCOUNT_SETTING_KEYS.forEach(function (key) {
+        try {
+          if (cloudSettings[key] != null) localStorage.setItem(accountSettingKey(username, key), String(cloudSettings[key]));
+        } catch (e) {}
+      });
+    }
     ACCOUNT_SETTING_KEYS.forEach(function (key) {
       try {
         var value = localStorage.getItem(accountSettingKey(username, key));
@@ -86,11 +121,11 @@
       if (typeof window.rehydrateSettings === 'function') window.rehydrateSettings();
       else if (typeof window.loadLightspeedText === 'function') window.loadLightspeedText();
     } catch (e) {}
-    if (!arguments[1]) {
+    if (!repeated) {
       [120, 500, 1200].forEach(function (delay) {
         setTimeout(function () {
           if (cleanUsername(localStorage.getItem('uzLoginEmail') || '') !== username) return;
-          restoreAccountSettings(username, true);
+          restoreAccountSettings(username, null, true);
         }, delay);
       });
     }
@@ -112,13 +147,15 @@
       }
     } catch (e) {}
   }
-  function prepareAccountSettings(username) {
+  function prepareAccountSettings(username, cloudSettings) {
     username = cleanUsername(username);
     if (!username) return;
+    var pendingProfile = window.UZPendingProfileSettings;
+    if (!cloudSettings && pendingProfile && cleanUsername(pendingProfile.username) === username) cloudSettings = pendingProfile.settings;
     var current = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
     if (current && current !== username) saveAccountSettings(current);
     try { localStorage.setItem('uzLoginEmail', username); } catch (e) {}
-    restoreAccountSettings(username);
+    restoreAccountSettings(username, cloudSettings);
   }
   async function setFirebasePersistence() {
     if (!firebaseMode || !client || !client.auth || !client.auth.setPersistence || !window.firebase || !window.firebase.auth || !window.firebase.auth.Auth) return;
@@ -185,6 +222,7 @@
       err.status = res.status; err.data = data;
       throw err;
     }
+    window.UZPendingProfileSettings = { username: username, settings: data.settings && typeof data.settings === 'object' ? data.settings : {} };
     return data;
   }
   function wakeAccountApi() {
@@ -396,7 +434,7 @@
     if (previousUsername && previousUsername !== username) saveAccountSettings(previousUsername);
     localStorage.setItem('uzLoginEmail', username);
     setLightspeed(username);
-    restoreAccountSettings(username);
+    restoreAccountSettings(username, profile && profile.settings);
     window.UZCurrentProfile = profile || window.UZCurrentProfile || null;
     screenFlash('good');
     ownerAudio('good');
