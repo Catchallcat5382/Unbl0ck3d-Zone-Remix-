@@ -8790,11 +8790,15 @@ let DATA = {
 <script>
 (function(){
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-  function ensureGustStyles(){ if(document.getElementById('uz-gust-style')) return; var s=document.createElement('style'); s.id='uz-gust-style'; s.textContent='.uz-gust-overlay{position:fixed;inset:0;z-index:999999;background:#050505;display:grid;grid-template-rows:auto 1fr}.uz-gust-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#0d0806;border-bottom:1px solid #ff6a00;color:#fff;padding:10px 14px}.uz-gust-bar b{color:#ff8a1a}.uz-gust-bar button{border:1px solid #ff6a00;background:#140b08;color:#ffb15d;border-radius:8px;padding:8px 10px;font:800 12px Arial,sans-serif;cursor:pointer}.uz-gust-overlay iframe{width:100%;height:100%;border:0;background:#0d0f12}.announcements-taskbar-btn{position:relative}.uz-ping-dot{position:absolute;top:2px;right:3px;min-width:18px;height:18px;border-radius:999px;background:#ff2b2b;color:white;font:900 11px/18px Arial;text-align:center;box-shadow:0 0 12px rgba(255,43,43,.65)}#uz-notification-tray{position:fixed;left:12px;top:12px;z-index:99997;font-family:Arial,sans-serif}#uz-notification-tray{display:none!important}body.uz-app-unlocked #uz-notification-tray{display:block!important}html.loading-active #uz-notification-tray,body.uz-auth-locked #uz-notification-tray{display:none!important}#uz-notification-toggle{border:1px solid #ff6a00;background:rgba(8,8,10,.86);color:#ffb15d;border-radius:999px;padding:8px 12px;font-weight:900;cursor:pointer}#uz-notification-toggle b{display:inline-grid;place-items:center;margin-left:6px;min-width:18px;height:18px;border-radius:999px;background:#ff2b2b;color:#fff;font-size:11px}#uz-notification-list{width:min(360px,calc(100vw - 24px));max-height:360px;overflow:auto;margin-top:8px;border:1px solid #ff6a00;border-radius:12px;background:rgba(8,8,10,.96);box-shadow:0 0 30px rgba(255,106,0,.18);padding:10px;color:#fff}.uz-notification-item{border-bottom:1px solid rgba(255,106,0,.22);padding:9px 6px}.uz-notification-item:last-child{border-bottom:0}.credits-box{margin:16px auto 0;max-width:520px;border:1px solid rgba(255,106,0,.45);border-radius:10px;background:rgba(10,10,12,.72);color:#fff}.credits-box summary{cursor:pointer;padding:12px 14px;color:#ffb15d;font-weight:900}.credits-scroll{max-height:160px;overflow:auto;padding:0 14px 14px}.announcements-board{width:min(1120px,calc(100vw - 28px));margin:0 auto;display:grid;gap:16px}.announcements-hero{display:flex;justify-content:space-between;align-items:center;gap:12px;border:2px solid #ff6a00;border-radius:12px;background:linear-gradient(135deg,rgba(255,106,0,.18),rgba(7,7,9,.9));padding:20px}.announcements-hero h2{margin:0;color:#ff8a1a;font-size:clamp(30px,5vw,56px)}.announcements-list{display:grid;gap:12px}.announcement-card{border:1px solid rgba(255,106,0,.45);border-radius:10px;background:rgba(12,10,12,.88);padding:16px;color:#fff}.announcement-card h3{margin:0 0 8px;color:#ffd29a}.announcement-meta{color:#aeb4c0;font-size:12px;margin-bottom:10px}.announcement-body{white-space:pre-wrap;line-height:1.45}.announcements-compose{border:1px dashed rgba(255,106,0,.45);border-radius:10px;padding:12px;background:rgba(255,106,0,.05)}.announcements-compose input,.announcements-compose textarea{width:100%;margin:0 0 8px;background:#0d0d10;color:#fff;border:1px solid rgba(255,106,0,.5);border-radius:8px;padding:10px}.announcements-compose textarea{min-height:90px;resize:vertical}'; document.head.appendChild(s); }
+   function ensureGustStyles(){ if(document.getElementById('uz-gust-style')) return; var s=document.createElement('style'); s.id='uz-gust-style'; s.textContent='.uz-gust-overlay{position:fixed;inset:0;z-index:999999;background:#050505;display:grid;grid-template-rows:auto 1fr}.uz-gust-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#0d0806;border-bottom:1px solid #ff6a00;color:#fff;padding:10px 14px}.uz-gust-bar b{color:#ff8a1a}.uz-gust-bar button{border:1px solid #ff6a00;background:#140b08;color:#ffb15d;border-radius:8px;padding:8px 10px;font:800 12px Arial,sans-serif;cursor:pointer}.uz-gust-overlay iframe{width:100%;height:100%;border:0;background:#0d0f12}.announcements-taskbar-btn{position:relative}.uz-ping-dot{position:absolute;top:2px;right:3px;min-width:18px;height:18px;border-radius:999px;background:#ff2b2b;color:white;font:900 11px/18px Arial;text-align:center;box-shadow:0 0 12px rgba(255,43,43,.65)}#uz-notification-tray{position:fixed;left:12px;top:12px;z-index:99997;font-family:Arial,sans-serif}#uz-notification-tray{display:none!important}body.uz-app-unlocked #uz-notification-tray{display:block!important}html.loading-active #uz-notification-tray,body.uz-auth-locked #uz-notification-tray{display:none!important}#uz-notification-toggle{border:1px solid #ff6a00;background:rgba(8,8,10,.86);color:#ffb15d;border-radius:999px;padding:8px 12px;font-weight:900;cursor:pointer}#uz-notification-toggle b{display:inline-grid;place-items:center;margin-left:6px;min-width:18px;height:18px;border-radius:999px;background:#ff2b2b;color:#fff;font-size:11px}#uz-notification-list{width:min(360px,calc(100vw - 24px));max-height:360px;overflow:auto;margin-top:8px;border:1px solid #ff6a00;border-radius:12px;background:rgba(8,8,10,.96);box-shadow:0 0 30px rgba(255,106,0,.18);padding:10px;color:#fff}.uz-notification-item{border-bottom:1px solid rgba(255,106,0,.22);padding:9px 6px}.uz-notification-item:last-child{border-bottom:0}.uz-notification-item.is-read{opacity:.72}.uz-notification-actions{display:flex;gap:6px;margin-top:8px}.uz-notification-actions button{border:1px solid rgba(255,106,0,.55);border-radius:6px;background:#140b08;color:#ffb15d;padding:4px 7px;font:700 11px Arial,sans-serif;cursor:pointer}.credits-box{margin:16px auto 0;max-width:520px;border:1px solid rgba(255,106,0,.45);border-radius:10px;background:rgba(10,10,12,.72);color:#fff}.credits-box summary{cursor:pointer;padding:12px 14px;color:#ffb15d;font-weight:900}.credits-scroll{max-height:160px;overflow:auto;padding:0 14px 14px}.announcements-board{width:min(1120px,calc(100vw - 28px));margin:0 auto;display:grid;gap:16px}.announcements-hero{display:flex;justify-content:space-between;align-items:center;gap:12px;border:2px solid #ff6a00;border-radius:12px;background:linear-gradient(135deg,rgba(255,106,0,.18),rgba(7,7,9,.9));padding:20px}.announcements-hero h2{margin:0;color:#ff8a1a;font-size:clamp(30px,5vw,56px)}.announcements-list{display:grid;gap:12px}.announcement-card{border:1px solid rgba(255,106,0,.45);border-radius:10px;background:rgba(12,10,12,.88);padding:16px;color:#fff}.announcement-card h3{margin:0 0 8px;color:#ffd29a}.announcement-meta{color:#aeb4c0;font-size:12px;margin-bottom:10px}.announcement-body{white-space:pre-wrap;line-height:1.45}.announcements-compose{border:1px dashed rgba(255,106,0,.45);border-radius:10px;padding:12px;background:rgba(255,106,0,.05)}.announcements-compose input,.announcements-compose textarea{width:100%;margin:0 0 8px;background:#0d0d10;color:#fff;border:1px solid rgba(255,106,0,.5);border-radius:8px;padding:10px}.announcements-compose textarea{min-height:90px;resize:vertical}'; document.head.appendChild(s); }
   window.openGUSTBrowser = function(){ ensureGustStyles(); var old=document.getElementById('uz-gust-overlay'); if(old) old.remove(); var overlay=document.createElement('div'); overlay.id='uz-gust-overlay'; overlay.className='uz-gust-overlay'; overlay.innerHTML='<div class="uz-gust-bar"><b>GUST Browser</b><div><button id="uz-gust-open">About:blank</button> <button id="uz-gust-close">Close</button></div></div><iframe src="assets/html/GUST.html" sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-downloads"></iframe>'; document.body.appendChild(overlay); document.getElementById('uz-gust-close').onclick=function(){overlay.remove();}; document.getElementById('uz-gust-open').onclick=async function(){ var w=window.open('about:blank','_blank'); if(!w){ alert('Popup blocked. Allow popups, then try again.'); return; } try{ var html=await fetch('assets/html/GUST.html',{cache:'no-store'}).then(function(r){return r.text();}); w.document.open(); w.document.write('<base href="'+location.href.replace(/[^\/]*$/, 'assets/html/')+'">'+html.replace(/<base[^>]*>/ig,'')); w.document.close(); }catch(e){ w.location.href='assets/html/GUST.html'; } }; };
-  window.UZNotify = { add:function(text){ ensureGustStyles(); var list=JSON.parse(localStorage.getItem('uzNotifications')||'[]'); list.unshift({text:String(text||'Notification'),time:Date.now()}); localStorage.setItem('uzNotifications',JSON.stringify(list.slice(0,50))); renderNotifications(); }, render:renderNotifications };
-  function renderNotifications(){ ensureGustStyles(); var list=[]; try{list=JSON.parse(localStorage.getItem('uzNotifications')||'[]')}catch(e){} var count=document.getElementById('uz-notification-count'); var box=document.getElementById('uz-notification-list'); var ping=document.getElementById('announcements-ping'); if(count) count.textContent=String(list.length); if(ping){ ping.hidden=!list.length; ping.textContent=String(Math.min(99,list.length)); } if(box) box.innerHTML=list.length?list.map(function(n){return '<div class="uz-notification-item"><b>'+esc(new Date(n.time).toLocaleString())+'</b><br>'+esc(n.text)+'</div>';}).join(''):'<div class="uz-notification-item">No notifications yet.</div>'; }
-  document.addEventListener('click',function(e){ if(e.target && e.target.id==='uz-notification-toggle'){ var box=document.getElementById('uz-notification-list'); if(box) box.hidden=!box.hidden; }});
+   var NOTIFICATION_KEY='uzNotifications';
+   function readNotifications(){ try { var list=JSON.parse(localStorage.getItem(NOTIFICATION_KEY)||'[]'); return Array.isArray(list)?list.filter(function(n){return n&&n.text;}).slice(0,50):[]; } catch(e) { return []; } }
+   function writeNotifications(list){ try { localStorage.setItem(NOTIFICATION_KEY,JSON.stringify((list||[]).slice(0,50))); } catch(e) {} }
+   function notificationUnread(list){ return (list||[]).filter(function(n){return !n.read;}).length; }
+   function renderNotifications(){ ensureGustStyles(); var list=readNotifications(); var unread=notificationUnread(list); var count=document.getElementById('uz-notification-count'); var box=document.getElementById('uz-notification-list'); var ping=document.getElementById('announcements-ping'); if(count) count.textContent=String(unread); if(ping){ ping.hidden=!unread; ping.textContent=String(Math.min(99,unread)); } if(box) box.innerHTML=(list.length?'<div class="uz-notification-actions"><button type="button" data-notification-read-all>Mark all read</button><button type="button" data-notification-dismiss-all>Dismiss all</button></div>':'')+(list.length?list.map(function(n){return '<div class="uz-notification-item'+(n.read?' is-read':'')+'" data-notification-id="'+esc(n.id||n.text)+'"><b>'+esc(new Date(n.time||Date.now()).toLocaleString())+'</b><br>'+esc(n.text)+'<div class="uz-notification-actions"><button type="button" data-notification-read="'+esc(n.id||n.text)+'">'+(n.read?'Read':'Mark read')+'</button><button type="button" data-notification-dismiss="'+esc(n.id||n.text)+'">Dismiss</button></div></div>';}).join(''):'<div class="uz-notification-item">No notifications yet.</div>'); }
+   window.UZNotify = { add:function(text,id){ ensureGustStyles(); text=String(text||'Notification'); var key=String(id||text); var list=readNotifications().filter(function(n){return String(n.id||n.text)!==key;}); list.unshift({id:key,text:text,time:Date.now(),read:false}); writeNotifications(list); renderNotifications(); }, removeText:function(text){ var target=String(text||''); writeNotifications(readNotifications().filter(function(n){return String(n.text)!==target;})); renderNotifications(); }, markAllRead:function(){ var list=readNotifications().map(function(n){n.read=true;return n;}); writeNotifications(list); renderNotifications(); }, dismissAll:function(){ writeNotifications([]); renderNotifications(); }, render:renderNotifications };
+   document.addEventListener('click',function(e){ var t=e.target; if(!t) return; if(t.id==='uz-notification-toggle'){ var box=document.getElementById('uz-notification-list'); if(box) box.hidden=!box.hidden; return; } var list=readNotifications(); if(t.dataset && t.dataset.notificationReadAll!==undefined){ list=list.map(function(n){n.read=true;return n;}); writeNotifications(list); renderNotifications(); return; } if(t.dataset && t.dataset.notificationDismissAll!==undefined){ writeNotifications([]); renderNotifications(); return; } if(t.dataset && t.dataset.notificationRead){ list=list.map(function(n){if(String(n.id||n.text)===String(t.dataset.notificationRead)) n.read=true;return n;}); writeNotifications(list); renderNotifications(); return; } if(t.dataset && t.dataset.notificationDismiss){ writeNotifications(list.filter(function(n){return String(n.id||n.text)!==String(t.dataset.notificationDismiss);})); renderNotifications(); return; } });
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',renderNotifications); else renderNotifications();
 })();
 </script>
@@ -8930,7 +8934,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function fromMongoUser(u) { return u ? { id: u.id, username: u.username, display_name: u.displayName || u.username, role: u.role || 'member', warnings: u.warnings || 0, banned_until: u.bannedUntil, kicked_until: u.kickedUntil, muted_until: u.mutedUntil, last_seen: u.lastSeen } : null; }
   function mongoMessage(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), body: row.body, deleted_body: row.deletedBody, deleted_at: row.deletedAt, updated_at: row.editedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'member' } }; }
-  function mongoPost(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), title: row.title, body: row.body, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'staff' } }; }
+  function mongoPost(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), title: row.title, body: row.body, deleted_at: row.deletedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'staff' } }; }
   function fromFirebaseProfile(id, data) { data = data || {}; return { id: id || data.id, username: data.username, display_name: data.display_name || data.displayName || data.username, avatar_url: data.avatar_url || data.avatarUrl || '', role: data.role || 'member', warnings: data.warnings || 0, banned_until: data.banned_until || data.bannedUntil || null, kicked_until: data.kicked_until || data.kickedUntil || null, muted_until: data.muted_until || data.mutedUntil || null, last_seen: data.last_seen || data.lastSeen || null, email: data.email || '' }; }
   function firebaseRow(doc) { var d = doc.data() || {}; d.id = doc.id; d.user_id = d.user_id || d.userId; d.created_at = d.created_at || d.createdAt; d.updated_at = d.updated_at || d.updatedAt; d.deleted_at = d.deleted_at || d.deletedAt; d.deleted_body = d.deleted_body || d.deletedBody; return d; }
   function displayName() { return getName() || (state.profile && (state.profile.display_name || state.profile.username)) || (state.user && state.user.email ? state.user.email.split('@')[0] : 'Member'); }
@@ -9122,7 +9126,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (mongoMode) {
       try {
         var data = await mongoFetch('/posts');
-        var rows = (data.posts || []).map(mongoPost).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
+        var rows = (data.posts || []).map(mongoPost).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
         list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : ''; var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : ''; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
         Array.prototype.forEach.call(document.querySelectorAll('.community-copy-announcement'), function(btn){ btn.onclick = function(){ var row = rows.filter(function(r){ return String(r.id) === String(btn.dataset.postId); })[0]; if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')); notifySaved('Announcement copied'); }; }); wireAnnouncementActions(rows);
         if (compose) {
@@ -9138,7 +9142,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (firebaseMode) {
       try {
         var snap = await state.client.db.collection('posts').orderBy('created_at', 'desc').limit(60).get();
-        var rows = snap.docs.map(firebaseRow).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
+        var rows = snap.docs.map(firebaseRow).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
         await loadMembers(false);
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         rows.forEach(function(row){ row.profiles = state.profileByUser[String(row.user_id)] || { username: row.username, display_name: row.username, role: 'staff' }; });
@@ -9156,7 +9160,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var res = await state.client.from('posts').select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(60);
     if (res.error && handleProfileError(res.error)) res = await state.client.from('posts').select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(60);
     if (res.error) { list.innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
-    var rows = (res.data || []).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
+    var rows = (res.data || []).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
     list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : ''; var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : ''; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
     Array.prototype.forEach.call(document.querySelectorAll('.community-copy-announcement'), function(btn){ btn.onclick = function(){ var row = rows.filter(function(r){ return String(r.id) === String(btn.dataset.postId); })[0]; if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')); notifySaved('Announcement copied'); }; }); wireAnnouncementActions(rows);
     if (compose) {
@@ -9196,7 +9200,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       try {
         if (state.tab === 'members') { await loadMembers(true); return; }
         var data = await mongoFetch(state.tab === 'chat' ? '/messages' : '/posts');
-        var rows = state.tab === 'chat' ? (data.messages || []).map(mongoMessage).reverse().filter(function(row){ return !row.deleted_at; }) : (data.posts || []).map(mongoPost).reverse();
+        var rows = state.tab === 'chat' ? (data.messages || []).map(mongoMessage).reverse().filter(function(row){ return !row.deleted_at; }) : (data.posts || []).map(mongoPost).reverse().filter(function(row){ return !row.deleted_at; });
         if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
@@ -9531,6 +9535,17 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function rememberWanted() { var box = document.getElementById('uz-remember-me'); return !box || box.checked; }
   function recentAccounts() { try { return JSON.parse(localStorage.getItem('uzRecentAccounts') || '[]').filter(function(a){ return a && a.username && Date.now() - a.time < 2592000000; }).slice(0, 12); } catch(e) { return []; } }
   function removeRecentAccount(username) { var u = cleanUsername(username); localStorage.setItem('uzRecentAccounts', JSON.stringify(recentAccounts().filter(function(a){ return cleanUsername(a.username) !== u; }))); }
+  function clearAccountLocalState(username) {
+    username = cleanUsername(username);
+    if (!username) return;
+    try {
+      localStorage.removeItem(profileKey('uzCommunityProfileName', username));
+      localStorage.removeItem(profileKey('uzCommunityAvatar', username));
+      ACCOUNT_SETTING_KEYS.forEach(function (key) { localStorage.removeItem(accountSettingKey(username, key)); });
+      localStorage.removeItem('uzBannedAccount:' + username);
+    } catch (e) {}
+    removeRecentAccount(username);
+  }
   function siteBannedName() { return cleanUsername(localStorage.getItem('uzSiteBanned') || ''); }
   function recentDaysLeft(a) { return Math.max(1, Math.ceil((2592000000 - (Date.now() - a.time)) / 86400000)); }
   function saveRecentAccount(username) { if (!rememberWanted()) { localStorage.setItem('uzRememberMe', 'false'); return; } var list = recentAccounts().filter(function(a){ return a.username !== username; }); list.unshift({ username: username, time: Date.now() }); localStorage.setItem('uzRecentAccounts', JSON.stringify(list.slice(0, 6))); localStorage.setItem('uzRememberMe', 'true'); }
@@ -9632,16 +9647,31 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   async function ensureFirebaseProfile(user, username) {
     initClient();
     username = cleanUsername(username || usernameFromUser(user));
-    try {
-      var deletedMarker = await client.db.collection('deletedAccounts').doc(user.uid).get();
-      if (deletedMarker.exists) {
-        try { removeRecentAccount(username); await client.auth.signOut(); } catch (e0) {}
-        renderGate('This account was deleted. Create a new account to continue.');
-        return null;
-      }
-    } catch (eMarker) { debugLog('deleted-marker-check-skipped', eMarker.message || 'unknown'); }
     var ref = client.db.collection('profiles').doc(user.uid);
+    var deletedRef = client.db.collection('deletedAccounts').doc(user.uid);
+    var deletedMarker = null;
+    try { deletedMarker = await deletedRef.get(); } catch (eMarker) { debugLog('deleted-marker-check-failed', eMarker.message || 'unknown'); }
     var doc = await ref.get();
+    if ((deletedMarker && deletedMarker.exists) || (doc.exists && doc.data() && doc.data().role === 'deleted')) {
+      // Finish cleaning up old deletion records when the old Auth account still exists.
+      // Keep the marker if Auth deletion fails so the stale account cannot be recreated.
+      try {
+        await deletedRef.set({ username: username, deleted_at: new Date().toISOString() }, { merge: true });
+        if (doc.exists) {
+          await ref.delete();
+          var afterDelete = await ref.get();
+          if (afterDelete.exists) throw new Error('Firebase did not confirm deleted profile cleanup.');
+        }
+        await user.delete();
+        try { await deletedRef.delete(); } catch (markerError) { debugLog('deleted-marker-cleanup-failed', markerError.message || 'unknown'); }
+      } catch (cleanupError) {
+        debugLog('deleted-account-cleanup-failed', cleanupError.message || 'unknown');
+      }
+      clearAccountLocalState(username);
+      try { await client.auth.signOut(); } catch (e0) {}
+      renderGate('This account was deleted. Create a new account to continue.');
+      return null;
+    }
     if (!doc.exists) {
       var role = 'member';
       await ref.set({ id: user.uid, username: username, display_name: username, role: role, warnings: 0, email: user.email || '', created_at: new Date().toISOString(), last_seen: new Date().toISOString() });
@@ -9652,7 +9682,6 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     }
     var data = doc.data() || {};
     data.id = user.uid;
-    if (data.role === 'deleted') { try { removeRecentAccount(username); localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(username)); await client.auth.signOut(); } catch(e) {} renderGate('This account was deleted.'); return null; }
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
   }
@@ -9754,7 +9783,6 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       var snapshot = null;
       var profileDeleted = false;
       var deletedRef = null;
-      var deletionMarkerCreated = false;
       var authDeleted = false;
       authTransition = true;
       try {
@@ -9764,12 +9792,12 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         ref = client.db.collection('profiles').doc(user.uid);
         snapshot = await ref.get();
         deletedRef = client.db.collection('deletedAccounts').doc(user.uid);
-        await deletedRef.set({ username: username, deleted_at: new Date().toISOString() });
-        deletionMarkerCreated = true;
-        await ref.delete();
-        profileDeleted = true;
-        var afterDelete = await ref.get();
-        if (afterDelete.exists) throw new Error('Firebase did not confirm profile deletion.');
+        if (snapshot.exists) {
+          await ref.delete();
+          profileDeleted = true;
+          var afterDelete = await ref.get();
+          if (afterDelete.exists) throw new Error('Firebase did not confirm profile deletion.');
+        }
         try {
           await user.delete();
         } catch (firstError) {
@@ -9781,10 +9809,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
           await user.delete();
         }
         authDeleted = true;
-        localStorage.removeItem(profileKey('uzCommunityProfileName', username));
-        localStorage.removeItem(profileKey('uzCommunityAvatar', username));
-        ACCOUNT_SETTING_KEYS.forEach(function (key) { localStorage.removeItem(accountSettingKey(username, key)); });
-        removeRecentAccount(username);
+        try { await deletedRef.delete(); } catch (markerError) { debugLog('deleted-marker-cleanup-failed', markerError.message || 'unknown'); }
+        clearAccountLocalState(username);
         localStorage.removeItem('uzSiteBanned');
         localStorage.removeItem('uzSiteBannedUid');
         localStorage.removeItem('uzBannedAccount:' + cleanUsername(username));
@@ -9798,9 +9824,6 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         authMode = 'signin';
         renderGate('Account deleted permanently.');
       } catch (e) {
-        if (!authDeleted && deletionMarkerCreated && deletedRef) {
-          try { await deletedRef.delete(); } catch (markerError) { debugLog('deleted-marker-rollback-failed', markerError.message || 'unknown'); }
-        }
         if (profileDeleted && snapshot && snapshot.exists && ref) {
           try { await ref.set(snapshot.data()); } catch (restoreError) { debugLog('profile-restore-failed', restoreError.message || 'unknown'); }
         }
@@ -9940,6 +9963,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   document.addEventListener('keydown', function (e) { if (!document.body.classList.contains('uz-auth-locked')) { konamiIndex = 0; return; } var key = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (key === konami[konamiIndex]) { konamiIndex++; ownerRift(konamiIndex / konami.length, false); } else { konamiIndex = key === konami[0] ? 1 : 0; if (konamiIndex) ownerRift(konamiIndex / konami.length, false); } if (konamiIndex === konami.length) { konamiIndex = 0; showOwnerPrompt(); } }, true);
   window.UZAuthGate = { refresh: check, showBanned: renderBannedGate, showLogin: function(msg){ tempOwnerActive=false; window.UZTempOwnerActive=false; renderGate(msg || ''); } };
   window.UZ_ACCOUNT_DEBUG.push('auth-gate-ready');
+  window.addEventListener('pagehide', function () { var current = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); if (current) saveAccountSettings(current); });
   if (ready && firebaseMode) { initClient(); client.auth.onAuthStateChanged(check); }
   else if (ready && !mongoMode) { initClient(); client.auth.onAuthStateChange(check); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ if (!firebaseMode) check(); updateProfileReady(); }); else { if (!firebaseMode) check(); updateProfileReady(); } window.addEventListener('load', updateProfileReady);

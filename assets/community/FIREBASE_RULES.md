@@ -49,7 +49,8 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.auth.uid == uid
         && request.resource.data.username is string;
-      allow update, delete: if owner();
+      allow update, delete: if signedIn()
+        && (request.auth.uid == uid || owner());
     }
 
     match /messages/{id} {

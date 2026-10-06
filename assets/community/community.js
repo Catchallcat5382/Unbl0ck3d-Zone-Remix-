@@ -77,7 +77,7 @@
   }
   function fromMongoUser(u) { return u ? { id: u.id, username: u.username, display_name: u.displayName || u.username, role: u.role || 'member', warnings: u.warnings || 0, banned_until: u.bannedUntil, kicked_until: u.kickedUntil, muted_until: u.mutedUntil, last_seen: u.lastSeen } : null; }
   function mongoMessage(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), body: row.body, deleted_body: row.deletedBody, deleted_at: row.deletedAt, updated_at: row.editedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'member' } }; }
-  function mongoPost(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), title: row.title, body: row.body, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'staff' } }; }
+  function mongoPost(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), title: row.title, body: row.body, deleted_at: row.deletedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'staff' } }; }
   function fromFirebaseProfile(id, data) { data = data || {}; return { id: id || data.id, username: data.username, display_name: data.display_name || data.displayName || data.username, avatar_url: data.avatar_url || data.avatarUrl || '', role: data.role || 'member', warnings: data.warnings || 0, banned_until: data.banned_until || data.bannedUntil || null, kicked_until: data.kicked_until || data.kickedUntil || null, muted_until: data.muted_until || data.mutedUntil || null, last_seen: data.last_seen || data.lastSeen || null, email: data.email || '' }; }
   function firebaseRow(doc) { var d = doc.data() || {}; d.id = doc.id; d.user_id = d.user_id || d.userId; d.created_at = d.created_at || d.createdAt; d.updated_at = d.updated_at || d.updatedAt; d.deleted_at = d.deleted_at || d.deletedAt; d.deleted_body = d.deleted_body || d.deletedBody; return d; }
   function displayName() { return getName() || (state.profile && (state.profile.display_name || state.profile.username)) || (state.user && state.user.email ? state.user.email.split('@')[0] : 'Member'); }
@@ -269,7 +269,7 @@
     if (mongoMode) {
       try {
         var data = await mongoFetch('/posts');
-        var rows = (data.posts || []).map(mongoPost).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
+        var rows = (data.posts || []).map(mongoPost).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
         list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : ''; var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : ''; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
         Array.prototype.forEach.call(document.querySelectorAll('.community-copy-announcement'), function(btn){ btn.onclick = function(){ var row = rows.filter(function(r){ return String(r.id) === String(btn.dataset.postId); })[0]; if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')); notifySaved('Announcement copied'); }; }); wireAnnouncementActions(rows);
         if (compose) {
@@ -285,7 +285,7 @@
     if (firebaseMode) {
       try {
         var snap = await state.client.db.collection('posts').orderBy('created_at', 'desc').limit(60).get();
-        var rows = snap.docs.map(firebaseRow).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
+        var rows = snap.docs.map(firebaseRow).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
         await loadMembers(false);
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         rows.forEach(function(row){ row.profiles = state.profileByUser[String(row.user_id)] || { username: row.username, display_name: row.username, role: 'staff' }; });
@@ -303,7 +303,7 @@
     var res = await state.client.from('posts').select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(60);
     if (res.error && handleProfileError(res.error)) res = await state.client.from('posts').select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(60);
     if (res.error) { list.innerHTML = '<div class="community-message community-locked">' + esc(res.error.message) + '</div>'; return; }
-    var rows = (res.data || []).filter(function(row){ return normalizePostChannel(row.title) === 'announcements'; });
+    var rows = (res.data || []).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
     list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : ''; var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : ''; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + esc(p.display_name || p.username || 'Staff') + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
     Array.prototype.forEach.call(document.querySelectorAll('.community-copy-announcement'), function(btn){ btn.onclick = function(){ var row = rows.filter(function(r){ return String(r.id) === String(btn.dataset.postId); })[0]; if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')); notifySaved('Announcement copied'); }; }); wireAnnouncementActions(rows);
     if (compose) {
@@ -343,7 +343,7 @@
       try {
         if (state.tab === 'members') { await loadMembers(true); return; }
         var data = await mongoFetch(state.tab === 'chat' ? '/messages' : '/posts');
-        var rows = state.tab === 'chat' ? (data.messages || []).map(mongoMessage).reverse().filter(function(row){ return !row.deleted_at; }) : (data.posts || []).map(mongoPost).reverse();
+        var rows = state.tab === 'chat' ? (data.messages || []).map(mongoMessage).reverse().filter(function(row){ return !row.deleted_at; }) : (data.posts || []).map(mongoPost).reverse().filter(function(row){ return !row.deleted_at; });
         if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
