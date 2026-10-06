@@ -1,0 +1,28 @@
+$ErrorActionPreference = 'Stop'
+$root = Split-Path -Parent $PSScriptRoot
+$htmlPath = Join-Path $root 'assets\index.html'
+$config = Get-Content (Join-Path $root 'assets\community\config.js') -Raw
+$community = Get-Content (Join-Path $root 'assets\community\community.js') -Raw
+$auth = Get-Content (Join-Path $root 'assets\community\auth-gate.js') -Raw
+$html = Get-Content $htmlPath -Raw
+$bundle = @"
+  <script>window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || []; window.UZ_ACCOUNT_DEBUG.push('inline-account-bundle-start');</script>
+  <script data-inline="community/config.js">
+$config
+  </script>
+  <script data-inline="community/community.js">
+$community
+  </script>
+  <script data-inline="community/auth-gate.js">
+$auth
+  </script>
+"@
+$startMarker = "  <script>window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || []; window.UZ_ACCOUNT_DEBUG.push('inline-account-bundle-start');</script>"
+$start = $html.IndexOf($startMarker, [System.StringComparison]::Ordinal)
+$authStart = $html.IndexOf('  <script data-inline="community/auth-gate.js">', $start, [System.StringComparison]::Ordinal)
+$end = if ($authStart -ge 0) { $html.IndexOf('</script>', $authStart, [System.StringComparison]::Ordinal) } else { -1 }
+if ($start -lt 0 -or $authStart -lt 0 -or $end -lt 0) { throw 'Inline bundle markers not found in assets/index.html' }
+$end += '</script>'.Length
+$newHtml = $html.Substring(0, $start) + $bundle.TrimEnd("`r", "`n") + $html.Substring($end)
+[System.IO.File]::WriteAllText($htmlPath, $newHtml.TrimEnd("`r", "`n") + "`n")
+Write-Host "Inline bundle rebuilt: $htmlPath"

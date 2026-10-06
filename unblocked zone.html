@@ -19,13 +19,13 @@
   <script>
     (async function () {
       function dec(parts) { return parts.map(function(p){ return atob(p); }).join(''); }
-      var buildVersion = 'cache-1';
-      var rawBaseUrl = dec(['aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LS8=','bWFzdGVyL2Fzc2V0cy8=']);
+      var buildVersion = 'live-' + Date.now();
+      var rawBaseUrl = dec(['aHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L2doLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzLw==']);
       var pageUrl = rawBaseUrl + 'index.html';
       var communityCssUrl = rawBaseUrl + 'community/community.css';
       var scriptFiles = ['community/config.js', 'community/community.js', 'community/auth-gate.js'];
       var fallbacks = [
-        dec(['aHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L2doLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw=']),
+        dec(['aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tLw==','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LS8=','bWFzdGVyL2Fzc2V0cy8=']),
         dec(['aHR0cHM6Ly9xdWFudGlsLmpzZGVsaXZyLm5ldC9naC8=','Q2F0Y2hhbGxjYXQ1MzgyL1VuYmwwY2szZC1ab25lLVJlbWl4LUBtYXN0ZXIvYXNzZXRzL2luZGV4Lmh0bWw='])
       ];
       var baseUrl = rawBaseUrl;
