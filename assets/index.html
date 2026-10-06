@@ -25,7 +25,16 @@
           return u ? 'uzacct:' + u + ':' + k : k;
         }
         Storage.prototype.getItem = function (k) { return rawGet.call(this, this === localStorage ? scoped(k) : k); };
-        Storage.prototype.setItem = function (k, v) { return rawSet.call(this, this === localStorage ? scoped(k) : k, v); };
+        Storage.prototype.setItem = function (k, v) {
+          var key = this === localStorage ? scoped(k) : k;
+          var result = rawSet.call(this, key, v);
+          // Auth-gate installs this hook after the bundle loads so account settings
+          // are copied to their durable per-user record immediately, not only on exit.
+          if (this === localStorage && key !== k && typeof window.UZPersistAccountSetting === 'function') {
+            try { window.UZPersistAccountSetting(String(k), String(v)); } catch (e) {}
+          }
+          return result;
+        };
         Storage.prototype.removeItem = function (k) { return rawRemove.call(this, this === localStorage ? scoped(k) : k); };
         Storage.prototype.key = function (i) { return rawKey.call(this, i); };
       } catch (e) {}
@@ -9421,9 +9430,20 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     'crosshairCustomRaw', 'panicEnabled', 'panicKey', 'panicUrl', 'panicAction', 'stealthCover', 'stretchedRes', 'perfMode',
     'cloakPreset', 'cloakCustomTitle', 'cloakCustomFavicon', 'openGamesInBlob', 'uzVoiceMuted', 'uzVoiceDeafened',
     'accentColor', 'cdnMirror', 'adLayout', 'lightspeedSchoolName', 'lightspeedTopText', 'lightspeedBottomText',
-    'lightspeedSystemMsg', 'scUrl', 'scHeading', 'scIp'
+    'lightspeedSystemMsg', 'scUrl', 'scHeading', 'scIp',
+    'ggTitle', 'ggMessage', 'scMessage', 'scReason', 'scPolicy', 'lqGlassButtons',
+    'homeMusicTracks', 'homeMusicVolume', 'homeMusicIndex', 'uzVoiceJoined',
+    'cloakTitle', 'cloakFavicon', 'hiddenPageCover', 'sidebarIconsOnly', 'uzRequireLogin',
+    'uzNotifications', 'uzAuditLog'
   ];
   function accountSettingKey(username, key) { return 'uzacct:settings:' + cleanUsername(username) + ':' + key; }
+  window.UZPersistAccountSetting = function (key, value) {
+    key = String(key || '');
+    if (ACCOUNT_SETTING_KEYS.indexOf(key) === -1) return;
+    var username = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
+    if (!username) return;
+    try { localStorage.setItem(accountSettingKey(username, key), String(value)); } catch (e) {}
+  };
   function saveAccountSettings(username) {
     username = cleanUsername(username);
     if (!username) return;
@@ -9739,13 +9759,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     saveRecentAccount(username);
     clearGate();
     renderProfile(session || mongoProfileToSession(profile), profile || window.UZCurrentProfile);
-    var refreshKey = 'uzAccountRefresh:' + username;
-    var shouldRefreshPage = sessionStorage.getItem(refreshKey) !== '1';
-    if (shouldRefreshPage) {
-      sessionStorage.setItem(refreshKey, '1');
-      location.reload();
-      return;
-    }
+    sessionStorage.setItem('uzAccountRefresh:' + username, '1');
     if (window.UZCommunity && window.UZCommunity.refresh) {
       try { await window.UZCommunity.refresh(); } catch(e) { debugLog('community-refresh-failed', e.message || 'unknown'); }
     }
@@ -10005,12 +10019,29 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     setTimeout(tick, 160);
   }
   async function showOwnerPrompt() { if (!document.body.classList.contains('uz-auth-locked')) return; initClient(); if (mongoMode && mongoToken()) { localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); renderGate('Signed out. Enter the owner code while logged out.'); return; } if (firebaseMode && client && client.auth.currentUser) { await client.auth.signOut(); sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); authMode = 'signin'; renderGate('Signed out. Enter the owner code while logged out.'); return; } if (client && !mongoMode && !firebaseMode) { try { var s = await client.auth.getSession(); if (s.data && s.data.session) { await client.auth.signOut(); sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); renderGate('Signed out. Enter the owner code while logged out.'); return; } } catch(e) {} } var existing = document.getElementById('uz-owner-code-modal'); if (existing) existing.remove(); ownerRift(1, true); ownerGlassFx(false); var modal = document.createElement('div'); modal.id = 'uz-owner-code-modal'; modal.className = 'uz-owner-code-modal from-rift'; modal.innerHTML = '<div class="uz-owner-code-card"><h2>Owner unlock</h2><p>Enter your 32-character temporary owner code. This unlock lasts until refresh or tab close.</p><input id="uz-owner-code-input" type="password" maxlength="64" autocomplete="off" placeholder="32-character raw code"><div class="community-row"><button class="community-btn" id="uz-owner-code-submit">Unlock</button><button class="community-btn secondary" id="uz-owner-code-cancel">Cancel</button></div><p id="uz-owner-code-error" class="uz-auth-error"></p></div>'; document.body.appendChild(modal); var input = document.getElementById('uz-owner-code-input'); var err = document.getElementById('uz-owner-code-error'); async function submit() { var code = input.value.trim(); if (code.length === 64 && /^[a-f0-9]{64}$/i.test(code)) { err.textContent = 'Enter the raw unlock code, not the stored hash.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); modal.classList.add('uz-auth-shake'); return; } if (code.length !== 32) { err.textContent = 'Enter the 32-character raw unlock code.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); modal.classList.add('uz-auth-shake'); return; } if (!bypassCodeReady()) { err.textContent = 'Owner unlock is not configured yet.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); return; } var codeHash = await sha256Hex(code); if (codeHash !== cfg.ownerBypassHash) { err.textContent = 'Wrong code.'; screenFlash('bad'); ownerAudio('bad'); ownerGlassFx(true); input.value = ''; input.focus(); modal.classList.remove('uz-auth-shake'); void modal.offsetWidth; modal.classList.add('uz-auth-shake'); return; } sessionStorage.removeItem('uzSessionOk'); localStorage.removeItem('uzLoginEmail'); modal.classList.add('accepted'); modal.remove(); fakeOwnerLogin(function(){ window.UZCurrentProfile = { username: 'temporary-owner', role: 'owner' }; tempOwnerActive = true; window.UZTempOwnerActive = true; setLightspeed('temporary-owner'); screenFlash('good'); sparkle(); setTimeout(function(){ closeOwnerRift(); check(); }, 820); }); } document.getElementById('uz-owner-code-submit').onclick = submit; document.getElementById('uz-owner-code-cancel').onclick = function () { modal.remove(); closeOwnerRift(); }; input.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); if (e.key === 'Escape') { modal.remove(); closeOwnerRift(); } }); setTimeout(function(){ input.focus(); }, 180); }
-  async function check() { if (authTransition) return; if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } initClient(); if (!cfg.requireLogin && !firebaseMode && (!mongoMode || !mongoToken())) { clearGate(); renderProfile(null, null); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } if (!ready) { renderProfile(null, null); renderGate(''); return; } if (firebaseMode) { var fbUser = client.auth.currentUser; var locked = siteBannedName(); var storedName = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); var fbName = cleanUsername(usernameFromUser(fbUser)); if (fbUser && storedName && fbName && storedName !== fbName) { authTransition = true; try { await client.auth.signOut(); } catch (e) {} authTransition = false; fbUser = null; localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); } if (!fbUser) { renderProfile(null, null); if (locked) renderBannedGate(locked); else renderGate(''); return; } var fbProfile = await ensureFirebaseProfile(fbUser, fbName); if (!fbProfile) { setBusy(''); return; } try { localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(fbProfile.username)); } catch(e) {} setLightspeed(fbProfile.username); prepareAccountSettings(fbProfile.username); clearGate(); renderProfile(firebaseProfileToSession(fbUser, fbProfile), fbProfile); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } var locked = siteBannedName(); if (locked) { renderProfile(null, null); renderBannedGate(locked); return; } if (mongoMode) { if (!mongoToken()) { renderProfile(null, null); renderGate(''); return; } try { var mine = await mongoFetch('/me'); window.UZCurrentProfile = mine.user; setLightspeed(mine.user.username); prepareAccountSettings(mine.user.username); clearGate(); renderProfile(mongoProfileToSession(mine.user), mine.user); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); } catch(e) { var oldName = localStorage.getItem('uzLoginEmail') || 'this account'; localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); if (e.data && e.data.banned) renderBannedGate(oldName); else if (cfg.requireLogin) renderGate(e.message || 'Sign in again.'); else { clearGate(); renderProfile(null, null); } } return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } if (localStorage.getItem('uzRememberMe') !== 'true' && sessionStorage.getItem('uzSessionOk') !== 'true') { await client.auth.signOut(); renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); if (profile && profile.banned_until && new Date(profile.banned_until) > new Date()) { await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); renderBannedGate(username); return; } setLightspeed(username); prepareAccountSettings(username); clearGate(); renderProfile(session, profile); }
+  async function check() { if (authTransition) return; if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } initClient(); if (!cfg.requireLogin && !firebaseMode && (!mongoMode || !mongoToken())) { clearGate(); renderProfile(null, null); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } if (!ready) { renderProfile(null, null); renderGate(''); return; } if (firebaseMode) { var fbUser = client.auth.currentUser; var locked = siteBannedName(); var storedName = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); var fbName = cleanUsername(usernameFromUser(fbUser)); if (fbUser && storedName && fbName && storedName !== fbName) { authTransition = true; try { await client.auth.signOut(); } catch (e) {} authTransition = false; fbUser = null; localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); } if (!fbUser) { renderProfile(null, null); if (locked) renderBannedGate(locked); else renderGate(''); return; } var fbProfile = await ensureFirebaseProfile(fbUser, fbName); if (!fbProfile) { setBusy(''); return; } try { localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(fbProfile.username)); } catch(e) {} setLightspeed(fbProfile.username); prepareAccountSettings(fbProfile.username); clearGate(); renderProfile(firebaseProfileToSession(fbUser, fbProfile), fbProfile); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } var locked = siteBannedName(); if (locked) { renderProfile(null, null); renderBannedGate(locked); return; } if (mongoMode) { if (!mongoToken()) { renderProfile(null, null); renderGate(''); return; } try { var mine = await mongoFetch('/me'); window.UZCurrentProfile = mine.user; setLightspeed(mine.user.username); prepareAccountSettings(mine.user.username); clearGate(); renderProfile(mongoProfileToSession(mine.user), mine.user); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); } catch(e) { var oldName = localStorage.getItem('uzLoginEmail') || 'this account'; localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); if (e.data && e.data.banned) renderBannedGate(oldName); else if (cfg.requireLogin) renderGate(e.message || 'Sign in again.'); else { clearGate(); renderProfile(null, null); } } return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); if (profile && profile.banned_until && new Date(profile.banned_until) > new Date()) { await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); renderBannedGate(username); return; } setLightspeed(username); prepareAccountSettings(username); clearGate(); renderProfile(session, profile); }
   document.addEventListener('keydown', function (e) { if (!document.body.classList.contains('uz-auth-locked')) { konamiIndex = 0; return; } var key = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (key === konami[konamiIndex]) { konamiIndex++; ownerRift(konamiIndex / konami.length, false); } else { konamiIndex = key === konami[0] ? 1 : 0; if (konamiIndex) ownerRift(konamiIndex / konami.length, false); } if (konamiIndex === konami.length) { konamiIndex = 0; showOwnerPrompt(); } }, true);
   window.UZAuthGate = { refresh: check, showBanned: renderBannedGate, showLogin: function(msg){ tempOwnerActive=false; window.UZTempOwnerActive=false; renderGate(msg || ''); } };
   window.UZ_ACCOUNT_DEBUG.push('auth-gate-ready');
-  window.addEventListener('pagehide', function () { var current = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); if (current) saveAccountSettings(current); });
-  if (ready && firebaseMode) { initClient(); client.auth.onAuthStateChanged(check); }
+  function saveCurrentAccountSettings() { var current = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); if (current) saveAccountSettings(current); }
+  window.addEventListener('pagehide', saveCurrentAccountSettings);
+  window.addEventListener('beforeunload', saveCurrentAccountSettings);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') saveCurrentAccountSettings(); });
+  if (ready && firebaseMode) {
+    initClient();
+    client.auth.onAuthStateChanged(function (user) {
+      // Firebase persistence is authoritative after a refresh. If an old local
+      // username is still present, save its settings before adopting the user
+      // that Firebase actually restored instead of signing that user out.
+      if (user) {
+        var restoredName = cleanUsername(usernameFromUser(user));
+        var previousName = cleanUsername(localStorage.getItem('uzLoginEmail') || '');
+        if (restoredName && previousName && restoredName !== previousName) saveAccountSettings(previousName);
+        if (restoredName) localStorage.setItem('uzLoginEmail', restoredName);
+      }
+      check();
+    });
+  }
   else if (ready && !mongoMode) { initClient(); client.auth.onAuthStateChange(check); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ if (!firebaseMode) check(); updateProfileReady(); }); else { if (!firebaseMode) check(); updateProfileReady(); } window.addEventListener('load', updateProfileReady);
 }());
