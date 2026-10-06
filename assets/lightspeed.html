@@ -55,7 +55,7 @@
       <div class="loading-school-name">Central Bucks School District</div>
       <div class="loading-stripe">
         <div class="top-text">Oops,</div>
-        <div class="website" id="loading-hostname">sitename.com</div>
+        <div class="website" id="loading-hostname">login.classlink.com</div>
         <div class="bottom-text">is not available because it is categorized as Security - Proxy.</div>
       </div>
       <div class="loading-system-msg">
@@ -66,7 +66,7 @@
   </div>
   <script>
       var sh = document.getElementById('loading-hostname');
-      if (sh) sh.textContent = window.location.hostname;
+      if (sh) sh.textContent = 'login.classlink.com';
       var map = {
         'lightspeedSchoolName': '.loading-school-name',
         'lightspeedTopText': '.top-text',
@@ -79,6 +79,12 @@
           if (v) { var el = document.querySelector(map[k]); if (el) el.textContent = v; }
         } catch (e) {}
       }
+      try {
+        var user = localStorage.getItem('uzLoginEmail') || 'user';
+        var account = user.indexOf('@') >= 0 ? user.split('@')[0] : user;
+        var msg = document.querySelector('.loading-system-msg');
+        if (msg) msg.textContent = 'You are logged in as ' + account + ' (IP Address: hidden).';
+      } catch (e) {}
   </script>
 </body>
 </html>
