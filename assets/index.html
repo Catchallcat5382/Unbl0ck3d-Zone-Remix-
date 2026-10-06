@@ -9544,7 +9544,13 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       localStorage.removeItem(profileKey('uzCommunityProfileName', username));
       localStorage.removeItem(profileKey('uzCommunityAvatar', username));
       ACCOUNT_SETTING_KEYS.forEach(function (key) { localStorage.removeItem(accountSettingKey(username, key)); });
+      var prefixes = ['uzacct:settings:' + username + ':', 'uzCommunityProfileName:' + username, 'uzCommunityAvatar:' + username];
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var key = localStorage.key(i) || '';
+        if (prefixes.some(function (prefix) { return key.indexOf(prefix) === 0; })) localStorage.removeItem(key);
+      }
       localStorage.removeItem('uzBannedAccount:' + username);
+      sessionStorage.removeItem('uzAccountRefresh:' + username);
     } catch (e) {}
     removeRecentAccount(username);
   }
@@ -9646,9 +9652,29 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function authFail(msg) { if (msg === 'ACCOUNT_MISSING') { note('Account does not exist. Press <button type="button" id="uz-create-account-error" class="uz-auth-inline-link">Create account</button> below to make one.', true); wireCreateAccountError(); } else note(msg || 'That did not work. Check the username and password.'); screenFlash('bad'); ownerAudio('bad'); var card = document.querySelector('.uz-auth-card'); if (card) { card.classList.remove('uz-auth-shake'); void card.offsetWidth; card.classList.add('uz-auth-shake'); } }
   async function accountExists(username) { if (mongoMode) return true; try { var found = await client.from('profiles').select('id').eq('username', username).maybeSingle(); return !!(found && found.data && found.data.id); } catch(e) { return true; } }
   function loginErrorMessage(username, exists) { return exists ? 'Username or password incorrect. Try again, or press Forgot password if this is your account.' : 'ACCOUNT_MISSING'; }
-  async function ensureFirebaseProfile(user, username) {
+  async function deleteFirebaseAuthUser(user, password) {
+    if (!user || typeof user.delete !== 'function') throw new Error('Firebase Auth deletion is unavailable.');
+    try {
+      await user.delete();
+      return true;
+    } catch (firstError) {
+      if (firstError.code !== 'auth/requires-recent-login') throw firstError;
+      password = password || prompt('Firebase needs one recent password check to permanently delete this account:');
+      if (!password) throw new Error('Account deletion cancelled.');
+      if (!user.reauthenticateWithCredential || !window.firebase || !window.firebase.auth || !window.firebase.auth.EmailAuthProvider) throw firstError;
+      var credential = window.firebase.auth.EmailAuthProvider.credential(user.email, password);
+      await user.reauthenticateWithCredential(credential);
+      await user.delete();
+      return true;
+    }
+  }
+  async function ensureFirebaseProfile(user, username, allowCreate, cleanupPassword) {
     initClient();
     username = cleanUsername(username || usernameFromUser(user));
+    if (allowCreate == null) {
+      var createdAt = user && user.metadata && user.metadata.creationTime ? new Date(user.metadata.creationTime).getTime() : 0;
+      allowCreate = Number.isFinite(createdAt) && Date.now() - createdAt < 120000;
+    }
     var ref = client.db.collection('profiles').doc(user.uid);
     var deletedRef = client.db.collection('deletedAccounts').doc(user.uid);
     var deletedMarker = null;
@@ -9664,7 +9690,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
           var afterDelete = await ref.get();
           if (afterDelete.exists) throw new Error('Firebase did not confirm deleted profile cleanup.');
         }
-        await user.delete();
+        await deleteFirebaseAuthUser(user, cleanupPassword);
         try { await deletedRef.delete(); } catch (markerError) { debugLog('deleted-marker-cleanup-failed', markerError.message || 'unknown'); }
       } catch (cleanupError) {
         debugLog('deleted-account-cleanup-failed', cleanupError.message || 'unknown');
@@ -9672,6 +9698,18 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       clearAccountLocalState(username);
       try { await client.auth.signOut(); } catch (e0) {}
       renderGate('This account was deleted. Create a new account to continue.');
+      return null;
+    }
+    if (!doc.exists && !allowCreate) {
+      clearAccountLocalState(username);
+      try {
+        await deleteFirebaseAuthUser(user, cleanupPassword);
+        debugLog('orphan-auth-deleted', username);
+      } catch (orphanError) {
+        debugLog('orphan-auth-delete-failed', orphanError.message || 'unknown');
+      }
+      try { await client.auth.signOut(); } catch (signOutError) {}
+      renderGate('This account no longer has an active profile and cannot be signed in. Create a new account to continue.');
       return null;
     }
     if (!doc.exists) {
@@ -9730,10 +9768,10 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     await old.user.delete();
     var replacement = await client.auth.createUserWithEmailAndPassword(authEmail(username), password);
     if (replacement.user.updateProfile) await replacement.user.updateProfile({ displayName: username }).catch(function(){});
-    var profile = await ensureFirebaseProfile(replacement.user, username);
+    var profile = await ensureFirebaseProfile(replacement.user, username, true);
     return profile ? { credential: replacement, profile: profile } : null;
   }
-  async function signIn() { var locked = siteBannedName(); if (locked) { renderBannedGate(locked); return; } if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } debugLog('signin-start', username); if (firebaseMode) { authTransition = true; try { setBusy('Signing in...'); await setFirebasePersistence(); var cred = await client.auth.signInWithEmailAndPassword(authEmail(username), password); var profile = await ensureFirebaseProfile(cred.user, username); if (profile) await finishLogin(username, firebaseProfileToSession(cred.user, profile), profile); else setBusy(''); authTransition = false; } catch(e) { authTransition = false; debugLog('firebase-signin-failed', e.message || 'unknown'); setBusy(''); removeRecentAccount(username); authFail((e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } if (mongoMode) { try { setBusy('Signing in...'); var data = await mongoFetch('/auth/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 16000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); await finishLogin(username, mongoProfileToSession(data.user), data.user); } catch(e) { debugLog('signin-failed', e.message || 'unknown'); setBusy(''); if (e.data && e.data.banned) renderBannedGate(username); else authFail(e.status === 404 ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } setBusy('Signing in...'); var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); if (res.error) { setBusy(''); removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } var profile = await ensureProfile(res.data.user); if (profile) await finishLogin(username, res.data.session || { user: res.data.user }, profile); else setBusy(''); }
+  async function signIn() { var locked = siteBannedName(); if (locked) { renderBannedGate(locked); return; } if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } debugLog('signin-start', username); if (firebaseMode) { authTransition = true; try { setBusy('Signing in...'); await setFirebasePersistence(); var cred = await client.auth.signInWithEmailAndPassword(authEmail(username), password); var profile = await ensureFirebaseProfile(cred.user, username, false, password); if (profile) await finishLogin(username, firebaseProfileToSession(cred.user, profile), profile); else setBusy(''); authTransition = false; } catch(e) { authTransition = false; debugLog('firebase-signin-failed', e.message || 'unknown'); setBusy(''); removeRecentAccount(username); authFail((e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } if (mongoMode) { try { setBusy('Signing in...'); var data = await mongoFetch('/auth/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 16000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); await finishLogin(username, mongoProfileToSession(data.user), data.user); } catch(e) { debugLog('signin-failed', e.message || 'unknown'); setBusy(''); if (e.data && e.data.banned) renderBannedGate(username); else authFail(e.status === 404 ? 'ACCOUNT_MISSING' : (e.message || loginErrorMessage(username, true))); } return; } var exists = await accountExists(username); if (!exists) { removeRecentAccount(username); authFail(loginErrorMessage(username, false)); return; } setBusy('Signing in...'); var res = await client.auth.signInWithPassword({ email: authEmail(username), password: password }); if (res.error) { setBusy(''); removeRecentAccount(username); authFail(loginErrorMessage(username, true)); return; } var profile = await ensureProfile(res.data.user); if (profile) await finishLogin(username, res.data.session || { user: res.data.user }, profile); else setBusy(''); }
   async function signUp() { var locked = siteBannedName(); if (locked) { renderBannedGate(locked); return; } if (!ready) { authFail('Account service is blocked or still loading on this network. Refresh once or try the latest hosted link.'); return; } initClient(); var username = cleanUsername(document.getElementById('uz-login-user').value); var password = document.getElementById('uz-login-pass').value; if (username.length < 2 || password.length < 6) { authFail('Username needs 2+ characters and password needs 6+ characters.'); return; } debugLog('signup-start', username); if (firebaseMode) { authTransition = true; try { setBusy('Creating account...'); await setFirebasePersistence(); var cred = await client.auth.createUserWithEmailAndPassword(authEmail(username), password); if (cred.user.updateProfile) await cred.user.updateProfile({ displayName: username }).catch(function(){}); var profile = await ensureFirebaseProfile(cred.user, username); if (profile) await finishLogin(username, firebaseProfileToSession(cred.user, profile), profile); else setBusy(''); authTransition = false; } catch(e) { debugLog('firebase-signup-failed', e.message || 'unknown'); if (e.code === 'auth/email-already-in-use') { try { setBusy('Repairing old account...'); var recovered = await recoverOrphanedFirebaseAccount(username, password); if (recovered) { await finishLogin(username, firebaseProfileToSession(recovered.credential.user, recovered.profile), recovered.profile); authTransition = false; return; } } catch(recoveryError) { debugLog('orphan-recovery-failed', recoveryError.message || 'unknown'); } } authTransition = false; setBusy(''); authFail(e.code === 'auth/email-already-in-use' ? 'Account already exists. Use Sign in instead.' : (e.message || 'Could not create account.')); } return; } if (mongoMode) { try { setBusy('Creating account...'); var data = await mongoFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ username: username, password: password }), timeout: 16000 }); if (rememberWanted()) localStorage.setItem('uzMongoToken', data.token); else sessionStorage.setItem('uzMongoToken', data.token); await finishLogin(username, mongoProfileToSession(data.user), data.user); } catch(e) { debugLog('signup-failed', e.message || 'unknown'); setBusy(''); authFail(e.message || 'Could not create account.'); } return; } setBusy('Creating account...'); var res = await client.auth.signUp({ email: authEmail(username), password: password, options: { data: { username: username } } }); if (res.error) { setBusy(''); authFail(res.error.message); return; } var profile = await ensureProfile(res.data.user); if (profile) await finishLogin(username, res.data.session || { user: res.data.user }, profile); else setBusy(''); }
 
   function updateProfileReady() {
@@ -9818,16 +9856,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
           var afterDelete = await ref.get();
           if (afterDelete.exists) throw new Error('Firebase did not confirm profile deletion.');
         }
-        try {
-          await user.delete();
-        } catch (firstError) {
-          if (firstError.code !== 'auth/requires-recent-login') throw firstError;
-          var password = prompt('Firebase needs one recent password check to permanently delete this account:');
-          if (!password) throw new Error('Account deletion cancelled.');
-          var credential = client.auth.EmailAuthProvider.credential(user.email, password);
-          await user.reauthenticateWithCredential(credential);
-          await user.delete();
-        }
+        await deleteFirebaseAuthUser(user);
         authDeleted = true;
         try { await deletedRef.delete(); } catch (markerError) { debugLog('deleted-marker-cleanup-failed', markerError.message || 'unknown'); }
         clearAccountLocalState(username);
