@@ -1,0 +1,41 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const html = fs.readFileSync('assets/index.html', 'utf8');
+const bootstrap = html.slice(html.indexOf('  <!-- Account-scoped'), html.indexOf('  <!-- Performance Mode')).match(/<script>([\s\S]*?)<\/script>/)[1];
+const auth = fs.readFileSync('assets/community/auth-gate.js', 'utf8');
+const core = auth.slice(0, auth.indexOf('  function clearActiveSettings()')) + '\nwindow.restore = restoreAccountSettings; }());';
+class Storage {
+  constructor() { this.values = new Map(); }
+  getItem(k) { return this.values.has(k) ? this.values.get(k) : null; }
+  setItem(k, v) { this.values.set(k, String(v)); }
+  removeItem(k) { this.values.delete(k); }
+  key(i) { return [...this.values.keys()][i] || null; }
+}
+const localStorage = new Storage();
+const context = vm.createContext({ Storage, localStorage, sessionStorage: new Storage(), window: {}, setTimeout: () => 0, clearTimeout() {}, console });
+localStorage.setItem('uzLoginEmail', 'alice');
+vm.runInContext(bootstrap, context);
+vm.runInContext(core, context);
+context.window.__uzSettingsReady = true;
+localStorage.setItem('accentColorV2', '#00ff9d');
+localStorage.setItem('bgMode', 'topography');
+localStorage.setItem('sidebarPosition', 'left');
+context.window.restore('alice');
+assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
+assert.equal(localStorage.getItem('bgMode'), 'topography');
+assert.equal(localStorage.getItem('sidebarPosition'), 'left');
+localStorage.setItem('uzLoginEmail', 'bob');
+context.window.restore('bob', { accentColorV2: '#0678d2', bgMode: 'waves' });
+assert.equal(localStorage.getItem('accentColorV2'), '#0678d2');
+assert.equal(localStorage.getItem('sidebarPosition'), null);
+localStorage.setItem('uzLoginEmail', 'alice');
+context.window.restore('alice');
+assert.equal(localStorage.getItem('accentColorV2'), '#00ff9d');
+assert.equal(localStorage.getItem('bgMode'), 'topography');
+assert.equal(localStorage.getItem('sidebarPosition'), 'left');
+localStorage.setItem('uzacct:alice:activeCursor', 'custom.png');
+context.window.restore('alice');
+assert.equal(localStorage.getItem('activeCursor'), 'custom.png');
+assert.equal(localStorage.getItem('uzacct:settings:alice:activeCursor'), 'custom.png');
+console.log('PASS: settings survive restoration, missing backups migrate, and accounts remain isolated.');

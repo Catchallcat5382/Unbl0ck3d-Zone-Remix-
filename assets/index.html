@@ -9580,12 +9580,13 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     ACCOUNT_SETTING_KEYS.forEach(function (key) {
       try {
         var value = localStorage.getItem(accountSettingKey(username, key));
-        if (value === null) localStorage.removeItem(key);
-        else localStorage.setItem(key, value);
+        if (value === null) {
+          value = localStorage.getItem(key);
+          if (value !== null) localStorage.setItem(accountSettingKey(username, key), value);
+        } else localStorage.setItem(key, value);
       } catch (e) {}
     });
     window.__uzSettingsReady = true;
-    window.__uzRestoringAccountSettings = false;
     try {
       var savedSiteTheme = localStorage.getItem('siteTheme');
       if (savedSiteTheme && typeof window.setSiteTheme === 'function') window.setSiteTheme(savedSiteTheme);
@@ -9594,7 +9595,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       if (typeof window.applyCustomCursor === 'function') window.applyCustomCursor();
       if (typeof window.rehydrateSettings === 'function') window.rehydrateSettings();
       else if (typeof window.loadLightspeedText === 'function') window.loadLightspeedText();
-    } catch (e) {}
+    } catch (e) { debugLog('settings-render-failed', e.message || 'unknown'); }
+    window.__uzRestoringAccountSettings = false;
     if (!repeated) {
       [120, 500, 1200].forEach(function (delay) {
         setTimeout(function () {
@@ -9696,7 +9698,6 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       err.status = res.status; err.data = data;
       throw err;
     }
-    window.UZPendingProfileSettings = { username: username, settings: data.settings && typeof data.settings === 'object' ? data.settings : {} };
     return data;
   }
   function wakeAccountApi() {
@@ -9896,6 +9897,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     }
     var data = doc.data() || {};
     data.id = user.uid;
+    window.UZPendingProfileSettings = { username: username, settings: data.settings && typeof data.settings === 'object' ? data.settings : {} };
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
   }
