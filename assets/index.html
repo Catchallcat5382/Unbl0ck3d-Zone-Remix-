@@ -1703,6 +1703,7 @@
 
   <div id="noise-bg" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></div>
   <div id="custom-bg" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;background-size:cover;background-position:center;background-repeat:no-repeat;pointer-events:none;"></div>
+  <style>#custom-bg video,#custom-bg iframe{display:block;width:100%;height:100%;border:0;object-fit:cover;pointer-events:none}#custom-bg iframe{position:absolute;top:50%;left:50%;width:max(100vw,177.78vh);height:max(100vh,56.25vw);transform:translate(-50%,-50%)}</style>
 
 
   <div id="console-overlay">
@@ -3342,13 +3343,14 @@
               <option value="matrix">Matrix</option>
               <option value="lines">Lines</option>
               <option value="noise">Noise</option>
-              <option value="custom">Custom Image</option>
+              <option value="custom">Custom Media</option>
               <option value="gradient">Gradient</option>
             </select>
             <div id="custom-wallpaper-ui" style="display:none;margin-top:12px;">
-              <label for="wallpaper-file" style="display:inline-block;padding:8px 16px;background:#333;color:#fff;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:8px;">Choose Image</label>
-              <input type="file" id="wallpaper-file" accept="image/*" style="display:none;" onchange="handleWallpaperFile(this)">
-              <input type="text" id="wallpaper-url" class="settings-input" placeholder="Or paste image URL..." style="width:100%;margin-top:6px;" onchange="handleWallpaperUrl(this.value)">
+              <label for="wallpaper-file" style="display:inline-block;padding:8px 16px;background:var(--accent);color:#080808;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:8px;">Upload image or video</label>
+              <input type="file" id="wallpaper-file" accept="image/*,video/mp4,video/webm" style="display:none;" onchange="handleWallpaperFile(this)">
+              <input type="text" id="wallpaper-url" class="settings-input" placeholder="Image, MP4/WebM, or YouTube URL" style="width:100%;margin-top:6px;" onchange="handleWallpaperUrl(this.value)">
+              <div id="wallpaper-status" role="status" style="color:#aaa;font-size:12px;margin-top:6px;"></div>
               <button onclick="clearCustomWallpaper()" style="margin-top:8px;padding:6px 12px;background:#c62828;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-family:'ApplePixel',sans-serif;">Remove Wallpaper</button>
             </div>
             <div id="gradient-wallpaper-ui" style="display:none;margin-top:12px;">
@@ -4562,7 +4564,9 @@
         if (window.__linesStart) window.__linesStart();
       } else if (mode === 'custom') {
         cuBg.style.display = 'block';
+        renderCustomWallpaper(localStorage.getItem('customWallpaper') || '');
       } else if (mode === 'gradient') {
+        clearWallpaperMedia();
         cuBg.style.display = 'block';
         cuBg.style.backgroundImage = getGradientCss() || '';
         ubSyncWallpaperClass();
@@ -4571,6 +4575,7 @@
         bgCanvas.style.display = 'block';
       }
       if (!silent) showToast('Background set to ' + mode);
+      if (mode !== 'custom' && mode !== 'gradient') clearWallpaperMedia();
     }
     var savedBgModeBeforeg4mes = null;
     var bgSuspended = false;
@@ -4623,10 +4628,7 @@
         setBackground('starfield');
       }
       var savedWallpaper = localStorage.getItem('customWallpaper');
-      if (savedWallpaper) {
-        var cuBg = document.getElementById('custom-bg');
-        if (cuBg) cuBg.style.backgroundImage = 'url(' + savedWallpaper + ')';
-      }
+      if (savedWallpaper && localStorage.getItem('bgMode') === 'custom') renderCustomWallpaper(savedWallpaper);
       try {
         var _gc1 = document.getElementById('gradient-c1');
         var _gc2 = document.getElementById('gradient-c2');
@@ -4746,44 +4748,133 @@
     })();
 
     /*  CUSTOM WALLPAPER  */
+    var wallpaperObjectUrl = null;
+    var wallpaperRenderId = 0;
+    function wallpaperStatus(message) {
+      var el = document.getElementById('wallpaper-status');
+      if (el) el.textContent = message || '';
+    }
+    function wallpaperDb() {
+      return new Promise(function(resolve, reject) {
+        if (!window.indexedDB) { reject(new Error('This browser does not support local media storage.')); return; }
+        var request = indexedDB.open('uz-wallpaper-media', 1);
+        request.onupgradeneeded = function() { request.result.createObjectStore('files'); };
+        request.onsuccess = function() { resolve(request.result); };
+        request.onerror = function() { reject(request.error || new Error('Media storage failed.')); };
+      });
+    }
+    async function wallpaperFileStore(key, file) {
+      var db = await wallpaperDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction('files', 'readwrite');
+        tx.objectStore('files').put(file, key);
+        tx.oncomplete = function() { db.close(); resolve(); };
+        tx.onerror = function() { db.close(); reject(tx.error || new Error('Media could not be saved.')); };
+      });
+    }
+    async function wallpaperFileLoad(key) {
+      var db = await wallpaperDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction('files', 'readonly');
+        var request = tx.objectStore('files').get(key);
+        request.onsuccess = function() { resolve(request.result); };
+        request.onerror = function() { reject(request.error || new Error('Media could not be loaded.')); };
+        tx.oncomplete = function() { db.close(); };
+      });
+    }
+    function clearWallpaperMedia() {
+      var bg = document.getElementById('custom-bg');
+      if (bg) { var video = bg.querySelector('video'); if (video) video.pause(); bg.replaceChildren(); }
+      if (wallpaperObjectUrl) { URL.revokeObjectURL(wallpaperObjectUrl); wallpaperObjectUrl = null; }
+    }
+    function youtubeWallpaperId(value) {
+      try {
+        var url = new URL(value);
+        var host = url.hostname.toLowerCase();
+        if (host === 'youtu.be' || host === 'www.youtu.be') return url.pathname.slice(1).split('/')[0];
+        if (host === 'youtube.com' || host === 'www.youtube.com' || host === 'm.youtube.com') return url.searchParams.get('v') || (url.pathname.match(/^\/(?:shorts|embed|live)\/([^/]+)/) || [])[1] || '';
+      } catch (e) {}
+      return '';
+    }
+    async function renderCustomWallpaper(value) {
+      var bg = document.getElementById('custom-bg');
+      if (!bg) return;
+      var renderId = ++wallpaperRenderId;
+      clearWallpaperMedia();
+      bg.style.backgroundImage = '';
+      if (!value) { ubSyncWallpaperClass(); return; }
+      var src = value;
+      if (value.indexOf('local-media:') === 0) {
+        try {
+          var file = await wallpaperFileLoad(value.slice('local-media:'.length));
+          if (renderId !== wallpaperRenderId) return;
+          if (!file) throw new Error('Uploaded media is not on this device. Use a direct URL to sync across devices.');
+          wallpaperObjectUrl = URL.createObjectURL(file);
+          src = wallpaperObjectUrl;
+          value = file.type.indexOf('video/') === 0 ? 'local-video' : 'local-image';
+        } catch (error) { wallpaperStatus(error.message); return; }
+      }
+      var youtubeId = youtubeWallpaperId(value);
+      if (youtubeId && /^[A-Za-z0-9_-]{11}$/.test(youtubeId)) {
+        var frame = document.createElement('iframe');
+        frame.title = 'YouTube background';
+        frame.allow = 'autoplay; encrypted-media';
+        frame.referrerPolicy = 'strict-origin-when-cross-origin';
+        frame.src = 'https://www.youtube-nocookie.com/embed/' + youtubeId + '?autoplay=1&mute=1&controls=0&loop=1&playlist=' + youtubeId + '&playsinline=1&rel=0';
+        bg.appendChild(frame);
+        wallpaperStatus('YouTube background loaded. If your network blocks embeds, use an MP4 file or direct video URL.');
+      } else if (value === 'local-video' || /\.(mp4|webm)(?:[?#]|$)/i.test(value)) {
+        var video = document.createElement('video');
+        video.src = src;
+        video.autoplay = true; video.muted = true; video.loop = true; video.playsInline = true;
+        video.addEventListener('error', function() { wallpaperStatus('Video could not play. Try an MP4 (H.264) or WebM file.'); });
+        bg.appendChild(video);
+        video.play().catch(function() { wallpaperStatus('Autoplay was blocked. Click the page, then select the background again.'); });
+      } else {
+        bg.style.backgroundImage = 'url(' + JSON.stringify(src) + ')';
+      }
+      ubSyncWallpaperClass();
+    }
     function handleWallpaperFile(input) {
       var file = input.files && input.files[0];
       if (!file) return;
-      if (file.size > 10 * 1024 * 1024) { alert('Image too large (max 10 MB).'); return; }
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var dataUrl = e.target.result;
-        localStorage.setItem('customWallpaper', dataUrl);
-        var cuBg = document.getElementById('custom-bg');
-        if (cuBg) cuBg.style.backgroundImage = 'url(' + dataUrl + ')';
-        ubSyncWallpaperClass();
+      if (!/^image\//.test(file.type) && !/^(video\/mp4|video\/webm)$/.test(file.type)) { wallpaperStatus('Choose an image, MP4, or WebM file.'); return; }
+      if (file.size > 150 * 1024 * 1024) { wallpaperStatus('File is too large (150 MB maximum).'); return; }
+      var key = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random());
+      wallpaperStatus('Saving media on this device...');
+      wallpaperFileStore(key, file).then(function() {
+        localStorage.setItem('customWallpaper', 'local-media:' + key);
         setBackground('custom');
         document.getElementById('bg-select').value = 'custom';
-      };
-      reader.readAsDataURL(file);
+        wallpaperStatus('Uploaded media saved on this device. Use a direct URL for cross-device sync.');
+      }).catch(function(error) { wallpaperStatus(error.message || 'Upload failed.'); });
     }
 
     function handleWallpaperUrl(url) {
+      url = String(url || '').trim();
       if (!url) return;
+      try { var parsed = new URL(url); if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error(); }
+      catch (e) { wallpaperStatus('Enter a full http:// or https:// media URL.'); return; }
       localStorage.setItem('customWallpaper', url);
-      var cuBg = document.getElementById('custom-bg');
-      if (cuBg) cuBg.style.backgroundImage = 'url(' + url + ')';
-      ubSyncWallpaperClass();
       setBackground('custom');
       document.getElementById('bg-select').value = 'custom';
+      if (!youtubeWallpaperId(url)) wallpaperStatus('Background URL saved.');
     }
 
     function ubSyncWallpaperClass() {
       var eq = document.getElementById('custom-bg');
       if (!eq) return;
       var bg = eq.style.backgroundImage || '';
-      eq.classList.toggle('wallpaper', !!bg && bg !== 'none' && bg !== '');
+      eq.classList.toggle('wallpaper', !!eq.firstElementChild || (!!bg && bg !== 'none' && bg !== ''));
     }
 
     function clearCustomWallpaper() {
       localStorage.removeItem('customWallpaper');
       var cuBg = document.getElementById('custom-bg');
+      ++wallpaperRenderId;
+      clearWallpaperMedia();
       if (cuBg) cuBg.style.backgroundImage = '';
+      wallpaperStatus('');
       ubSyncWallpaperClass();
       setBackground('starfield');
       document.getElementById('bg-select').value = 'starfield';
@@ -8065,9 +8156,7 @@ let DATA = {
       } catch (e) { console.error('Could not restore background', e); }
       try {
         if (has('customWallpaper')) {
-          var cuBg = document.getElementById('custom-bg');
-          if (cuBg) cuBg.style.backgroundImage = 'url(' + get('customWallpaper') + ')';
-          ubSyncWallpaperClass();
+          if (localStorage.getItem('bgMode') === 'custom') renderCustomWallpaper(get('customWallpaper'));
         }
       } catch (e) {}
       try {
