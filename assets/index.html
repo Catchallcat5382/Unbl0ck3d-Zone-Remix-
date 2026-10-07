@@ -3303,12 +3303,18 @@
             </div>
             <select id="panic-action-select" class="settings-input" onchange="savePanicSettings()" style="margin-top:12px;">
               <option value="redirect">Redirect to URL</option>
-              <option value="cover">Embed URL cover</option>
+              <option value="cover">Visual cover</option>
               <option value="close">Close this tab</option>
               <option value="blank">Blank page</option>
-              <option value="history-back" disabled>Go back cover (replaced by Embed URL cover)</option>
+              <option value="history-back" disabled>Legacy cover</option>
             </select>
             <input type="text" id="panic-url-input" class="settings-input" placeholder="Redirect URL (https://www.google.com)" onchange="savePanicSettings()" style="margin-top:12px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
+              <label for="panic-cover-file" class="settings-btn" style="cursor:pointer;">Upload cover image</label>
+              <input id="panic-cover-file" type="file" accept="image/*" style="display:none;" onchange="handlePanicCoverFile(this)">
+              <button class="settings-btn" type="button" onclick="clearPanicCoverImage()">Remove image</button>
+            </div>
+            <div id="panic-cover-status" role="status" style="color:#aaa;font-size:12px;margin-top:5px;"></div>
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
               <button class="settings-btn" onclick="savePanicSettings()">Save</button>
               <button class="settings-btn" onclick="resetPanicSettings()">Reset</button>
@@ -4841,7 +4847,7 @@
       var file = input.files && input.files[0];
       if (!file) return;
       if (!/^image\//.test(file.type) && !/^(video\/mp4|video\/webm)$/.test(file.type)) { wallpaperStatus('Choose an image, MP4, or WebM file.'); return; }
-      if (file.size > 150 * 1024 * 1024) { wallpaperStatus('File is too large (150 MB maximum).'); return; }
+      if (file.size > 350 * 1024 * 1024) { wallpaperStatus('File is too large (350 MB maximum).'); return; }
       var key = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random());
       wallpaperStatus('Saving media on this device...');
       wallpaperFileStore(key, file).then(function() {
@@ -4849,7 +4855,7 @@
         setBackground('custom');
         document.getElementById('bg-select').value = 'custom';
         wallpaperStatus('Uploaded media saved on this device. Use a direct URL for cross-device sync.');
-      }).catch(function(error) { wallpaperStatus(error.message || 'Upload failed.'); });
+      }).catch(function(error) { wallpaperStatus('Local storage could not save this file: ' + (error.message || 'storage quota reached')); });
     }
 
     function handleWallpaperUrl(url) {
@@ -5057,15 +5063,80 @@
       if (document.getElementById('panic-cover-style')) return;
       var style = document.createElement('style');
       style.id = 'panic-cover-style';
-      style.textContent = '.panic-cover-frame{position:fixed;inset:0;z-index:2147483646;display:none;background:#fff}.panic-cover-frame.open{display:block}.panic-cover-frame iframe{display:block;width:100%;height:100%;border:0;background:#fff;pointer-events:none}.panic-cover-close{position:absolute;right:10px;top:10px;z-index:1;border:1px solid #555;background:#fff;color:#111;border-radius:6px;padding:7px 10px;font:700 12px Arial,sans-serif;cursor:pointer}';
+      style.textContent = '.panic-cover-frame{position:fixed;inset:0;z-index:2147483646;display:none;background:#fff;color:#202124;font-family:Arial,sans-serif}.panic-cover-frame.open{display:block}.panic-cover-preview{position:absolute;inset:0;display:grid;grid-template-rows:52px 1fr;background:#fff}.panic-cover-address{display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid #dadce0;color:#5f6368;font:13px Arial,sans-serif}.panic-cover-address span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.panic-cover-address i{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#e8f0fe;color:#4285f4;font-style:normal;font-weight:700}.panic-cover-main{display:grid;align-content:center;justify-items:center;gap:26px;padding:24px 18px 15vh;text-align:center}.panic-cover-brand{font:700 clamp(34px,7vw,82px)/1 Arial,sans-serif;color:#3c4043;overflow-wrap:anywhere}.panic-cover-google{display:flex;font:500 clamp(42px,7vw,88px)/1 Arial,sans-serif;letter-spacing:-.05em}.panic-cover-search{width:min(560px,calc(100vw - 40px));height:46px;border:1px solid #dadce0;border-radius:24px;box-shadow:0 2px 6px rgba(0,0,0,.08);color:#9aa0a6;text-align:left;box-sizing:border-box;padding:13px 18px;font-size:14px}.panic-cover-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.panic-cover-close{position:absolute;right:10px;top:10px;z-index:2;border:1px solid #aaa;background:#fff;color:#111;border-radius:6px;padding:7px 10px;font:700 12px Arial,sans-serif;cursor:pointer}';
       document.head.appendChild(style);
+    }
+    var panicCoverObjectUrl = null;
+    function panicCoverStatus(message) {
+      var status = document.getElementById('panic-cover-status');
+      if (status) status.textContent = message || '';
+    }
+    function clearPanicCoverObjectUrl() {
+      if (panicCoverObjectUrl) { URL.revokeObjectURL(panicCoverObjectUrl); panicCoverObjectUrl = null; }
+    }
+    function handlePanicCoverFile(input) {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { panicCoverStatus('Choose an image file.'); return; }
+      if (file.size > 350 * 1024 * 1024) { panicCoverStatus('File is too large (350 MB maximum).'); return; }
+      var key = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random());
+      panicCoverStatus('Saving cover on this device...');
+      wallpaperFileStore('panic-cover:' + key, file).then(function() {
+        localStorage.setItem('panicCoverMedia', key);
+        var old = document.getElementById('panic-cover-frame');
+        if (old) old.remove();
+        clearPanicCoverObjectUrl();
+        panicCoverStatus('Cover image saved on this device.');
+      }).catch(function(error) { panicCoverStatus('Local storage could not save this image: ' + (error.message || 'storage quota reached')); });
+    }
+    function clearPanicCoverImage() {
+      localStorage.removeItem('panicCoverMedia');
+      var old = document.getElementById('panic-cover-frame');
+      if (old) old.remove();
+      clearPanicCoverObjectUrl();
+      panicCoverStatus('Cover image removed.');
+    }
+    function buildPanicCoverPreview(wrap, url) {
+      var preview = document.createElement('div');
+      preview.className = 'panic-cover-preview';
+      var address = document.createElement('div');
+      address.className = 'panic-cover-address';
+      var icon = document.createElement('i'); icon.textContent = '●';
+      var addressText = document.createElement('span'); addressText.textContent = url;
+      address.appendChild(icon); address.appendChild(addressText);
+      var main = document.createElement('div'); main.className = 'panic-cover-main';
+      var host = new URL(url).hostname.replace(/^www\./, '');
+      if (host === 'google.com') {
+        var logo = document.createElement('div'); logo.className = 'panic-cover-google';
+        'Google'.split('').forEach(function(letter, index) {
+          var span = document.createElement('span'); span.textContent = letter;
+          span.style.color = ['#4285f4','#ea4335','#fbbc05','#4285f4','#34a853','#ea4335'][index];
+          logo.appendChild(span);
+        });
+        main.appendChild(logo);
+      } else {
+        var brand = document.createElement('div'); brand.className = 'panic-cover-brand'; brand.textContent = host;
+        main.appendChild(brand);
+      }
+      var search = document.createElement('div'); search.className = 'panic-cover-search'; search.textContent = 'Search';
+      main.appendChild(search);
+      preview.appendChild(address); preview.appendChild(main);
+      wrap.appendChild(preview);
+      var key = localStorage.getItem('panicCoverMedia');
+      if (key) wallpaperFileLoad('panic-cover:' + key).then(function(file) {
+        if (!file || !wrap.isConnected) return;
+        clearPanicCoverObjectUrl();
+        panicCoverObjectUrl = URL.createObjectURL(file);
+        var image = document.createElement('img'); image.className = 'panic-cover-image'; image.alt = 'Uploaded visual cover'; image.src = panicCoverObjectUrl;
+        preview.replaceChildren(image);
+      }).catch(function(error) { panicCoverStatus('Cover image unavailable here; showing the local preview.'); });
     }
     function togglePanicCover() {
       var old = document.getElementById('panic-cover-frame');
       if (old) {
         if (old.classList.contains('open')) { old.classList.remove('open'); return; }
-        if (old.dataset.url === getPanicUrl()) { old.classList.add('open'); return; }
-        old.remove();
+        if (old.dataset.url === getPanicUrl() && old.dataset.media === (localStorage.getItem('panicCoverMedia') || '')) { old.classList.add('open'); return; }
+        old.remove(); clearPanicCoverObjectUrl();
       }
       ensurePanicCoverStyle();
       var wrap = document.createElement('div');
@@ -5075,17 +5146,13 @@
       try { var parsed = new URL(url); if (!/^https?:$/.test(parsed.protocol)) throw new Error(); url = parsed.href; }
       catch (e) { url = 'https://www.google.com'; }
       wrap.dataset.url = getPanicUrl();
-      var frame = document.createElement('iframe');
-      frame.title = 'Focus cover';
-      frame.referrerPolicy = 'no-referrer';
-      frame.tabIndex = -1;
-      frame.src = url;
+      wrap.dataset.media = localStorage.getItem('panicCoverMedia') || '';
+      buildPanicCoverPreview(wrap, url);
       var close = document.createElement('button');
       close.className = 'panic-cover-close';
       close.type = 'button';
       close.textContent = 'Close cover';
       close.onclick = function() { wrap.classList.remove('open'); };
-      wrap.appendChild(frame);
       wrap.appendChild(close);
       document.body.appendChild(wrap);
     }
