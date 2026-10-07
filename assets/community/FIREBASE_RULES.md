@@ -67,6 +67,19 @@ service cloud.firestore {
       );
 
       allow delete: if owner() || myRole() == 'admin';
+
+      match /attachments/{attachmentId} {
+        allow read: if signedIn();
+
+        allow create: if signedIn()
+          && get(/databases/$(database)/documents/messages/$(id)).data.user_id == request.auth.uid;
+
+        allow update, delete: if signedIn() && (
+          owner()
+          || myRole() == 'admin'
+          || get(/databases/$(database)/documents/messages/$(id)).data.user_id == request.auth.uid
+        );
+      }
     }
 
     match /posts/{id} {
@@ -81,6 +94,20 @@ service cloud.firestore {
         staff()
         || resource.data.user_id == request.auth.uid
       );
+
+      match /attachments/{attachmentId} {
+        allow read: if signedIn();
+
+        allow create: if signedIn() && (
+          staff()
+          || get(/databases/$(database)/documents/posts/$(id)).data.user_id == request.auth.uid
+        );
+
+        allow update, delete: if signedIn() && (
+          staff()
+          || get(/databases/$(database)/documents/posts/$(id)).data.user_id == request.auth.uid
+        );
+      }
     }
 
     match /appeals/{id} {

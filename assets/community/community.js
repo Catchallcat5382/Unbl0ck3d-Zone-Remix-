@@ -2,7 +2,8 @@
   window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
   window.UZ_ACCOUNT_DEBUG.push('community-js-start');
   var cfg = window.UZ_COMMUNITY_CONFIG || {};
-  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachment: null, pendingPostAttachment: null, pendingAnnouncementAttachment: null, pendingAnnouncementEdits: {}, pendingPostEdits: {} };
+  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachments: [], pendingPostAttachment: null, pendingAnnouncementAttachments: [], pendingAnnouncementEdits: {}, pendingPostEdits: {} };
+  var MAX_ATTACHMENTS = 20;
   var mongoApiUrl = String(cfg.mongoApiUrl || '').replace(/\/$/, '');
   var mongoMode = !!mongoApiUrl;
   var firebaseMode = !mongoMode && cfg.authProvider === 'firebase';
@@ -238,7 +239,8 @@
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
     chat.classList.toggle('community-hidden', state.tab !== 'chat'); post.classList.toggle('community-hidden', state.tab !== 'posts'); staff.classList.toggle('community-hidden', true);
     var ok = state.user && !isBanned(state.profile) && !isMuted(state.profile);
-    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload file<input id="community-chat-file-input" type="file"></label><span class="community-attachment-choice" id="community-chat-file-choice">No file selected</span><button class="community-btn" id="community-send-chat">Send</button></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
+    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload files<input id="community-chat-file-input" type="file" multiple></label><span class="community-attachment-choice" id="community-chat-file-choice">No files selected</span><button class="community-btn" id="community-send-chat">Send</button></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
+    if (ok) showAttachmentQueue('community-chat-file-choice', state.pendingChatAttachments);
     var postOk = ok && canPost();
     var titlePh = state.channelName === 'settings' ? 'Preset name' : (state.channelName === 'suggestions' ? 'Suggestion title' : 'Thread title');
     var bodyPh = state.channelName === 'settings' ? 'Describe this settings preset, or press Attach settings.' : 'Post text, links, updates, settings, images, or files.';
@@ -271,7 +273,9 @@
       raw = raw.slice(0, match.index).trim();
     }
     var body = raw ? '<div class="community-rich-text">' + decorateMentions(raw) + '</div>' : '';
-    return body + attachmentHtml(attachment || legacy, !!legacy && !attachment);
+    var attachments = Array.isArray(attachment) ? attachment : (attachment ? [attachment] : []);
+    if (legacy && !attachments.length) attachments = [legacy];
+    return body + attachments.map(function(item){ return attachmentHtml(item, !!legacy && item === legacy); }).join('');
   }
   function wireMentionComplete(el) {
     if (!el) return;
@@ -334,8 +338,46 @@
     });
   }
   function showAttachmentChoice(id, attachment) { var el = $(id); if (el) el.textContent = attachment ? 'Ready: ' + attachmentName(attachment) : 'No file selected'; }
+  function showAttachmentQueue(id, attachments) { var el = $(id); if (!el) return; var count = (attachments || []).length; el.textContent = count ? count + ' of ' + MAX_ATTACHMENTS + ' files ready' : 'No files selected'; }
+  async function queueAttachments(files, stateKey, choiceId) {
+    var nextFiles = Array.prototype.slice.call(files || []);
+    var queue = state[stateKey] || [];
+    if (!nextFiles.length) return;
+    if (queue.length + nextFiles.length > MAX_ATTACHMENTS) throw new Error('You can attach up to ' + MAX_ATTACHMENTS + ' files at once.');
+    for (var i = 0; i < nextFiles.length; i++) queue.push(await fileToImageAttachment(nextFiles[i]));
+    state[stateKey] = queue;
+    showAttachmentQueue(choiceId, queue);
+  }
+  async function createFirebaseItemWithAttachments(collection, record, attachments) {
+    var files = (attachments || []).slice(0, MAX_ATTACHMENTS);
+    var ref = await state.client.db.collection(collection).add(Object.assign({}, record, { attachment_count: 0 }));
+    if (!files.length) return ref;
+    try {
+      var batch = state.client.db.batch();
+      files.forEach(function(attachment, index) {
+        batch.set(ref.collection('attachments').doc(), Object.assign({}, attachment, { sort_index: index, created_at: new Date().toISOString() }));
+      });
+      batch.update(ref, { attachment_count: files.length });
+      await batch.commit();
+      return ref;
+    } catch (error) {
+      try { await ref.delete(); } catch (cleanupError) {}
+      throw error;
+    }
+  }
+  async function loadFirebaseAttachments(collection, rows) {
+    await Promise.all((rows || []).filter(function(row){ return Number(row.attachment_count || 0) > 0; }).map(async function(row) {
+      try {
+        var snapshot = await state.client.db.collection(collection).doc(String(row.id)).collection('attachments').orderBy('sort_index', 'asc').limit(MAX_ATTACHMENTS).get();
+        row.attachments = snapshot.docs.map(function(doc){ return doc.data() || {}; });
+      } catch (error) {
+        row.attachments = [];
+        console.warn('Could not load attachments for ' + collection + '/' + row.id, error);
+      }
+    }));
+  }
   async function attachFileToPost(e) { try { state.pendingPostAttachment = await fileToImageAttachment(e && e.target && e.target.files ? e.target.files[0] : null); showAttachmentChoice('community-file-choice', state.pendingPostAttachment); status('File attached. It will be published separately from the post text.'); } catch (error) { state.pendingPostAttachment = null; showAttachmentChoice('community-file-choice', null); status(error.message || 'File upload failed.'); } }
-  async function attachFileToChat(e) { try { state.pendingChatAttachment = await fileToImageAttachment(e && e.target && e.target.files ? e.target.files[0] : null); showAttachmentChoice('community-chat-file-choice', state.pendingChatAttachment); status('File attached to this message.'); } catch (error) { state.pendingChatAttachment = null; showAttachmentChoice('community-chat-file-choice', null); status(error.message || 'File upload failed.'); } }
+  async function attachFileToChat(e) { try { await queueAttachments(e && e.target && e.target.files, 'pendingChatAttachments', 'community-chat-file-choice'); if (e && e.target) e.target.value = ''; status('Files attached to this message.'); } catch (error) { status(error.message || 'File upload failed.'); } }
   function renderVoiceRoom() {
     var list = $('community-list');
     if (!list) return;
@@ -370,7 +412,7 @@
     var p = row.profiles || {};
     var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : '';
     var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : '';
-    return '<article class="announcement-card" data-announcement-id="' + esc(row.id) + '"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + authorLabel(p, row) + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '', row.attachment) + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>';
+    return '<article class="announcement-card" data-announcement-id="' + esc(row.id) + '"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + authorLabel(p, row) + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '', row.attachments || row.attachment) + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>';
   }
   function renderAnnouncementRows(rows) {
     var list = $('announcements-list');
@@ -380,13 +422,14 @@
     wireAnnouncementActionsV2(rows);
   }
   function announcementComposerMarkup() {
-    return '<input id="announcement-title" maxlength="120" placeholder="Announcement title"><textarea id="announcement-body" maxlength="7000" placeholder="Announcement text, links, files, or @everyone. Type @eve then Tab."></textarea><div class="announcement-composer-actions"><label class="community-file-label">Upload file<input id="announcement-file-input" type="file"></label><span class="community-attachment-choice" id="announcement-file-choice">No file selected</span><button class="community-btn" id="announcement-send" type="button">Publish announcement</button></div>';
+    return '<input id="announcement-title" maxlength="120" placeholder="Announcement title"><textarea id="announcement-body" maxlength="7000" placeholder="Announcement text, links, files, or @everyone. Type @eve then Tab."></textarea><div class="announcement-composer-actions"><label class="community-file-label">Upload files<input id="announcement-file-input" type="file" multiple></label><span class="community-attachment-choice" id="announcement-file-choice">No files selected</span><button class="community-btn" id="announcement-send" type="button">Publish announcement</button></div>';
   }
   function renderAnnouncementComposerV2() {
     var compose = $('announcements-compose');
     if (!compose) return;
     if (!(state.user && isStaff())) { compose.innerHTML = '<div class="community-message community-locked">Mod, admin, or owner required to publish announcements.</div>'; return; }
     compose.innerHTML = announcementComposerMarkup();
+    showAttachmentQueue('announcement-file-choice', state.pendingAnnouncementAttachments);
     var file = $('announcement-file-input'); if (file) file.onchange = attachAnnouncementFileV2;
     var send = $('announcement-send'); if (send) send.onclick = publishAnnouncementV2;
     wireMentionComplete($('announcement-body'));
@@ -394,23 +437,24 @@
   async function publishAnnouncementV2() {
     var title = String(($('announcement-title') || {}).value || '').trim();
     var body = String(($('announcement-body') || {}).value || '').trim();
-    var attachment = state.pendingAnnouncementAttachment;
-    if (!title || (!body && !attachment)) { status('Add a title and either text or a file.'); return; }
+    var attachments = state.pendingAnnouncementAttachments || [];
+    if (!title || (!body && !attachments.length)) { status('Add a title and either text or a file.'); return; }
     if (hasBadWord(title + ' ' + body)) { status('Blocked word found. Announcement will not publish.'); return; }
-    var record = { title: '[announcements] ' + title, body: body, attachment: attachment || null };
+    var record = { title: '[announcements] ' + title, body: body };
     try {
       initClient();
       if (firebaseMode) {
         record.user_id = state.user.id; record.username = profileUsername(); record.created_at = new Date().toISOString();
-        await state.client.db.collection('posts').add(record);
+        await createFirebaseItemWithAttachments('posts', record, attachments);
       } else if (mongoMode) {
         await mongoFetch('/posts', { method: 'POST', body: JSON.stringify(record) });
       } else {
-        if (attachment) throw new Error('Image attachments require the Firebase account database.');
+        if (attachments.length) throw new Error('Attachments require the Firebase account database.');
         var result = await state.client.from('posts').insert({ user_id: state.user.id, title: record.title, body: record.body });
         if (result.error) throw result.error;
       }
-      state.pendingAnnouncementAttachment = null;
+      state.pendingAnnouncementAttachments = [];
+      showAttachmentQueue('announcement-file-choice', []);
       audit('announcement', title);
       if (/@everyone\b/i.test(title + ' ' + body)) pingEveryone(title);
       notifySaved('Announcement posted');
@@ -419,12 +463,11 @@
   }
   async function attachAnnouncementFileV2(e) {
     try {
-      state.pendingAnnouncementAttachment = await fileToImageAttachment(e && e.target && e.target.files ? e.target.files[0] : null);
-      showAttachmentChoice('announcement-file-choice', state.pendingAnnouncementAttachment);
-      status('File attached. It will be shown under the announcement text.');
+      await queueAttachments(e && e.target && e.target.files, 'pendingAnnouncementAttachments', 'announcement-file-choice');
+      if (e && e.target) e.target.value = '';
+      status('Files attached. They will be shown under the announcement text.');
     } catch (error) {
-      state.pendingAnnouncementAttachment = null;
-      showAttachmentChoice('announcement-file-choice', null);
+      showAttachmentQueue('announcement-file-choice', state.pendingAnnouncementAttachments);
       status(error.message || 'File upload failed.');
     }
   }
@@ -483,6 +526,7 @@
         rows = response.data || [];
       }
       rows = (rows || []).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
+      if (firebaseMode) await loadFirebaseAttachments('posts', rows);
       renderAnnouncementRows(rows); renderAnnouncementComposerV2();
     } catch(error) { list.innerHTML = '<div class="community-message community-locked">' + esc(error.message || 'Announcements could not load.') + '</div>'; var compose = $('announcements-compose'); if (compose) compose.innerHTML = ''; }
   }
@@ -555,6 +599,7 @@
         var snap = await state.client.db.collection(collection).orderBy('created_at', 'desc').limit(100).get();
         var rows = snap.docs.map(firebaseRow).reverse().filter(function(row){ return !row.deleted_at; });
         if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
+        await loadFirebaseAttachments(collection, rows);
         await loadMembers(false);
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         rows.forEach(function(r){ r.profiles = state.profileByUser[String(r.user_id)] || { username: r.username, display_name: r.username, role: 'member' }; });
@@ -593,13 +638,13 @@
   function metaEmail(p) { if (!isOwner() || !p.email) return ''; return ' / ' + esc(p.email); }
   function renderItem(row) {
     var p = row.profiles || {}; var name = p.display_name || p.username || row.username || 'Member'; var r = p.role || 'member';
-    if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><h3>' + esc(stripPostChannel(row.title)) + '</h3><div class="community-body">' + renderRichBody(row.body, row.attachment) + '</div>' + actions + '</article>'; }
+    if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><h3>' + esc(stripPostChannel(row.title)) + '</h3><div class="community-body">' + renderRichBody(row.body, row.attachments || row.attachment) + '</div>' + actions + '</article>'; }
     if (row.deleted_at) return '';
     var edited = row.updated_at && row.created_at && new Date(row.updated_at).getTime() - new Date(row.created_at).getTime() > 1000 ? '<span class="community-edited">edited</span>' : '';
     var deleted = row.deleted_at ? '<span class="community-deleted-tag">deleted</span>' : '';
     var bodyClass = row.deleted_at ? 'community-body community-deleted-body' : 'community-body';
     var body = row.deleted_at ? 'Deleted message: ' + (row.deleted_body || row.body || '') : row.body;
-    var renderedBody = row.deleted_at ? esc(body) : renderRichBody(body, row.attachment);
+    var renderedBody = row.deleted_at ? esc(body) : renderRichBody(body, row.attachments || row.attachment);
     var chatActions = '<div class="community-actions">';
     if (canEditMessage(row)) chatActions += '<button class="community-btn secondary community-edit-message" data-message-id="' + esc(row.id) + '">Edit</button>';
     if (canDeleteMessage(row)) chatActions += '<button class="community-btn secondary community-delete-message" data-message-id="' + esc(row.id) + '">Delete</button>';
@@ -836,15 +881,16 @@
   function warnBlockedInput(el, msg) { status(msg || 'Blocked word found. This will not send.'); if (el) { el.classList.remove('community-input-warn'); void el.offsetWidth; el.classList.add('community-input-warn'); el.focus(); } }
   async function sendMessage() { if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').add({ user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages', { method: 'POST', body: JSON.stringify({ body: body }) }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); }
   async function sendMessageV2() {
-    if (!firebaseMode || !state.pendingChatAttachment) return sendMessage();
+    if (!firebaseMode || !(state.pendingChatAttachments || []).length) return sendMessage();
     if (!state.user) { status('Sign in first.'); return; }
     var input = $('community-chat-input'); var body = String((input && input.value) || '').trim();
-    if (!body && !state.pendingChatAttachment) return;
+    var attachments = state.pendingChatAttachments || [];
+    if (!body && !attachments.length) return;
     if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; }
     try {
       initClient();
-      await state.client.db.collection('messages').add({ user_id: state.user.id, username: profileUsername(), body: body, attachment: state.pendingChatAttachment, created_at: new Date().toISOString() });
-      state.pendingChatAttachment = null; if (input) input.value = ''; showAttachmentChoice('community-chat-file-choice', null); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems();
+      await createFirebaseItemWithAttachments('messages', { user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }, attachments);
+      state.pendingChatAttachments = []; if (input) input.value = ''; showAttachmentQueue('community-chat-file-choice', []); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems();
     } catch (error) { status(error.message || 'Message could not be sent.'); }
   }
   async function sendPostMessage() {
