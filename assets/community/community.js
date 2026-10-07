@@ -91,9 +91,9 @@
   function profileAvatarHtml(profile, sizeClass) { var name = (profile && (profile.display_name || profile.username)) || 'M'; var avatar = String((profile && profile.avatar_url) || '').trim(); return avatar ? '<button type="button" class="community-profile-avatar ' + (sizeClass || '') + '" data-avatar-preview="' + esc(avatar) + '" aria-label="View ' + esc(name) + ' profile image"><img src="' + esc(avatar) + '" alt="' + esc(name) + '"></button>' : '<span class="community-profile-avatar ' + (sizeClass || '') + '">' + esc(name.charAt(0).toUpperCase()) + '</span>'; }
   function mergeProfile(profile) { if (!profile) return; var rank = { member: 0, mod: 1, admin: 2, co_owner: 3, owner: 4 }; var cur = state.profile || {}; state.profile = Object.assign({}, cur, profile); if ((rank[(window.UZCurrentProfile || {}).role] || 0) > (rank[state.profile.role] || 0)) state.profile.role = window.UZCurrentProfile.role; window.UZCurrentProfile = state.profile; }
   function profileFields() { return 'id, username, display_name, role, warnings, banned_until, muted_until' + (state.kickReady ? ', kicked_until' : '') + ', staff_note' + (state.presenceReady ? ', last_seen' : ''); }
-  function isOnline(profile) { if (!profile) return false; if (state.user && String(profile.id) === String(state.user.id)) return true; if (state.onlineIds && state.onlineIds[String(profile.id)]) return true; if (!profile.last_seen) return false; var t = new Date(profile.last_seen).getTime(); return Number.isFinite(t) && Date.now() - t < 18000; }
+  function isOnline(profile) { if (!profile) return false; if (state.user && String(profile.id) === String(state.user.id)) return true; if (state.onlineIds && state.onlineIds[String(profile.id)]) return true; if (!profile.last_seen) return false; var t = new Date(profile.last_seen).getTime(); return Number.isFinite(t) && Date.now() - t < 90000; }
   async function touchPresence() { if (firebaseMode) { if (!state.user || !state.client) return; try { await state.client.db.collection('profiles').doc(state.user.id).set({ last_seen: new Date().toISOString(), email: state.user.email || '' }, { merge: true }); } catch(e) {} return; } if (mongoMode) { try { var mine = await mongoFetch('/me'); mergeProfile(fromMongoUser(mine.user)); } catch(e) { if (e.status === 401 || e.status === 403) await forceSignedOut(e.message || 'Your account session ended.', e.data && e.data.banned ? profileUsername() : null); } return; } if (!ready || !state.client || !state.user || !state.presenceReady) return; var res = await state.client.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', state.user.id).select(profileFields()).single(); if (res.error) { if (/last_seen/i.test(res.error.message || '')) state.presenceReady = false; return; } if (res.data) mergeProfile(res.data); }
-  function startHeartbeat() { clearInterval(state.heartbeatTimer); if (!state.user) return; touchPresence(); state.heartbeatTimer = setInterval(function(){ touchPresence(); if (state.tab === 'members') loadMembers(true); else loadMembers(false); }, (mongoMode || firebaseMode) ? 5000 : 25000); }
+  function startHeartbeat() { clearInterval(state.heartbeatTimer); if (!state.user) return; touchPresence(); state.heartbeatTimer = setInterval(function(){ touchPresence(); }, (mongoMode || firebaseMode) ? 60000 : 25000); }
   function subscribePresence() {
     if (!ready || !state.client || !state.user) return;
     if (state.presenceChannel) state.client.removeChannel(state.presenceChannel);
@@ -615,7 +615,7 @@
       else if (firebaseMode) {
         var snapshot = await state.client.db.collection('posts').orderBy('created_at', 'desc').limit(60).get();
         rows = snapshot.docs.map(firebaseRow);
-        await loadMembers(false);
+        if (!state.memberRows.length) await loadMembers(false);
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         rows.forEach(function(row){ row.profiles = state.profileByUser[String(row.user_id)] || { username: row.username, display_name: row.username, role: 'staff' }; });
       } else {
@@ -653,7 +653,7 @@
       try {
         var snap = await state.client.db.collection('posts').orderBy('created_at', 'desc').limit(60).get();
         var rows = snap.docs.map(firebaseRow).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
-        await loadMembers(false);
+        if (!state.memberRows.length) await loadMembers(false);
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         rows.forEach(function(row){ row.profiles = state.profileByUser[String(row.user_id)] || { username: row.username, display_name: row.username, role: 'staff' }; });
         list.innerHTML = rows.map(function(row){ var p = row.profiles || {}; var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : ''; var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : ''; return '<article class="announcement-card"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + authorLabel(p, row) + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '') + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>'; }).join('') || '<div class="community-message">No announcements yet.</div>';
@@ -698,7 +698,7 @@
         var rows = snap.docs.map(firebaseRow).reverse().filter(function(row){ return !row.deleted_at || !!state.recentlyDeletedMessages[String(row.id)]; });
         if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
         await loadFirebaseAttachments(collection, rows);
-        await loadMembers(false);
+        if (!state.memberRows.length) await loadMembers(false);
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         rows.forEach(function(r){ r.profiles = state.profileByUser[String(r.user_id)] || { username: r.username, display_name: r.username, role: 'member' }; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
@@ -716,7 +716,7 @@
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-        wireProfileLinks(); list.scrollTop = list.scrollHeight; loadMembers(false);
+        wireProfileLinks(); list.scrollTop = list.scrollHeight; if (!state.memberRows.length) loadMembers(false);
       } catch(e) { list.innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
       return;
     }
@@ -731,7 +731,7 @@
     state.profileByUser = {}; rows.forEach(function(r){ if (r.profiles && r.user_id) state.profileByUser[String(r.user_id)] = r.profiles; });
     list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-    wireProfileLinks(); list.scrollTop = list.scrollHeight; loadMembers(false);
+    wireProfileLinks(); list.scrollTop = list.scrollHeight; if (!state.memberRows.length) loadMembers(false);
   }
   function metaEmail(p) { if (!isOwner() || !p.email) return ''; return ' / ' + esc(p.email); }
   function renderItem(row) {
