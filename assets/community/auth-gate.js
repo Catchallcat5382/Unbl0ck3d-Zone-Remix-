@@ -61,7 +61,7 @@
   function usernameFromUser(user) { return (user && user.user_metadata && user.user_metadata.username) || (user && user.email ? user.email.split('@')[0] : ''); }
   var ACCOUNT_SETTING_KEYS = [
     'siteTheme', 'loadingTheme', 'accentColorV2', 'bgMode', 'customWallpaper', 'gradientC1', 'gradientC2', 'gradientAngle',
-    'sidebarPosition', 'uzSidebarHidden', 'activeCursor', 'customCursor', 'musicOnStartup', 'startupLoadingScreen', 'startupBlockScreen',
+    'sidebarPosition', 'uzSidebarHidden', 'activeCursor', 'customCursor', 'customVideoCursor', 'musicOnStartup', 'startupLoadingScreen', 'startupBlockScreen',
     'g4mesVolume', 'g4mesTabMode', 'favoriteg4mes', 'crosshairEnabled', 'crosshairStyle', 'crosshairSize', 'crosshairColor',
     'crosshairCustomRaw', 'panicEnabled', 'panicKey', 'panicUrl', 'panicAction', 'stealthCover', 'stretchedRes', 'perfMode',
     'cloakPreset', 'cloakCustomTitle', 'cloakCustomFavicon', 'openGamesInBlob', 'uzVoiceMuted', 'uzVoiceDeafened',
@@ -115,12 +115,12 @@
     try {
       if (typeof window.rehydrateSettings === 'function') window.rehydrateSettings();
     } finally { window.__uzRestoringAccountSettings = false; }
+    if (typeof window.UZFlushAccountSettings === 'function') window.UZFlushAccountSettings(current, normalized);
     return Object.keys(normalized).length;
   };
   var cloudSettingsWrite = { timer: null, uid: '', username: '', values: {} };
   function queueFirebaseSetting(username, key, value) {
     if (!firebaseMode || !client || !client.auth || !client.db || window.__uzRestoringAccountSettings) return;
-    if (/^(accentColorV2|bgMode|siteTheme)$/.test(key) && !window.__uzUserSettingsChange) return;
     var user = client.auth.currentUser;
     username = cleanUsername(username);
     if (!user || !username || cleanUsername(usernameFromUser(user)) !== username) return;
@@ -157,6 +157,25 @@
     } catch (e) {}
     queueFirebaseSetting(username, key, value);
   };
+  window.UZFlushAccountSettings = function (username, values) {
+    username = cleanUsername(username || localStorage.getItem('uzLoginEmail') || '');
+    if (!firebaseMode || !client || !client.auth || !client.db || !username) return;
+    var user = client.auth.currentUser;
+    if (!user || cleanUsername(usernameFromUser(user)) !== username) return;
+    var payload = {};
+    Object.keys(values || {}).forEach(function (key) {
+      if (ACCOUNT_SETTING_KEYS.indexOf(key) !== -1 && values[key] != null) payload[key] = String(values[key]);
+    });
+    if (!Object.keys(payload).length) return;
+    client.db.collection('profiles').doc(user.uid).set({
+      settings: payload,
+      settings_updated_at: new Date().toISOString()
+    }, { merge: true }).then(function () {
+      if (window.UZCurrentProfile && cleanUsername(window.UZCurrentProfile.username) === username) {
+        window.UZCurrentProfile.settings = Object.assign({}, window.UZCurrentProfile.settings || {}, payload);
+      }
+    }).catch(function (e) { debugLog('settings-flush-failed', e && e.message ? e.message : 'unknown'); });
+  };
   function saveAccountSettings(username) {
     username = cleanUsername(username);
     if (!username) return;
@@ -171,12 +190,10 @@
     username = cleanUsername(username);
     if (!username) return;
     window.__uzRestoringAccountSettings = true;
-    try {
-      var savedTheme = typeof window.UZReadThemeSettings === 'function' ? window.UZReadThemeSettings(username) : null;
-      ['accentColorV2', 'bgMode', 'siteTheme'].forEach(function (key) {
-        if (savedTheme && savedTheme[key] != null) localStorage.setItem(accountSettingKey(username, key), String(savedTheme[key]));
-      });
-    } catch (e) {}
+    var savedTheme = typeof window.UZReadThemeSettings === 'function' ? window.UZReadThemeSettings(username) : null;
+    ['accentColorV2', 'bgMode', 'siteTheme'].forEach(function (key) {
+      if (savedTheme && savedTheme[key] != null) localStorage.setItem(accountSettingKey(username, key), String(savedTheme[key]));
+    });
     if (cloudSettings && typeof cloudSettings === 'object') {
       ACCOUNT_SETTING_KEYS.forEach(function (key) {
         try {
@@ -451,6 +468,45 @@
     document.getElementById('uz-login-pass').addEventListener('keydown', function(e){ if (e.key === 'Enter') { if (authMode === 'signup') signUp(); else signIn(); } });
   }
   function clearGate() { document.body.classList.remove('uz-auth-locked'); document.body.classList.add('uz-app-unlocked'); var gate = document.getElementById('uz-auth-gate'); if (gate) gate.remove(); if (window.restoreSavedCloak) window.restoreSavedCloak(); }
+  function appealProofDataUrl(file) {
+    if (!file) return Promise.resolve('');
+    return profileImageDataUrl(file).catch(function () { throw new Error('Choose an image smaller than 8 MB for the appeal proof.'); });
+  }
+  async function submitBanAppeal() {
+    if (!firebaseMode) { note('Appeals are available when this site is using the Firebase account database.'); return; }
+    initClient();
+    var user = client && client.auth && client.auth.currentUser;
+    var reason = String((document.getElementById('uz-appeal-reason') || {}).value || '').trim();
+    var details = String((document.getElementById('uz-appeal-details') || {}).value || '').trim();
+    var proofUrl = String((document.getElementById('uz-appeal-proof-url') || {}).value || '').trim();
+    var statusEl = document.getElementById('uz-appeal-status');
+    if (!user) { if (statusEl) statusEl.textContent = 'Your account session is not available. Refresh and try again.'; return; }
+    if (reason.length < 12 || details.length < 12) { if (statusEl) statusEl.textContent = 'Answer both appeal questions with at least 12 characters.'; return; }
+    try {
+      if (statusEl) statusEl.textContent = 'Checking appeal limits...';
+      var profile = await client.db.collection('profiles').doc(user.uid).get();
+      var profileData = profile.exists ? (profile.data() || {}) : {};
+      var banKey = String(profileData.ban_id || profileData.banned_at || profileData.banned_until || 'current');
+      var prior = await client.db.collection('appeals').where('user_id', '==', user.uid).limit(30).get();
+      var matching = prior.docs.map(function (doc) { var data = doc.data() || {}; data.id = doc.id; return data; }).filter(function (entry) { return String(entry.ban_key || 'current') === banKey; }).sort(function (a, b) { return String(b.created_at || '').localeCompare(String(a.created_at || '')); });
+      if (matching.length >= 2) throw new Error('This ban already has the maximum of two appeals.');
+      if (matching[0] && Date.now() - new Date(matching[0].created_at || 0).getTime() < 86400000) throw new Error('You can submit another appeal after 24 hours.');
+      var proofFileEl = document.getElementById('uz-appeal-proof-file');
+      var proofImage = await appealProofDataUrl(proofFileEl && proofFileEl.files ? proofFileEl.files[0] : null);
+      await client.db.collection('appeals').add({
+        user_id: user.uid,
+        username: cleanUsername(profileData.username || usernameFromUser(user)),
+        ban_key: banKey,
+        status: 'pending',
+        reason: reason.slice(0, 1200),
+        details: details.slice(0, 3000),
+        proof_url: proofUrl.slice(0, 1000),
+        proof_image: proofImage,
+        created_at: new Date().toISOString()
+      });
+      if (statusEl) statusEl.textContent = 'Appeal submitted. Staff can review it now.';
+    } catch (error) { if (statusEl) statusEl.textContent = error.message || 'Could not submit appeal.'; }
+  }
   function renderBannedGate(username) {
     username = cleanUsername(username || localStorage.getItem('uzLoginEmail') || 'this account');
     try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzBannedAccount:' + username, '1'); if (client && client.auth && client.auth.currentUser) localStorage.setItem('uzSiteBannedUid', client.auth.currentUser.uid); } catch(e) {}
@@ -458,7 +514,8 @@
     document.body.classList.add('uz-auth-locked'); document.body.classList.remove('uz-app-unlocked');
     var gate = document.getElementById('uz-auth-gate');
     if (!gate) { gate = document.createElement('div'); gate.id = 'uz-auth-gate'; gate.className = 'uz-auth-gate uz-auth-ms-style'; document.body.appendChild(gate); }
-    gate.innerHTML = '<div class="uz-banned-card"><h1>Access Blocked</h1><p><b>' + esc(username || 'This account') + '</b> is banned from Unblocked Zone.</p><span>Use the owner unlock sequence only if you are recovering your own site.</span></div>';
+    gate.innerHTML = '<div class="uz-banned-card"><h1>Access Blocked</h1><p><b>' + esc(username || 'This account') + '</b> is banned from Unblocked Zone.</p><span>Appeals have a 24-hour cooldown and a maximum of two submissions for each ban.</span><div class="uz-appeal-form"><label>What happened?<textarea id="uz-appeal-reason" maxlength="1200" placeholder="Explain what happened."></textarea></label><label>Why should the ban be lifted?<textarea id="uz-appeal-details" maxlength="3000" placeholder="Share context, accountability, or what will change."></textarea></label><label>Proof link (optional)<input id="uz-appeal-proof-url" maxlength="1000" placeholder="https://..."></label><label class="community-file-label">Upload proof image (optional)<input id="uz-appeal-proof-file" type="file" accept="image/*"></label><button class="community-btn" id="uz-appeal-submit" type="button">Submit appeal</button><p id="uz-appeal-status" class="uz-appeal-status"></p></div></div>';
+    var submit = document.getElementById('uz-appeal-submit'); if (submit) submit.onclick = submitBanAppeal;
   }
   async function forgotPassword() {
     var username = cleanUsername((document.getElementById('uz-login-user') || {}).value || '');

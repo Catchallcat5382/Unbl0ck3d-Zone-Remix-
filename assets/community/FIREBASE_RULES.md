@@ -82,5 +82,24 @@ service cloud.firestore {
         || resource.data.user_id == request.auth.uid
       );
     }
+
+    match /appeals/{id} {
+      allow create: if signedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.username is string
+        && request.resource.data.status == 'pending';
+
+      allow read: if signedIn() && (
+        resource.data.user_id == request.auth.uid
+        || staff()
+      );
+
+      allow update: if signedIn()
+        && myRole() in ['owner', 'admin']
+        && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.username == resource.data.username;
+
+      allow delete: if false;
+    }
   }
 }
