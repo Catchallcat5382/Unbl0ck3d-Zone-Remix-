@@ -44,6 +44,8 @@
   function canDeletePost(row) { return isOwner() || isCoOwner() || role() === 'admin' || (role() === 'mod' && state.user && row.user_id === state.user.id); }
   function canEditMessage(row) { return !!(state.user && row && String(row.user_id) === String(state.user.id) && !row.deleted_at); }
   function canDeleteMessage(row) { return !!(row && !row.deleted_at && (isOwner() || isCoOwner() || role() === 'admin' || (state.user && String(row.user_id) === String(state.user.id)))); }
+  function canBroadcastMention() { return ['owner', 'co_owner', 'admin'].indexOf(role()) !== -1; }
+  function rejectRestrictedMention(text, input) { if (/(^|\s)@(everyone|here)\b/i.test(String(text || '')) && !canBroadcastMention()) { warnBlockedInput(input, '@everyone and @here are restricted to admins and above.'); return true; } return false; }
   function notifySaved(msg) { var n = $('community-save-note') || $('uz-autosave-note'); if (!n) { n = document.createElement('div'); n.id = 'community-save-note'; n.className = 'community-save-note'; document.body.appendChild(n); } n.textContent = msg || 'Saved'; n.classList.add('show'); clearTimeout(notifySaved.t); notifySaved.t = setTimeout(function(){ n.classList.remove('show'); }, 1500); }
   function normalizeName(v) { return String(v || '').replace(/\s+/g, ' ').trim().slice(0, cfg.maxNameLength || 24); }
   function hasBadWord(v) { var s = String(v || '').toLowerCase().replace(/[^a-z0-9]/g, ''); return (cfg.blockedWords || []).some(function (w) { return s.indexOf(String(w).toLowerCase().replace(/[^a-z0-9]/g, '')) !== -1; }); }
@@ -158,6 +160,15 @@
     if (firebaseMode && state.client && state.user && isStaff()) {
       state.client.db.collection('staffLogs').add({ action: entry.action, detail: entry.detail, actor_id: state.user.id, actor_username: entry.by, created_at: entry.at }).catch(function(error){ debugLog('staff-log-failed', error && error.message); });
     }
+  }
+  async function loadStaffLogs() {
+    var local = [];
+    try { local = JSON.parse(localStorage.getItem('uzAuditLog') || '[]'); } catch(e) {}
+    if (!firebaseMode || !state.client || !state.user || !isStaff()) return local;
+    try {
+      var snap = await state.client.db.collection('staffLogs').limit(300).get();
+      return snap.docs.map(function(doc){ var row = doc.data() || {}; return { action: row.action, detail: row.detail, by: row.actor_username || row.actor_id || 'staff', at: row.created_at || Date.now() }; }).sort(function(a,b){ return new Date(b.at).getTime() - new Date(a.at).getTime(); });
+    } catch(e) { debugLog('staff-log-read-failed', e && e.message); return local; }
   }
   function subscribeCloudNotifications() {
     if (!firebaseMode || !state.client || !state.user) return;
@@ -301,6 +312,7 @@
     var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
     var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost;
     var chatInput = $('community-chat-input');
+    if (chatInput) chatInput.addEventListener('input', function(){ chatInput.classList.toggle('has-mention-preview', /(^|\s)@(everyone|here|[a-z0-9_.-]+)$/i.test(chatInput.value.slice(0, chatInput.selectionStart || chatInput.value.length))); });
     if (chatInput) chatInput.addEventListener('keydown', function(e){
       if (e.key === 'Enter' && !e.shiftKey && !e.defaultPrevented) { e.preventDefault(); sendMessageV2(); }
     });
@@ -481,9 +493,11 @@
     var tools = document.createElement('div');
     tools.id = 'community-pop-tools';
     tools.className = 'community-pop-tools';
-    tools.innerHTML = '<button class="community-btn secondary" id="community-expand-toggle" type="button">Expand</button>';
+    tools.innerHTML = '<button class="community-btn secondary" id="community-expand-toggle" type="button">Expand</button><button class="community-btn secondary" id="community-go-top" type="button">Top</button><button class="community-btn secondary" id="community-go-bottom" type="button">Bottom</button>';
     shell.insertBefore(tools, shell.firstChild);
     document.getElementById('community-expand-toggle').onclick = function(){ document.body.classList.toggle('community-expanded'); this.textContent = document.body.classList.contains('community-expanded') ? 'Shrink' : 'Expand'; };
+    document.getElementById('community-go-top').onclick = function(){ var list = $('community-list'); if (list) list.scrollTo({ top: 0, behavior: 'smooth' }); };
+    document.getElementById('community-go-bottom').onclick = function(){ var list = $('community-list'); if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); };
   }
   function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p>'; }
   function setTab(tab, channel) {
@@ -523,6 +537,7 @@
     var attachments = state.pendingAnnouncementAttachments || [];
     if (!title || (!body && !attachments.length)) { status('Add a title and either text or a file.'); return; }
     if (hasBadWord(title + ' ' + body)) { status('Blocked word found. Announcement will not publish.'); return; }
+    if (/@(?:everyone|here)\b/i.test(title + ' ' + body) && !canBroadcastMention()) { status('@everyone and @here are restricted to admins and above.'); return; }
     var record = { title: '[announcements] ' + title, body: body };
     try {
       initClient();
@@ -731,7 +746,7 @@
     if (canEditMessage(row)) chatActions += '<button class="community-btn secondary community-edit-message" data-message-id="' + esc(row.id) + '">Edit</button>';
     if (canDeleteMessage(row)) chatActions += '<button class="community-btn secondary community-delete-message" data-message-id="' + esc(row.id) + '">Delete</button>';
     chatActions += '</div>';
-    return '<article class="community-message ' + (row.deleted_at ? 'is-deleted' : '') + '" data-message-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + ' ' + edited + deleted + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="' + bodyClass + '">' + renderedBody + '</div>' + chatActions + '</article>';
+    return '<article class="community-message ' + (row.deleted_at ? 'is-deleted ' : '') + (/@(?:everyone|here|[a-z0-9_.-]+)\b/i.test(String(row.body || '')) ? 'has-mention' : '') + '" data-message-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + ' ' + edited + deleted + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="' + bodyClass + '">' + renderedBody + '</div>' + chatActions + '</article>';
   }
   async function loadMembers(main) {
     if (!ready) return;
@@ -778,7 +793,8 @@
     (root || document).querySelectorAll('.community-profile-avatar[data-avatar-preview]').forEach(function(button){ button.onclick = function(event){ event.stopPropagation(); var existing = document.getElementById('community-avatar-lightbox'); if (existing) existing.remove(); var lightbox = document.createElement('div'); lightbox.id = 'community-avatar-lightbox'; lightbox.className = 'community-avatar-lightbox'; lightbox.innerHTML = '<button type="button" aria-label="Close image"><img src="' + esc(button.dataset.avatarPreview || '') + '" alt="Profile image"></button>'; document.body.appendChild(lightbox); lightbox.onclick = function(){ lightbox.remove(); }; }; });
   }
   function wireProfileLinks() { Array.prototype.forEach.call(document.querySelectorAll('.community-user-link'), function(btn){ btn.onclick = function(){ showCommunityProfile(btn.dataset.userId); }; }); wireAvatarPreviews(document); }
-  function wireMemberActions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ sel.onchange = async function(){ await changeUserRoleV2(sel.dataset.username, sel.value); }; }); }
+  function wireMemberActions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ sel.onchange = async function(){ await changeUserRoleV2(sel.dataset.username, sel.value); }; }); ensureCoOwnerOptions(); }
+  function ensureCoOwnerOptions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ if (!sel.querySelector('option[value="co_owner"]')) { var option = document.createElement('option'); option.value = 'co_owner'; option.textContent = 'co_owner'; if (sel.dataset.currentRole === 'co_owner') option.selected = true; sel.insertBefore(option, sel.querySelector('option[value="admin"]')); } }); }
   async function firebaseFindUser(username) { initClient(); var snap = await state.client.db.collection('profiles').where('username', '==', String(username || '').toLowerCase()).limit(1).get(); if (snap.empty) return null; var doc = snap.docs[0]; return { id: doc.id, data: fromFirebaseProfile(doc.id, doc.data()), ref: state.client.db.collection('profiles').doc(doc.id) }; }
   async function changeUserRole(username, newRole) { if (!isRealOwner()) { status('A real owner account is required to change roles.'); return; } if (!username) return; if (state.profile && username.toLowerCase() === String(state.profile.username || '').toLowerCase()) { status('You cannot change your own role here.'); loadMembers(state.tab === 'members'); return; } if (firebaseMode) { try { var target = await firebaseFindUser(username); if (!target) { status('Target not found.'); return; } if (target.data.role === 'owner') { status('Owners cannot change other owners.'); return; } var set = { role: newRole }; if (newRole === 'banned') set.banned_until = '2099-01-01T00:00:00.000Z'; else set.banned_until = null; await target.ref.set(set, { merge: true }); notifySaved('Role updated'); await loadMembers(state.tab === 'members'); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/staff/role', { method: 'POST', body: JSON.stringify({ username: username, role: newRole }) }); notifySaved('Role updated'); await loadMembers(state.tab === 'members'); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.rpc('set_user_role', { target_username: username, new_role: newRole }); if (res.error) { status(res.error.message); return; } notifySaved('Role updated'); await loadMembers(state.tab === 'members'); }
   async function changeUserRoleV2(username, newRole) {
@@ -900,6 +916,7 @@
       var attachment = state.pendingPostEdits[id];
       if (!title || (!body && !attachment)) { status('Add a title and either text or a file.'); return; }
       if (hasBadWord(title + ' ' + body)) { status('Blocked word found. This post will not save.'); return; }
+      if (rejectRestrictedMention(title + ' ' + body, bodyEl || titleEl)) return;
       try {
         initClient();
         var changes = { title: '[' + state.channelName + '] ' + title, body: body, attachment: attachment || null, updated_at: new Date().toISOString() };
@@ -933,8 +950,8 @@
     if (!state.user || !isStaff()) return { ok: false, message: 'Staff account required.' };
     if (!parsed.target) return { ok: false, message: 'Add a target username.' };
     var rr = role();
-    if (['ban','unban','setrole','deleteuser'].indexOf(parsed.action) !== -1 && rr !== 'owner') return { ok: false, message: 'Owner role required for /' + parsed.action + '.' };
-    if (parsed.action === 'kick' && ['owner','admin'].indexOf(rr) === -1) return { ok: false, message: 'Admin or owner required for /kick.' };
+    if (['ban','unban','setrole','deleteuser'].indexOf(parsed.action) !== -1 && !isRealSeniorStaff()) return { ok: false, message: 'Owner or co-owner role required for /' + parsed.action + '.' };
+    if (parsed.action === 'kick' && !(isRealSeniorStaff() || rr === 'admin')) return { ok: false, message: 'Admin, owner, or co-owner required for /kick.' };
     if (['warn','mute','unmute'].indexOf(parsed.action) !== -1 && ['owner','admin','mod'].indexOf(rr) === -1) return { ok: false, message: 'Staff role required.' };
     if (parsed.action === 'deleteuser') return runStaffCommandText(text);
     try {
@@ -963,12 +980,13 @@
   function warnBlockedInput(el, msg) { status(msg || 'Blocked word found. This will not send.'); if (el) { el.classList.remove('community-input-warn'); void el.offsetWidth; el.classList.add('community-input-warn'); el.focus(); } }
   async function sendMessage() { if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').add({ user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages', { method: 'POST', body: JSON.stringify({ body: body }) }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); }
   async function sendMessageV2() {
-    if (!firebaseMode || !(state.pendingChatAttachments || []).length) return sendMessage();
+    if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; return sendMessage(); }
     if (!state.user) { status('Sign in first.'); return; }
     var input = $('community-chat-input'); var body = String((input && input.value) || '').trim();
     var attachments = state.pendingChatAttachments || [];
     if (!body && !attachments.length) return;
     if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; }
+    if (rejectRestrictedMention(body, input)) return;
     try {
       initClient();
       await createFirebaseItemWithAttachments('messages', { user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }, attachments);
@@ -1007,7 +1025,7 @@
     if (target.tab) setTab(target.tab, target.channel || (target.tab === 'chat' ? 'chat' : state.channelName));
     setTimeout(function(){ var selector = target.id ? '[data-message-id="' + String(target.id).replace(/"/g, '') + '"],[data-post-id="' + String(target.id).replace(/"/g, '') + '"],[data-announcement-id="' + String(target.id).replace(/"/g, '') + '"]' : ''; var found = selector ? document.querySelector(selector) : null; if (found) { found.scrollIntoView({ behavior: 'smooth', block: 'center' }); found.classList.add('community-notification-focus'); setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800); } }, 220);
   });
-  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
+  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
   window.UZ_ACCOUNT_DEBUG.push('community-js-ready');
   window.initCommunity = function () { ensureCommunityTools(); Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initCommunity); else window.initCommunity();
