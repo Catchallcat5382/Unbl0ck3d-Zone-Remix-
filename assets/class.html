@@ -133,17 +133,16 @@ main{flex:1;padding:32px 40px;max-width:1080px}
         project: "classroom-web"
     };
 
+    var _revision = "3d2fdd272a1525386daa820f137a37dee06a9a1c";
     var _mirrors = [
-        "https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://gcore.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://originfastly.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://fastly.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://testingcf.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://jsdelivr.b-cdn.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://jsd.onmicrosoft.cn/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://cdn.jsdmirror.com/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/assets/index.html",
-        "https://cdn.statically.io/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@main/assets/index.html",
-        "https://cdn.staticdelivr.com/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-/main/assets/index.html"
+        "https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html",
+        "https://gcore.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html",
+        "https://originfastly.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html",
+        "https://fastly.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html",
+        "https://testingcf.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html",
+        "https://jsdelivr.b-cdn.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html",
+        "https://jsd.onmicrosoft.cn/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html",
+        "https://cdn.jsdmirror.com/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@" + _revision + "/assets/index.html"
     ];
 
     var _cache = {};
@@ -161,7 +160,7 @@ main{flex:1;padding:32px 40px;max-width:1080px}
         var key = mirrorIdx || 0;
         if (_cache[key]) return Promise.resolve(_cache[key]);
         var url = _mirrors[key];
-        return fetch(url).then(function (r) {
+        return fetch(url + "?v=" + _revision, { cache: "no-store" }).then(function (r) {
             if (!r.ok) throw new Error(r.status);
             return r.text();
         }).then(function (html) {

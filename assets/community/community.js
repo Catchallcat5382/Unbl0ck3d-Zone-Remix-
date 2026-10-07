@@ -2,7 +2,7 @@
   window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
   window.UZ_ACCOUNT_DEBUG.push('community-js-start');
   var cfg = window.UZ_COMMUNITY_CONFIG || {};
-  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, notificationUnsub: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachments: [], pendingPostAttachment: null, pendingAnnouncementAttachments: [], pendingAnnouncementEdits: {}, pendingPostEdits: {}, recentlyDeletedMessages: {}, jumpToLatest: true };
+  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, notificationUnsub: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachments: [], pendingPostAttachment: null, pendingAnnouncementAttachments: [], pendingAnnouncementEdits: {}, pendingPostEdits: {}, recentlyDeletedMessages: {}, jumpToLatest: true, firestoreCooldownUntil: 0 };
   var MAX_ATTACHMENTS = 20;
   var mongoApiUrl = String(cfg.mongoApiUrl || '').replace(/\/$/, '');
   var mongoMode = !!mongoApiUrl;
@@ -21,6 +21,18 @@
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function when(ts) { try { return new Date(ts).toLocaleString(); } catch (e) { return ''; } }
   function status(msg) { var el = $('community-status'); if (el) el.textContent = msg || ''; }
+  function firebaseCooldown(error) {
+    var message = String(error && (error.message || error.code) || error || '').toLowerCase();
+    if (message.indexOf('resource-exhausted') === -1 && message.indexOf('quota') === -1 && message.indexOf('daily limit') === -1 && message.indexOf('rate') === -1) return false;
+    var now = new Date(); var reset = new Date(now); reset.setHours(3, 0, 0, 0); if (reset <= now) reset.setDate(reset.getDate() + 1);
+    state.firestoreCooldownUntil = reset.getTime();
+    var banner = $('uz-firebase-cooldown');
+    if (!banner) { banner = document.createElement('div'); banner.id = 'uz-firebase-cooldown'; banner.className = 'uz-firebase-cooldown'; document.body.appendChild(banner); }
+    function tick() { var left = Math.max(0, state.firestoreCooldownUntil - Date.now()); var s = Math.ceil(left / 1000); var h = Math.floor(s / 3600); var m = Math.floor((s % 3600) / 60); var sec = s % 60; banner.textContent = 'Firebase is temporarily rate-limited. Data access resumes in ' + h + 'h ' + m + 'm ' + String(sec).padStart(2, '0') + 's. No account data was deleted.'; if (!left) { clearInterval(banner._timer); banner.remove(); state.firestoreCooldownUntil = 0; } }
+    if (!banner._timer) banner._timer = setInterval(tick, 1000); tick();
+    return true;
+  }
+  function firebaseAvailable() { return !state.firestoreCooldownUntil || state.firestoreCooldownUntil <= Date.now(); }
   function debugLog(label, detail) {
     try {
       window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
@@ -687,6 +699,7 @@
   function stripPostChannel(title) { return String(title || '').replace(/^\[[^\]]+\]\s*/, ''); }
   async function loadItems() {
     var list = $('community-list'); if (!list) return; renderChannelHeader();
+    if (firebaseMode && !firebaseAvailable()) { list.innerHTML = '<div class="community-message community-locked">Firebase is temporarily rate-limited. The countdown at the top shows when reads resume.</div>'; return; }
     if (state.tab === 'voice') { renderVoiceRoom(); loadMembers(false); return; }
     if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Check community/config.js.</div>'; return; }
     if (firebaseMode) {
@@ -704,7 +717,7 @@
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
         wireProfileLinks(); list.scrollTop = list.scrollHeight;
-      } catch(e) { list.innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
+      } catch(e) { firebaseCooldown(e); list.innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
       return;
     }
     if (mongoMode) {
@@ -1019,7 +1032,20 @@
       audit('post', title); notifySaved('Posted'); loadItems();
     } catch (error) { status(error.message || 'Post could not be published.'); }
   }
-  function subscribe() { if (!ready || !state.client) return; if (typeof state.realtime === 'function') { state.realtime(); state.realtime = null; } else if (state.realtime && state.client.removeChannel) state.client.removeChannel(state.realtime); if (state.tab === 'voice') return; if (firebaseMode) { var collection = state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts'); state.realtime = state.client.db.collection(collection).onSnapshot(function(){ loadItems(); }); return; } if (state.tab === 'members') return; var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; state.realtime = state.client.channel('uz-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, loadItems).subscribe(); }
+  function subscribe() {
+    if (!ready || !state.client || !firebaseAvailable()) return;
+    if (typeof state.realtime === 'function') state.realtime(); else if (state.realtime && state.client.removeChannel) state.client.removeChannel(state.realtime);
+    state.realtime = null;
+    if (state.tab === 'voice') return;
+    if (firebaseMode) {
+      var collection = state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts');
+      var query = collection === 'profiles' ? state.client.db.collection(collection).limit(200) : state.client.db.collection(collection).orderBy('created_at', 'desc').limit(60);
+      state.realtime = query.onSnapshot(function(){ loadItems(); }, function(error){ firebaseCooldown(error); });
+      return;
+    }
+    if (state.tab === 'members') return;
+    var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; state.realtime = state.client.channel('uz-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, loadItems).subscribe();
+  }
   document.addEventListener('uz-notification-open', function(event){
     var item = event.detail || {}; var target = item.target || {};
     if (target.tab) setTab(target.tab, target.channel || (target.tab === 'chat' ? 'chat' : state.channelName));
