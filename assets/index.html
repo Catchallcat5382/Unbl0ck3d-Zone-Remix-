@@ -4827,6 +4827,8 @@
         var video = document.createElement('video');
         video.src = src;
         video.autoplay = true; video.muted = true; video.loop = true; video.playsInline = true;
+        video.setAttribute('loop', '');
+        video.addEventListener('ended', function() { video.currentTime = 0; video.play().catch(function() {}); });
         video.addEventListener('error', function() { wallpaperStatus('Video could not play. Try an MP4 (H.264) or WebM file.'); });
         bg.appendChild(video);
         video.play().catch(function() { wallpaperStatus('Autoplay was blocked. Click the page, then select the background again.'); });
@@ -5025,8 +5027,8 @@
       return localStorage.getItem('panicUrl') || 'https://www.google.com';
     }
     function getPanicAction() {
-      var action = localStorage.getItem('panicAction') || 'cover';
-      return action === 'history-back' || action === 'redirect' ? 'cover' : action;
+      var action = localStorage.getItem('panicAction') || 'redirect';
+      return action === 'history-back' ? 'cover' : action;
     }
     function savePanicSettings() {
       var url = document.getElementById('panic-url-input');
@@ -5042,32 +5044,49 @@
     function resetPanicSettings() {
       localStorage.setItem('panicKey', 'Backquote');
       localStorage.setItem('panicUrl', 'https://www.google.com');
-      localStorage.setItem('panicAction', 'history-back');
+      localStorage.setItem('panicAction', 'redirect');
       var inp = document.getElementById('panic-key-input');
       if (inp) inp.value = panicKeyLabel('Backquote');
       var url = document.getElementById('panic-url-input');
       if (url) url.value = 'https://www.google.com';
       var action = document.getElementById('panic-action-select');
-      if (action) action.value = 'history-back';
+      if (action) action.value = 'redirect';
       notifyAutosave('Panic settings reset');
     }
     function ensurePanicCoverStyle() {
       if (document.getElementById('panic-cover-style')) return;
       var style = document.createElement('style');
       style.id = 'panic-cover-style';
-      style.textContent = '.panic-cover-frame{position:fixed;inset:0;z-index:2147483646;display:none;background:#fff}.panic-cover-frame.open{display:block}.panic-cover-frame iframe{display:block;width:100%;height:100%;border:0;background:#fff}';
+      style.textContent = '.panic-cover-frame{position:fixed;inset:0;z-index:2147483646;display:none;background:#fff}.panic-cover-frame.open{display:block}.panic-cover-frame iframe{display:block;width:100%;height:100%;border:0;background:#fff;pointer-events:none}.panic-cover-close{position:absolute;right:10px;top:10px;z-index:1;border:1px solid #555;background:#fff;color:#111;border-radius:6px;padding:7px 10px;font:700 12px Arial,sans-serif;cursor:pointer}';
       document.head.appendChild(style);
     }
     function togglePanicCover() {
       var old = document.getElementById('panic-cover-frame');
-      if (old) { old.classList.toggle('open'); return; }
+      if (old) {
+        if (old.classList.contains('open')) { old.classList.remove('open'); return; }
+        if (old.dataset.url === getPanicUrl()) { old.classList.add('open'); return; }
+        old.remove();
+      }
       ensurePanicCoverStyle();
       var wrap = document.createElement('div');
       wrap.id = 'panic-cover-frame';
       wrap.className = 'panic-cover-frame open';
       var url = getPanicUrl();
-      if (!/^https?:\/\//i.test(url)) url = 'https://www.google.com';
-      wrap.innerHTML = '<iframe title="Focus cover" src="' + url.replace(/"/g, '%22') + '" referrerpolicy="no-referrer"></iframe>';
+      try { var parsed = new URL(url); if (!/^https?:$/.test(parsed.protocol)) throw new Error(); url = parsed.href; }
+      catch (e) { url = 'https://www.google.com'; }
+      wrap.dataset.url = getPanicUrl();
+      var frame = document.createElement('iframe');
+      frame.title = 'Focus cover';
+      frame.referrerPolicy = 'no-referrer';
+      frame.tabIndex = -1;
+      frame.src = url;
+      var close = document.createElement('button');
+      close.className = 'panic-cover-close';
+      close.type = 'button';
+      close.textContent = 'Close cover';
+      close.onclick = function() { wrap.classList.remove('open'); };
+      wrap.appendChild(frame);
+      wrap.appendChild(close);
       document.body.appendChild(wrap);
     }
     function panicKeyLabel(key) {
@@ -5145,7 +5164,7 @@
       if ((mods.indexOf('alt') !== -1) !== e.altKey) return;
       if ((mods.indexOf('shift') !== -1) !== e.shiftKey) return;
       if ((mods.indexOf('meta') !== -1) !== e.metaKey) return;
-      if (e.key.toLowerCase() !== keyPart) return;
+      if (e.key.toLowerCase() !== keyPart && !(keyPart === '`' && e.code === 'Backquote')) return;
       e.preventDefault();
       window.__panicBypass = true;
       var action = getPanicAction();
@@ -5153,7 +5172,8 @@
       if (action === 'close') { window.close(); location.href = 'about:blank'; return; }
       if (action === 'blank') { location.href = 'about:blank'; return; }
       if (action === 'history-back') { togglePanicCover(); return; }
-      window.location.href = getPanicUrl();
+      try { var target = new URL(getPanicUrl()); if (!/^https?:$/.test(target.protocol)) throw new Error(); window.location.assign(target.href); }
+      catch (error) { notifyAutosave('Enter a valid http:// or https:// panic URL'); }
     });
 
     (function initBottomBarToggle(){
