@@ -26,6 +26,38 @@
   function profileKey(name, username) { return name + ':' + cleanUsername(username || profileStorageUser()); }
   function getName(username) { return String(localStorage.getItem(profileKey('uzCommunityProfileName', username)) || '').trim(); }
   function getAvatar(username) { return String(localStorage.getItem(profileKey('uzCommunityAvatar', username)) || '').trim(); }
+  function profileImageDataUrl(file) {
+    if (!file || !/^image\//i.test(file.type || '')) return Promise.reject(new Error('Choose an image file.'));
+    if (file.size > 8 * 1024 * 1024) return Promise.reject(new Error('That image is too large. Choose one below 8 MB.'));
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error('The image could not be read.')); };
+      reader.onload = function(){
+        var source = String(reader.result || '');
+        var image = new Image();
+        image.onerror = function(){ reject(new Error('The image could not be prepared.')); };
+        image.onload = function(){
+          var edge = Math.min(512, Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+          var attempt = 0;
+          function encode() {
+            var scale = Math.min(1, edge / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+            var width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+            var height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+            var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+            var data = canvas.toDataURL('image/jpeg', Math.max(.58, .88 - attempt * .08));
+            if (data.length <= 250000) { resolve(data); return; }
+            attempt++; edge = Math.round(edge * .72);
+            if (attempt > 4 || edge < 96) { reject(new Error('That image is still too large after resizing.')); return; }
+            encode();
+          }
+          encode();
+        };
+        image.src = source;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
   function usernameFromUser(user) { return (user && user.user_metadata && user.user_metadata.username) || (user && user.email ? user.email.split('@')[0] : ''); }
   var ACCOUNT_SETTING_KEYS = [
     'siteTheme', 'loadingTheme', 'accentColorV2', 'bgMode', 'customWallpaper', 'gradientC1', 'gradientC2', 'gradientAngle',
@@ -570,16 +602,26 @@
     var temporary = isTempOwner() && !user;
     var savedName = temporary ? '' : getName(username);
     var name = temporary ? 'Temporary Owner' : (savedName || (profile && profile.display_name) || username || 'Profile');
-    var avatar = temporary ? '' : getAvatar(username);
+    var avatar = temporary ? '' : (getAvatar(username) || ((profile && profile.avatar_url) || ''));
     var disabled = temporary ? ' disabled' : '';
     var readonlyNote = temporary ? '<p class="uz-profile-note">Temporary owner mode cannot save profile names, images, or account settings.</p>' : '';
     var passwordTools = temporary ? '' : '<details class="uz-account-tools"><summary>Account security</summary><button class="community-btn secondary" id="uz-password-save" type="button">Forgot / reset password</button></details>';
     var switchButton = temporary ? '' : switchAccountsHtml(username);
     var deleteButton = temporary ? '' : '<button class="community-btn danger" id="uz-profile-delete">Delete account</button>';
-    mount.innerHTML = '<button class="uz-profile-chip" id="uz-profile-toggle"><span class="uz-profile-avatar">' + (avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(name.charAt(0).toUpperCase() || 'P')) + '</span><span>' + esc(name) + '</span></button><div class="uz-profile-panel" id="uz-profile-panel"><label>Display name</label><input id="uz-profile-name" maxlength="24" value="' + esc(savedName) + '" placeholder="Choose a name"' + disabled + '><label>Image URL</label><input id="uz-profile-avatar" value="' + esc(avatar) + '" placeholder="https://..."' + disabled + '><div class="community-row"><button class="community-btn" id="uz-profile-save"' + disabled + '>Save</button><button class="community-btn secondary" id="uz-profile-open" type="button">Expand profile settings</button><button class="community-btn secondary" id="uz-profile-logout">Log out</button></div>' + switchButton + passwordTools + deleteButton + readonlyNote + '<p>Account: <b>' + esc(username || 'Not signed in') + '</b></p><p>Role: <b>' + esc(owner ? 'owner' : 'member') + '</b></p></div>';
+    mount.innerHTML = '<button class="uz-profile-chip" id="uz-profile-toggle"><span class="uz-profile-avatar">' + (avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(name.charAt(0).toUpperCase() || 'P')) + '</span><span>' + esc(name) + '</span></button><div class="uz-profile-panel" id="uz-profile-panel"><label>Display name</label><input id="uz-profile-name" maxlength="24" value="' + esc(savedName) + '" placeholder="Choose a name"' + disabled + '><label>Image URL</label><input id="uz-profile-avatar" value="' + esc(avatar) + '" placeholder="https://..."' + disabled + '><label class="community-file-label">Upload profile image<input id="uz-profile-avatar-file" type="file" accept="image/*"' + disabled + '></label><span class="uz-profile-upload-note" id="uz-profile-upload-note">Images are resized before saving.</span><div class="community-row"><button class="community-btn" id="uz-profile-save"' + disabled + '>Save</button><button class="community-btn secondary" id="uz-profile-open" type="button">Expand profile settings</button><button class="community-btn secondary" id="uz-profile-logout">Log out</button></div>' + switchButton + passwordTools + deleteButton + readonlyNote + '<p>Account: <b>' + esc(username || 'Not signed in') + '</b></p><p>Role: <b>' + esc(owner ? 'owner' : 'member') + '</b></p></div>';
     document.getElementById('uz-profile-toggle').onclick = function () { document.getElementById('uz-profile-panel').classList.toggle('open'); };
     var openProfile = document.getElementById('uz-profile-open');
     if (openProfile) openProfile.onclick = function () { openProfileSettings(username, name, avatar, owner, temporary); };
+    var avatarFile = document.getElementById('uz-profile-avatar-file');
+    if (avatarFile && !temporary) avatarFile.onchange = async function () {
+      var note = document.getElementById('uz-profile-upload-note');
+      try {
+        if (note) note.textContent = 'Preparing image...';
+        var value = await profileImageDataUrl(avatarFile.files && avatarFile.files[0]);
+        document.getElementById('uz-profile-avatar').value = value;
+        if (note) note.textContent = 'Image ready. Press Save to update your profile.';
+      } catch (error) { if (note) note.textContent = error.message || 'Image upload failed.'; }
+    };
     var save = document.getElementById('uz-profile-save');
     if (save && !temporary) save.onclick = async function () {
       var n = document.getElementById('uz-profile-name').value.replace(/\s+/g, ' ').trim().slice(0, cfg.maxNameLength || 24);

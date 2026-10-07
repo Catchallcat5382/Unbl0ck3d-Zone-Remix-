@@ -2,7 +2,7 @@
   window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
   window.UZ_ACCOUNT_DEBUG.push('community-js-start');
   var cfg = window.UZ_COMMUNITY_CONFIG || {};
-  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null };
+  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingPostAttachment: null, pendingAnnouncementAttachment: null, pendingAnnouncementEdits: {} };
   var mongoApiUrl = String(cfg.mongoApiUrl || '').replace(/\/$/, '');
   var mongoMode = !!mongoApiUrl;
   var firebaseMode = !mongoMode && cfg.authProvider === 'firebase';
@@ -47,7 +47,7 @@
   function validName(v) { v = normalizeName(v); return v.length >= (cfg.minNameLength || 2) && !hasBadWord(v); }
   function profileUsername() { return state.profile && state.profile.username ? state.profile.username : (state.user && state.user.email ? state.user.email.split('@')[0] : 'guest'); }
   function getName() { if (isTempOwner() && !state.user) return 'Temporary Owner'; return normalizeName(localStorage.getItem(storageKey + ':' + profileUsername()) || ''); }
-  function getAvatar() { var value = String(localStorage.getItem('uzCommunityAvatar:' + profileUsername()) || '').trim(); if (!value) return ''; try { var url = new URL(value, window.location.href); if (['http:', 'https:', 'data:'].indexOf(url.protocol) === -1) return ''; return url.href.slice(0, 1000); } catch (e) { return ''; } }
+  function getAvatar() { var value = String(localStorage.getItem('uzCommunityAvatar:' + profileUsername()) || ((state.profile && state.profile.avatar_url) || '')).trim(); if (!value) return ''; try { var url = new URL(value, window.location.href); if (['http:', 'https:', 'data:'].indexOf(url.protocol) === -1) return ''; return url.href.slice(0, 320000); } catch (e) { return ''; } }
   function initClient() { if (firebaseMode && firebaseReady && !state.client) { if (!window.firebase.apps.length) window.firebase.initializeApp(cfg.firebaseConfig); state.client = { auth: window.firebase.auth(), db: window.firebase.firestore() }; return; } if (!mongoMode && ready && !state.client) state.client = window.supabase.createClient(String(cfg.supabaseUrl || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, ''), cfg.supabaseAnonKey); }
   function mongoToken() { return localStorage.getItem('uzMongoToken') || sessionStorage.getItem('uzMongoToken') || ''; }
   async function mongoFetch(path, options) {
@@ -77,11 +77,12 @@
   }
   function fromMongoUser(u) { return u ? { id: u.id, username: u.username, display_name: u.displayName || u.username, role: u.role || 'member', warnings: u.warnings || 0, banned_until: u.bannedUntil, kicked_until: u.kickedUntil, muted_until: u.mutedUntil, last_seen: u.lastSeen } : null; }
   function mongoMessage(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), body: row.body, deleted_body: row.deletedBody, deleted_at: row.deletedAt, updated_at: row.editedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'member' } }; }
-  function mongoPost(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), title: row.title, body: row.body, deleted_at: row.deletedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'staff' } }; }
+  function mongoPost(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), title: row.title, body: row.body, attachment: row.attachment || null, deleted_at: row.deletedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'staff' } }; }
   function fromFirebaseProfile(id, data) { data = data || {}; return { id: id || data.id, username: data.username, display_name: data.display_name || data.displayName || data.username, avatar_url: data.avatar_url || data.avatarUrl || '', role: data.role || 'member', warnings: data.warnings || 0, banned_until: data.banned_until || data.bannedUntil || null, kicked_until: data.kicked_until || data.kickedUntil || null, muted_until: data.muted_until || data.mutedUntil || null, last_seen: data.last_seen || data.lastSeen || null, email: data.email || '' }; }
   function firebaseRow(doc) { var d = doc.data() || {}; d.id = doc.id; d.user_id = d.user_id || d.userId; d.created_at = d.created_at || d.createdAt; d.updated_at = d.updated_at || d.updatedAt; d.deleted_at = d.deleted_at || d.deletedAt; d.deleted_body = d.deleted_body || d.deletedBody; return d; }
   function displayName() { return getName() || (state.profile && (state.profile.display_name || state.profile.username)) || (state.user && state.user.email ? state.user.email.split('@')[0] : 'Member'); }
   function authorLabel(p, row) { p = p || {}; row = row || {}; var display = p.display_name || p.username || row.username || 'Member'; var username = p.username || row.username || ''; return esc(display) + (username ? ' <small>@' + esc(username) + '</small>' : ''); }
+  function profileAvatarHtml(profile, sizeClass) { var name = (profile && (profile.display_name || profile.username)) || 'M'; var avatar = String((profile && profile.avatar_url) || '').trim(); return '<span class="community-profile-avatar ' + (sizeClass || '') + '">' + (avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(name.charAt(0).toUpperCase())) + '</span>'; }
   function mergeProfile(profile) { if (!profile) return; var rank = { member: 0, mod: 1, admin: 2, owner: 3 }; var cur = state.profile || {}; state.profile = Object.assign({}, cur, profile); if ((rank[(window.UZCurrentProfile || {}).role] || 0) > (rank[state.profile.role] || 0)) state.profile.role = window.UZCurrentProfile.role; window.UZCurrentProfile = state.profile; }
   function profileFields() { return 'id, username, display_name, role, warnings, banned_until, muted_until' + (state.kickReady ? ', kicked_until' : '') + ', staff_note' + (state.presenceReady ? ', last_seen' : ''); }
   function isOnline(profile) { if (!profile) return false; if (state.user && String(profile.id) === String(state.user.id)) return true; if (state.onlineIds && state.onlineIds[String(profile.id)]) return true; if (!profile.last_seen) return false; var t = new Date(profile.last_seen).getTime(); return Number.isFinite(t) && Date.now() - t < 18000; }
@@ -195,8 +196,8 @@
     chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><button class="community-btn" id="community-send-chat">Send</button>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
     var postOk = ok && canPost();
     var titlePh = state.channelName === 'settings' ? 'Preset name' : (state.channelName === 'suggestions' ? 'Suggestion title' : 'Thread title');
-    var bodyPh = state.channelName === 'settings' ? 'Describe this settings preset, or press Attach settings.' : 'Post text, links, updates, settings, or attached file text';
-    post.innerHTML = postOk ? '<div class="community-post-composer"><input id="community-post-title" maxlength="120" placeholder="' + titlePh + '"><textarea id="community-post-body" maxlength="7000" placeholder="' + bodyPh + '"></textarea><div class="community-composer-actions"><button class="community-btn secondary" id="community-attach-settings" type="button">Attach settings</button><label class="community-file-label">Attach file<input id="community-file-input" type="file"></label><button class="community-btn" id="community-send-post">Publish</button></div></div>' : '<div class="community-message community-locked">' + postAllowedMessage() + '</div>';
+    var bodyPh = state.channelName === 'settings' ? 'Describe this settings preset, or press Attach settings.' : 'Post text, links, updates, settings, or an image.';
+    post.innerHTML = postOk ? '<div class="community-post-composer"><input id="community-post-title" maxlength="120" placeholder="' + titlePh + '"><textarea id="community-post-body" maxlength="7000" placeholder="' + bodyPh + '"></textarea><div class="community-composer-actions"><button class="community-btn secondary" id="community-attach-settings" type="button">Attach settings</button><label class="community-file-label">Upload image<input id="community-file-input" type="file" accept="image/*"></label><span class="community-attachment-choice" id="community-file-choice">No image selected</span><button class="community-btn" id="community-send-post">Publish</button></div></div>' : '<div class="community-message community-locked">' + postAllowedMessage() + '</div>';
     var sendChat = $('community-send-chat'); if (sendChat) sendChat.onclick = sendMessage;
     var sendPost = $('community-send-post'); if (sendPost) sendPost.onclick = sendPostMessage;
     var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
@@ -204,15 +205,25 @@
     wireMentionComplete($('community-post-body'));
   }
   function decorateMentions(text) { return esc(text).replace(/@everyone\b/gi, '<span class="community-mention">@everyone</span>'); }
-  function renderRichBody(text) {
+  function attachmentData(attachment) { return attachment && String(attachment.data_url || attachment.dataUrl || attachment.url || '').trim(); }
+  function attachmentName(attachment) { return attachment && String(attachment.name || 'Image').trim().slice(0, 120); }
+  function attachmentHtml(attachment, legacy) {
+    var data = attachmentData(attachment), name = attachmentName(attachment);
+    if (!data) return '';
+    if (legacy) return '<div class="community-attachment-embed is-legacy"><b>' + esc(name) + '</b><small>An older attachment cannot be previewed. Upload it again to restore the image.</small></div>';
+    if (!/^data:image\//i.test(data) && !/^https?:\/\//i.test(data)) return '';
+    return '<figure class="community-attachment-embed"><img src="' + esc(data) + '" alt="' + esc(name) + '"><figcaption>' + esc(name) + '</figcaption></figure>';
+  }
+  function renderRichBody(text, attachment) {
     var raw = String(text || '');
     var match = raw.match(/(?:^|\n)Attached file:\s*([^\n]+)\n(data:[^\s]+)/);
-    if (!match) return decorateMentions(raw);
-    var before = raw.slice(0, match.index).trim();
-    var name = match[1].trim();
-    var data = match[2].trim();
-    var embed = '<div class="community-attachment-embed"><b>' + esc(name) + '</b><small>Attached file</small>' + (/^data:image\//i.test(data) ? '<img src="' + esc(data) + '" alt="' + esc(name) + '">' : '<a href="' + esc(data) + '" download="' + esc(name) + '">Download</a>') + '</div>';
-    return (before ? decorateMentions(before) : '') + embed;
+    var legacy = null;
+    if (match) {
+      legacy = { name: match[1].trim(), data_url: match[2].trim() };
+      raw = raw.slice(0, match.index).trim();
+    }
+    var body = raw ? '<div class="community-rich-text">' + decorateMentions(raw) + '</div>' : '';
+    return body + attachmentHtml(attachment || legacy, !!legacy && !attachment);
   }
   function wireMentionComplete(el) {
     if (!el) return;
@@ -232,7 +243,42 @@
   function currentSettingsText() { var keys = ['activeCursor','cloakTitle','cloakFavicon','uzRememberMe','panicEnabled','panicKey','startupLoadingEnabled','loadingScreenEnabled','openGamesInBlob','hiddenPageCover']; var out = keys.map(function(k){ return k + ': ' + (localStorage.getItem(k) || ''); }).join('\n'); return 'Settings preset from ' + displayName() + '\n```\n' + out + '\n```'; }
   function appendPostText(text) { var body = $('community-post-body'); if (!body) return; body.value = (body.value ? body.value + '\n\n' : '') + text; body.focus(); }
   function attachSettingsPreset() { appendPostText(currentSettingsText()); status('Settings preset added.'); }
-  function attachFileToPost(e) { var file = e && e.target && e.target.files ? e.target.files[0] : null; if (!file) return; if (file.size > 250000) { status('File is too large for inline sharing. Upload it somewhere and paste a link.'); return; } var reader = new FileReader(); reader.onload = function(){ appendPostText('Attached file: ' + file.name + '\n' + String(reader.result || '').slice(0, 12000)); status('File attached.'); }; reader.readAsDataURL(file); }
+  function fileToImageAttachment(file) {
+    if (!file) return Promise.resolve(null);
+    if (!/^image\//i.test(file.type || '')) return Promise.reject(new Error('Choose an image file.'));
+    if (file.size > 8 * 1024 * 1024) return Promise.reject(new Error('That image is too large. Choose one below 8 MB.'));
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error('The image could not be read.')); };
+      reader.onload = function(){
+        var original = String(reader.result || '');
+        if (original.length <= 500000) { resolve({ name: String(file.name || 'image').slice(0, 120), type: file.type || 'image/*', data_url: original }); return; }
+        var image = new Image();
+        image.onerror = function(){ reject(new Error('The image could not be prepared.')); };
+        image.onload = function(){
+          var edge = Math.min(1024, Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+          var attempt = 0;
+          function encode() {
+            var scale = Math.min(1, edge / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+            var width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+            var height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+            var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+            var data = canvas.toDataURL('image/jpeg', Math.max(.55, .88 - attempt * .08));
+            if (data.length <= 500000) { resolve({ name: String(file.name || 'image').slice(0, 120), type: 'image/jpeg', data_url: data }); return; }
+            attempt++; edge = Math.round(edge * .72);
+            if (attempt > 4 || edge < 128) { reject(new Error('That image is still too large after resizing.')); return; }
+            encode();
+          }
+          encode();
+        };
+        image.src = original;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  function showAttachmentChoice(id, attachment) { var el = $(id); if (el) el.textContent = attachment ? 'Image ready: ' + attachmentName(attachment) : 'No image selected'; }
+  async function attachFileToPost(e) { try { state.pendingPostAttachment = await fileToImageAttachment(e && e.target && e.target.files ? e.target.files[0] : null); showAttachmentChoice('community-file-choice', state.pendingPostAttachment); status('Image attached. It will be published separately from the post text.'); } catch (error) { state.pendingPostAttachment = null; showAttachmentChoice('community-file-choice', null); status(error.message || 'Image upload failed.'); } }
   function renderVoiceRoom() {
     var list = $('community-list');
     if (!list) return;
@@ -263,7 +309,128 @@
     Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ var active = btn.dataset.communityChannel === state.channelName; btn.classList.toggle('active', active); btn.classList.toggle('secondary', !active); });
     renderChannelHeader(); renderComposer(); loadItems(); subscribe();
   }
+  function announcementCard(row) {
+    var p = row.profiles || {};
+    var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : '';
+    var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : '';
+    return '<article class="announcement-card" data-announcement-id="' + esc(row.id) + '"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + authorLabel(p, row) + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '', row.attachment) + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>';
+  }
+  function renderAnnouncementRows(rows) {
+    var list = $('announcements-list');
+    if (!list) return;
+    list.innerHTML = rows.map(announcementCard).join('') || '<div class="community-message">No announcements yet.</div>';
+    Array.prototype.forEach.call(document.querySelectorAll('.community-copy-announcement'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Announcement copied'); }).catch(function(){ status('Could not copy announcement.'); }); }; });
+    wireAnnouncementActionsV2(rows);
+  }
+  function announcementComposerMarkup() {
+    return '<input id="announcement-title" maxlength="120" placeholder="Announcement title"><textarea id="announcement-body" maxlength="7000" placeholder="Announcement text, links, images, or @everyone. Type @eve then Tab."></textarea><div class="announcement-composer-actions"><label class="community-file-label">Upload image<input id="announcement-file-input" type="file" accept="image/*"></label><span class="community-attachment-choice" id="announcement-file-choice">No image selected</span><button class="community-btn" id="announcement-send" type="button">Publish announcement</button></div>';
+  }
+  function renderAnnouncementComposerV2() {
+    var compose = $('announcements-compose');
+    if (!compose) return;
+    if (!(state.user && isStaff())) { compose.innerHTML = '<div class="community-message community-locked">Mod, admin, or owner required to publish announcements.</div>'; return; }
+    compose.innerHTML = announcementComposerMarkup();
+    var file = $('announcement-file-input'); if (file) file.onchange = attachAnnouncementFileV2;
+    var send = $('announcement-send'); if (send) send.onclick = publishAnnouncementV2;
+    wireMentionComplete($('announcement-body'));
+  }
+  async function publishAnnouncementV2() {
+    var title = String(($('announcement-title') || {}).value || '').trim();
+    var body = String(($('announcement-body') || {}).value || '').trim();
+    var attachment = state.pendingAnnouncementAttachment;
+    if (!title || (!body && !attachment)) { status('Add a title and either text or an image.'); return; }
+    if (hasBadWord(title + ' ' + body)) { status('Blocked word found. Announcement will not publish.'); return; }
+    var record = { title: '[announcements] ' + title, body: body, attachment: attachment || null };
+    try {
+      initClient();
+      if (firebaseMode) {
+        record.user_id = state.user.id; record.username = profileUsername(); record.created_at = new Date().toISOString();
+        await state.client.db.collection('posts').add(record);
+      } else if (mongoMode) {
+        await mongoFetch('/posts', { method: 'POST', body: JSON.stringify(record) });
+      } else {
+        if (attachment) throw new Error('Image attachments require the Firebase account database.');
+        var result = await state.client.from('posts').insert({ user_id: state.user.id, title: record.title, body: record.body });
+        if (result.error) throw result.error;
+      }
+      state.pendingAnnouncementAttachment = null;
+      audit('announcement', title);
+      if (/@everyone\b/i.test(title + ' ' + body)) pingEveryone(title);
+      notifySaved('Announcement posted');
+      await renderAnnouncementsPanelV2();
+    } catch (error) { status(error.message || 'Announcement could not be published.'); }
+  }
+  async function attachAnnouncementFileV2(e) {
+    try {
+      state.pendingAnnouncementAttachment = await fileToImageAttachment(e && e.target && e.target.files ? e.target.files[0] : null);
+      showAttachmentChoice('announcement-file-choice', state.pendingAnnouncementAttachment);
+      status('Image attached. It will be shown under the announcement text.');
+    } catch (error) {
+      state.pendingAnnouncementAttachment = null;
+      showAttachmentChoice('announcement-file-choice', null);
+      status(error.message || 'Image upload failed.');
+    }
+  }
+  function announcementEditorMarkup(row, attachment) {
+    var attachmentNote = attachment ? 'Image: ' + attachmentName(attachment) : 'No image selected';
+    var remove = attachment ? '<button class="community-btn secondary announcement-edit-remove-image" type="button">Remove image</button>' : '';
+    return '<div class="announcement-edit-form"><input class="announcement-edit-title" maxlength="120" value="' + esc(stripPostChannel(row.title || '')) + '" aria-label="Announcement title"><textarea class="announcement-edit-body" maxlength="7000" aria-label="Announcement text">' + esc(row.body || '') + '</textarea><div class="announcement-edit-actions"><label class="community-file-label">Replace image<input class="announcement-edit-file" type="file" accept="image/*"></label><span class="community-attachment-choice announcement-edit-choice">' + esc(attachmentNote) + '</span>' + remove + '<button class="community-btn announcement-edit-save" type="button">Save changes</button><button class="community-btn secondary announcement-edit-cancel" type="button">Cancel</button></div></div>';
+  }
+  function beginAnnouncementEdit(row) {
+    var card = Array.prototype.filter.call(document.querySelectorAll('.announcement-card'), function(el){ return String(el.dataset.announcementId) === String(row.id); })[0];
+    if (!card) return;
+    var id = String(row.id);
+    state.pendingAnnouncementEdits[id] = row.attachment || null;
+    card.innerHTML = announcementEditorMarkup(row, state.pendingAnnouncementEdits[id]);
+    var input = card.querySelector('.announcement-edit-file');
+    if (input) input.onchange = async function(e) { try { state.pendingAnnouncementEdits[id] = await fileToImageAttachment(e.target.files && e.target.files[0]); card.querySelector('.announcement-edit-choice').textContent = 'Image ready: ' + attachmentName(state.pendingAnnouncementEdits[id]); var remove = card.querySelector('.announcement-edit-remove-image'); if (!remove) { remove = document.createElement('button'); remove.type = 'button'; remove.className = 'community-btn secondary announcement-edit-remove-image'; remove.textContent = 'Remove image'; card.querySelector('.announcement-edit-actions').insertBefore(remove, card.querySelector('.announcement-edit-save')); remove.onclick = function(){ state.pendingAnnouncementEdits[id] = null; card.querySelector('.announcement-edit-choice').textContent = 'No image selected'; remove.remove(); }; } } catch(error) { status(error.message || 'Image upload failed.'); } };
+    var remove = card.querySelector('.announcement-edit-remove-image'); if (remove) remove.onclick = function(){ state.pendingAnnouncementEdits[id] = null; card.querySelector('.announcement-edit-choice').textContent = 'No image selected'; remove.remove(); };
+    card.querySelector('.announcement-edit-cancel').onclick = function(){ delete state.pendingAnnouncementEdits[id]; renderAnnouncementsPanelV2(); };
+    card.querySelector('.announcement-edit-save').onclick = async function(){
+      var title = card.querySelector('.announcement-edit-title').value.trim();
+      var body = card.querySelector('.announcement-edit-body').value.trim();
+      var attachment = state.pendingAnnouncementEdits[id];
+      if (!title || (!body && !attachment)) { status('Add a title and either text or an image.'); return; }
+      if (hasBadWord(title + ' ' + body)) { status('Blocked word found. Announcement will not save.'); return; }
+      try {
+        initClient();
+        var changes = { title: '[announcements] ' + title, body: body, attachment: attachment || null, updated_at: new Date().toISOString() };
+        if (firebaseMode) await state.client.db.collection('posts').doc(id).set(changes, { merge: true });
+        else if (mongoMode) await mongoFetch('/posts/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify(changes) });
+        else { if (attachment) throw new Error('Image attachments require the Firebase account database.'); var result = await state.client.from('posts').update({ title: changes.title, body: changes.body, updated_at: changes.updated_at }).eq('id', id); if (result.error) throw result.error; }
+        delete state.pendingAnnouncementEdits[id]; audit('announcement-edit', id); notifySaved('Announcement updated'); await renderAnnouncementsPanelV2();
+      } catch(error) { status(error.message || 'Announcement edit failed.'); }
+    };
+  }
+  function wireAnnouncementActionsV2(rows) {
+    Array.prototype.forEach.call(document.querySelectorAll('.community-edit-announcement'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (row && canEditPost(row)) beginAnnouncementEdit(row); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('.community-delete-announcement'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row) || !confirm('Delete this announcement?')) return; try { initClient(); if (firebaseMode) await state.client.db.collection('posts').doc(String(row.id)).delete(); else if (mongoMode) await mongoFetch('/posts/' + encodeURIComponent(row.id), { method: 'DELETE' }); else { var result = await state.client.from('posts').delete().eq('id', row.id); if (result.error) throw result.error; } if (window.UZNotify && window.UZNotify.removeText) window.UZNotify.removeText('@everyone: ' + stripPostChannel(row.title || '')); audit('announcement-delete', row.id); notifySaved('Announcement deleted'); await renderAnnouncementsPanelV2(); } catch(error) { status(error.message || 'Announcement delete failed.'); } }; });
+  }
+  async function renderAnnouncementsPanelV2() {
+    var list = $('announcements-list');
+    if (!list) return;
+    if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet.</div>'; return; }
+    try {
+      initClient();
+      var rows;
+      if (mongoMode) rows = (await mongoFetch('/posts')).posts.map(mongoPost);
+      else if (firebaseMode) {
+        var snapshot = await state.client.db.collection('posts').orderBy('created_at', 'desc').limit(60).get();
+        rows = snapshot.docs.map(firebaseRow);
+        await loadMembers(false);
+        state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
+        rows.forEach(function(row){ row.profiles = state.profileByUser[String(row.user_id)] || { username: row.username, display_name: row.username, role: 'staff' }; });
+      } else {
+        var response = await state.client.from('posts').select('*, profiles(' + profileFields() + ', email)').order('created_at', { ascending: false }).limit(60);
+        if (response.error) throw response.error;
+        rows = response.data || [];
+      }
+      rows = (rows || []).filter(function(row){ return !row.deleted_at && normalizePostChannel(row.title) === 'announcements'; });
+      renderAnnouncementRows(rows); renderAnnouncementComposerV2();
+    } catch(error) { list.innerHTML = '<div class="community-message community-locked">' + esc(error.message || 'Announcements could not load.') + '</div>'; var compose = $('announcements-compose'); if (compose) compose.innerHTML = ''; }
+  }
   async function renderAnnouncementsPanel() {
+    return renderAnnouncementsPanelV2();
     var list = $('announcements-list'), compose = $('announcements-compose');
     if (!list) return;
     if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet.</div>'; return; }
@@ -369,7 +536,7 @@
   function metaEmail(p) { if (!isOwner() || !p.email) return ''; return ' / ' + esc(p.email); }
   function renderItem(row) {
     var p = row.profiles || {}; var name = p.display_name || p.username || row.username || 'Member'; var r = p.role || 'member';
-    if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><h3>' + esc(stripPostChannel(row.title)) + '</h3><div class="community-body">' + renderRichBody(row.body) + '</div>' + actions + '</article>'; }
+    if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><h3>' + esc(stripPostChannel(row.title)) + '</h3><div class="community-body">' + renderRichBody(row.body, row.attachment) + '</div>' + actions + '</article>'; }
     if (row.deleted_at) return '';
     var edited = row.updated_at && row.created_at && new Date(row.updated_at).getTime() - new Date(row.created_at).getTime() > 1000 ? '<span class="community-edited">edited</span>' : '';
     var deleted = row.deleted_at ? '<span class="community-deleted-tag">deleted</span>' : '';
@@ -420,7 +587,7 @@
     var order = { owner: 0, admin: 1, mod: 2, member: 3, banned: 4 };
     rows = (rows || []).slice().sort(function(a,b){ return (order[a.role] || 9) - (order[b.role] || 9) || String(a.username || '').localeCompare(String(b.username || '')); });
     var groups = ['owner','admin','mod','member','banned'];
-    return groups.map(function(g){ var members = rows.filter(function(r){ return (r.role || 'member') === g; }); if (!members.length) return ''; return '<section class="community-member-group"><h3>' + esc(g.toUpperCase()) + ' - ' + members.length + '</h3>' + members.map(function(m){ var canChangeRole = full && isRealOwner() && (!state.user || String(m.id) !== String(state.user.id)); var online = isOnline(m); var statusText = online ? 'Online' : 'Offline'; var roleControl = canChangeRole ? '<select class="community-role-select" data-user-id="' + esc(m.id) + '" data-username="' + esc(m.username || '') + '"><option' + (m.role === 'owner' ? ' selected' : '') + '>owner</option><option' + (m.role === 'admin' ? ' selected' : '') + '>admin</option><option' + (m.role === 'mod' ? ' selected' : '') + '>mod</option><option' + ((m.role || 'member') === 'member' ? ' selected' : '') + '>member</option><option' + (m.role === 'banned' ? ' selected' : '') + '>banned</option></select>' : '<em>' + esc(m.role || 'member') + '</em>'; return '<article class="community-member-row ' + (online ? 'is-online' : 'is-offline') + (g === 'banned' ? ' is-banned-member' : '') + '"><span class="community-member-dot" title="' + esc(statusText) + '"></span><button class="community-user-link community-member-name" data-user-id="' + esc(m.id) + '"><b>' + esc(m.display_name || m.username || 'member') + '</b><small>@' + esc(m.username || 'unknown') + ' - ' + statusText + '</small></button>' + roleControl + '</article>'; }).join('') + '</section>'; }).join('');
+    return groups.map(function(g){ var members = rows.filter(function(r){ return (r.role || 'member') === g; }); if (!members.length) return ''; return '<section class="community-member-group"><h3>' + esc(g.toUpperCase()) + ' - ' + members.length + '</h3>' + members.map(function(m){ var canChangeRole = full && isRealOwner() && (!state.user || String(m.id) !== String(state.user.id)); var online = isOnline(m); var statusText = online ? 'Online' : 'Offline'; var roleControl = canChangeRole ? '<select class="community-role-select" data-user-id="' + esc(m.id) + '" data-username="' + esc(m.username || '') + '"><option' + (m.role === 'owner' ? ' selected' : '') + '>owner</option><option' + (m.role === 'admin' ? ' selected' : '') + '>admin</option><option' + (m.role === 'mod' ? ' selected' : '') + '>mod</option><option' + ((m.role || 'member') === 'member' ? ' selected' : '') + '>member</option><option' + (m.role === 'banned' ? ' selected' : '') + '>banned</option></select>' : '<em>' + esc(m.role || 'member') + '</em>'; return '<article class="community-member-row ' + (online ? 'is-online' : 'is-offline') + (g === 'banned' ? ' is-banned-member' : '') + '"><span class="community-member-dot" title="' + esc(statusText) + '"></span>' + profileAvatarHtml(m) + '<button class="community-user-link community-member-name" data-user-id="' + esc(m.id) + '"><b>' + esc(m.display_name || m.username || 'member') + '</b><small>@' + esc(m.username || 'unknown') + ' - ' + statusText + '</small></button>' + roleControl + '</article>'; }).join('') + '</section>'; }).join('');
   }
   function wireProfileLinks() { Array.prototype.forEach.call(document.querySelectorAll('.community-user-link'), function(btn){ btn.onclick = function(){ showCommunityProfile(btn.dataset.userId); }; }); }
   function wireMemberActions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ sel.onchange = async function(){ await changeUserRole(sel.dataset.username, sel.value); }; }); }
@@ -455,7 +622,7 @@
     var ban = p.banned_until && new Date(p.banned_until) > new Date() ? '<p>Banned until: <b>' + esc(when(p.banned_until)) + '</b></p>' : '';
     var kick = p.kicked_until && new Date(p.kicked_until) > new Date() ? '<p>Kicked until: <b>' + esc(when(p.kicked_until)) + '</b></p>' : '';
     var mute = p.muted_until && new Date(p.muted_until) > new Date() ? '<p>Muted until: <b>' + esc(when(p.muted_until)) + '</b></p>' : '';
-    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><h2>' + esc(p.display_name || p.username || 'Member') + '</h2><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + profileCommandButtons(p) + '</div>';
+    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><div class="community-profile-heading">' + profileAvatarHtml(p, 'large') + '<h2>' + esc(p.display_name || p.username || 'Member') + '</h2></div><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + profileCommandButtons(p) + '</div>';
     document.body.appendChild(modal); document.getElementById('community-profile-close').onclick = function(){ modal.remove(); };
     var roleSel = document.getElementById('community-profile-role'); if (roleSel) roleSel.onchange = async function(){ await changeUserRole(p.username, roleSel.value); modal.remove(); };
     Array.prototype.forEach.call(modal.querySelectorAll('.community-profile-command'), function(btn){ btn.onclick = async function(){ var result = await runProfileCommand(p.username, btn.dataset.profileCmd); status(result.message); if (result.ok) { modal.remove(); await loadMembers(state.tab === 'members'); await loadItems(); } }; });
@@ -517,7 +684,32 @@
   async function runStaffCommandText(text) { var parsed = parseStaffCommand(text); if (!parsed) return { ok: false, message: 'Type a command first.' }; if (parsed.local) return { ok: true, message: parsed.local }; if (parsed.error) return { ok: false, message: parsed.error }; if (isTempOwner()) return { ok: false, message: 'Temporary owner can view the terminal, but live commands need a real staff account.' }; if (!state.user || !isStaff()) return { ok: false, message: 'Staff account required.' }; if (!parsed.target) return { ok: false, message: 'Add a target username.' }; var rr = role(); if (['ban','unban','setrole','deleteuser'].indexOf(parsed.action) !== -1 && rr !== 'owner') return { ok: false, message: 'Owner role required for /' + parsed.action + '.' }; if (parsed.action === 'kick' && ['owner','admin'].indexOf(rr) === -1) return { ok: false, message: 'Admin or owner required for /kick.' }; if (['warn','mute','unmute'].indexOf(parsed.action) !== -1 && ['owner','admin','mod'].indexOf(rr) === -1) return { ok: false, message: 'Staff role required.' }; if (firebaseMode) { try { var target = await firebaseFindUser(parsed.target); if (!target) return { ok: false, message: 'Target not found.' }; if (target.data.role === 'owner' && target.data.username !== profileUsername()) return { ok: false, message: 'Owners cannot moderate other owners.' }; var set = {}; if (parsed.action === 'setrole') { if (!parsed.newRole) return { ok: false, message: 'Add a role: owner, admin, mod, member, or banned.' }; set.role = parsed.newRole; set.banned_until = parsed.newRole === 'banned' ? '2099-01-01T00:00:00.000Z' : null; if (parsed.newRole !== 'deleted') set.deleted_at = null; } else if (parsed.action === 'deleteuser') { var deletedRef = state.client.db.collection('deletedAccounts').doc(target.id); await deletedRef.set({ username: target.data.username || parsed.target, deleted_at: new Date().toISOString(), deleted_by: state.user.id }); try { await target.ref.delete(); } catch(deleteError) { try { await deletedRef.delete(); } catch(markerError) {} throw deleteError; } audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; } else if (parsed.action === 'ban') { set.role = 'banned'; set.banned_until = '2099-01-01T00:00:00.000Z'; set.deleted_at = null; } else if (parsed.action === 'unban') { set.role = 'member'; set.banned_until = null; set.deleted_at = null; } else if (parsed.action === 'warn') { set.warnings = (Number(target.data.warnings || 0) + 1); } else if (parsed.action === 'mute') { set.muted_until = new Date(Date.now() + (parsed.minutes || 10) * 60000).toISOString(); } else if (parsed.action === 'unmute') { set.muted_until = null; } else if (parsed.action === 'kick') { set.kicked_until = new Date(Date.now() + (parsed.minutes || 10) * 60000).toISOString(); } await target.ref.set(set, { merge: true }); if (parsed.action === 'unban') clearDeviceBan(parsed.target); audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; } catch(e) { return { ok: false, message: e.message }; } } if (mongoMode) { try { if (parsed.action === 'setrole') { if (!parsed.newRole) return { ok: false, message: 'Add a role: owner, admin, mod, member, or banned.' }; await mongoFetch('/staff/role', { method: 'POST', body: JSON.stringify({ username: parsed.target, role: parsed.newRole }) }); } else if (parsed.action === 'deleteuser') { await mongoFetch('/staff/delete-user', { method: 'POST', body: JSON.stringify({ username: parsed.target }) }); } else { await mongoFetch('/staff/moderate', { method: 'POST', body: JSON.stringify({ username: parsed.target, action: parsed.action, reason: parsed.reason || '', minutes: parsed.minutes || null }) }); } if (parsed.action === 'unban') { try { localStorage.removeItem('uzBannedAccount:' + String(parsed.target || '').toLowerCase()); } catch(e) {} } audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; } catch(e) { return { ok: false, message: e.message }; } } initClient(); var res; if (parsed.action === 'setrole') { if (!parsed.newRole) return { ok: false, message: 'Add a role: owner, admin, mod, member, or banned.' }; res = await state.client.rpc('set_user_role', { target_username: parsed.target, new_role: parsed.newRole }); } else if (parsed.action === 'deleteuser') { res = await state.client.rpc('delete_user_by_username', { target_username: parsed.target }); } else { res = await state.client.rpc('moderate_user', { target_username: parsed.target, action_name: parsed.action, reason_text: parsed.reason || '', duration_minutes: parsed.minutes || null }); } if (res.error) return { ok: false, message: res.error.message }; if (parsed.action === 'unban') { try { localStorage.removeItem('uzBannedAccount:' + String(parsed.target || '').toLowerCase()); } catch(e) {} } audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; }
   function warnBlockedInput(el, msg) { status(msg || 'Blocked word found. This will not send.'); if (el) { el.classList.remove('community-input-warn'); void el.offsetWidth; el.classList.add('community-input-warn'); el.focus(); } }
   async function sendMessage() { if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').add({ user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages', { method: 'POST', body: JSON.stringify({ body: body }) }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); }
-  async function sendPostMessage() { if (!canPost()) { status('You cannot post in this channel.'); return; } if (!state.user) { status('Sign into a real account before publishing.'); return; } var titleEl = $('community-post-title'); var bodyEl = $('community-post-body'); var title = titleEl ? titleEl.value.trim() : ''; var body = bodyEl ? bodyEl.value.trim() : ''; if (!title || !body) return; if (hasBadWord(title + ' ' + body)) { warnBlockedInput(bodyEl || titleEl, 'Blocked word found. This post will not publish.'); return; } if (firebaseMode) { try { await state.client.db.collection('posts').add({ user_id: state.user.id, username: profileUsername(), title: '[' + state.channelName + '] ' + title, body: body, created_at: new Date().toISOString() }); if (titleEl) titleEl.value = ''; if (bodyEl) bodyEl.value = ''; audit('post', title); if (state.channelName === 'announcements' && /@everyone\b/i.test(title + ' ' + body)) pingEveryone(title); notifySaved('Posted'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/posts', { method: 'POST', body: JSON.stringify({ title: '[' + state.channelName + '] ' + title, body: body }) }); if (titleEl) titleEl.value = ''; if (bodyEl) bodyEl.value = ''; audit('post', title); notifySaved('Posted'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('posts').insert({ user_id: state.user.id, title: '[' + state.channelName + '] ' + title, body: body }); if (res.error) { status(res.error.message); return; } if (titleEl) titleEl.value = ''; if (bodyEl) bodyEl.value = ''; audit('post', title); if (state.channelName === 'announcements' && /@everyone\b/i.test(title + ' ' + body)) pingEveryone(title); notifySaved('Posted'); loadItems(); }
+  async function sendPostMessage() {
+    if (!canPost()) { status('You cannot post in this channel.'); return; }
+    if (!state.user) { status('Sign into a real account before publishing.'); return; }
+    var titleEl = $('community-post-title'); var bodyEl = $('community-post-body');
+    var title = titleEl ? titleEl.value.trim() : ''; var body = bodyEl ? bodyEl.value.trim() : '';
+    var attachment = state.pendingPostAttachment;
+    if (!title || (!body && !attachment)) { status('Add a title and either text or an image.'); return; }
+    if (hasBadWord(title + ' ' + body)) { warnBlockedInput(bodyEl || titleEl, 'Blocked word found. This post will not publish.'); return; }
+    try {
+      initClient();
+      var record = { title: '[' + state.channelName + '] ' + title, body: body, attachment: attachment || null };
+      if (firebaseMode) {
+        record.user_id = state.user.id; record.username = profileUsername(); record.created_at = new Date().toISOString();
+        await state.client.db.collection('posts').add(record);
+      } else if (mongoMode) {
+        await mongoFetch('/posts', { method: 'POST', body: JSON.stringify(record) });
+      } else {
+        if (attachment) throw new Error('Image attachments require the Firebase account database.');
+        var res = await state.client.from('posts').insert({ user_id: state.user.id, title: record.title, body: record.body });
+        if (res.error) throw res.error;
+      }
+      state.pendingPostAttachment = null;
+      if (titleEl) titleEl.value = ''; if (bodyEl) bodyEl.value = ''; showAttachmentChoice('community-file-choice', null);
+      audit('post', title); notifySaved('Posted'); loadItems();
+    } catch (error) { status(error.message || 'Post could not be published.'); }
+  }
   function subscribe() { if (!ready || !state.client) return; if (typeof state.realtime === 'function') { state.realtime(); state.realtime = null; } else if (state.realtime && state.client.removeChannel) state.client.removeChannel(state.realtime); if (state.tab === 'voice') return; if (firebaseMode) { var collection = state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts'); state.realtime = state.client.db.collection(collection).onSnapshot(function(){ loadItems(); }); return; } if (state.tab === 'members') return; var table = state.tab === 'chat' ? 'chat_messages' : 'posts'; state.realtime = state.client.channel('uz-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, loadItems).subscribe(); }
   window.UZCommunity = { saveProfile: saveProfile, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandText, renderAnnouncements: renderAnnouncementsPanel, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
   window.UZ_ACCOUNT_DEBUG.push('community-js-ready');
