@@ -1543,11 +1543,11 @@
     #context-menu .ctx-sep{height:1px;background:rgba(255,255,255,0.1);margin:5px 8px;}
     #context-menu .ctx-title{padding:6px 12px 2px;color:#666;font-size:11px;letter-spacing:1px;text-transform:uppercase;}
     @keyframes ctxIn{from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);}}
-    .uz-command-overlay{position:fixed;inset:0;z-index:60000;display:grid;place-items:start center;padding-top:12vh;background:rgba(0,0,0,.48);backdrop-filter:blur(5px)}
-    .uz-command-card{width:min(760px,calc(100vw - 28px));border:2px solid var(--accent);border-radius:12px;background:#090607;box-shadow:0 0 34px rgba(var(--accent-rgb),.35);padding:12px;font-family:'ApplePixel',monospace;color:#fff}
+    .uz-command-overlay{position:fixed;inset:0;z-index:60000;display:grid;place-items:center;padding:12px;box-sizing:border-box;overflow-y:auto;background:rgba(0,0,0,.48);backdrop-filter:blur(5px)}
+    .uz-command-card{width:min(760px,calc(100vw - 28px));max-height:calc(100dvh - 24px);min-height:0;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;border:2px solid var(--accent);border-radius:12px;background:#090607;box-shadow:0 0 34px rgba(var(--accent-rgb),.35);padding:12px;font-family:'ApplePixel',monospace;color:#fff}
     .uz-command-title{display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--accent);font-size:15px;margin-bottom:10px}.uz-command-title button{background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:6px 10px;cursor:pointer}
     .uz-command-input{width:100%;box-sizing:border-box;background:#111;border:2px solid var(--accent);border-radius:8px;color:#fff;font-family:'ApplePixel',monospace;font-size:18px;padding:13px;outline:none}.uz-command-input:focus{box-shadow:0 0 18px rgba(var(--accent-rgb),.45)}
-    .uz-command-help{display:grid;gap:7px;margin-top:10px}.uz-command-suggestion{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid rgba(var(--accent-rgb),.35);border-radius:8px;padding:9px 10px;background:rgba(255,255,255,.03);color:#ddd;cursor:pointer}.uz-command-suggestion.active,.uz-command-suggestion:hover{background:rgba(var(--accent-rgb),.18);color:#fff}.uz-command-suggestion code{color:var(--accent);font-family:'ApplePixel',monospace}.uz-command-status{min-height:22px;color:#ffd29a;margin-top:10px;font-size:13px}
+    .uz-command-help{display:grid;align-content:start;gap:7px;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;margin-top:10px;padding-right:5px}.uz-command-suggestion{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid rgba(var(--accent-rgb),.35);border-radius:8px;padding:9px 10px;background:rgba(255,255,255,.03);color:#ddd;cursor:pointer;overflow-wrap:anywhere}.uz-command-suggestion.active,.uz-command-suggestion:hover{background:rgba(var(--accent-rgb),.18);color:#fff}.uz-command-suggestion code{color:var(--accent);font-family:'ApplePixel',monospace}.uz-command-status{min-height:22px;color:#ffd29a;margin-top:10px;font-size:13px}
 
     /*  EXTRA MOTION  */
     .day-name{animation:titleGlow 4s ease-in-out infinite;}
@@ -8947,7 +8947,7 @@ let DATA = {
     overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Command Terminal - role: <b>'+esc(roleText())+'</b></span><button id="uz-command-close">Close</button></div><input id="uz-command-input" class="uz-command-input" autocomplete="off" spellcheck="false" placeholder="Type /warn, /mute, /kick, /ban, /setrole..."><div class="uz-command-builder"><input id="uz-cmd-user" placeholder="username"><select id="uz-cmd-time"><option value="10m">10 min</option><option value="30m">30 min</option><option value="1h">1 hour</option><option value="1d">1 day</option><option value="perm">permanent</option></select><select id="uz-cmd-role"><option>member</option><option>mod</option><option>admin</option><option>owner</option><option>banned</option></select><input id="uz-cmd-reason" placeholder="reason"><div class="uz-command-buttons wide"><button data-build="/warn">Warn</button><button data-build="/mute">Mute</button><button data-build="/unmute">Unmute</button><button data-build="/kick">Kick</button><button data-build="/ban">Ban</button><button data-build="/unban">Unban</button><button data-build="/setrole">Set role</button></div></div><div id="uz-command-help" class="uz-command-help"></div><div id="uz-command-status" class="uz-command-status">Tab autocompletes. Enter runs the command. Drag the header to move this panel.</div></div>';
     document.body.appendChild(overlay);
     var card=overlay.querySelector('.uz-command-card'), header=overlay.querySelector('.uz-command-title');
-    header.onmousedown=function(ev){ if(ev.target && ev.target.tagName==='BUTTON') return; var sx=ev.clientX, sy=ev.clientY, r=card.getBoundingClientRect(); card.style.position='fixed'; card.style.left=r.left+'px'; card.style.top=r.top+'px'; card.style.margin='0'; function move(e){ card.style.left=(r.left+e.clientX-sx)+'px'; card.style.top=(r.top+e.clientY-sy)+'px'; } function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); } document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); };    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');
+    header.onmousedown=function(ev){ if(ev.target && ev.target.tagName==='BUTTON') return; var sx=ev.clientX, sy=ev.clientY, r=card.getBoundingClientRect(); card.style.position='fixed'; card.style.left=r.left+'px'; card.style.top=r.top+'px'; card.style.margin='0'; function move(e){ card.style.left=Math.max(0,Math.min(window.innerWidth-card.offsetWidth,r.left+e.clientX-sx))+'px'; card.style.top=Math.max(0,Math.min(window.innerHeight-card.offsetHeight,r.top+e.clientY-sy))+'px'; } function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); } document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); };    var input=document.getElementById('uz-command-input'), help=document.getElementById('uz-command-help'), status=document.getElementById('uz-command-status');
     function matching(){ var q=input.value.trim().toLowerCase(); return commands.filter(function(c){return !q || c.cmd.toLowerCase().indexOf(q)===0 || c.fill.trim().indexOf(q)===0;}); }
     function render(){ var list=matching(); help.innerHTML=(list.length?list:commands).map(function(c,i){return '<button type="button" class="uz-command-suggestion'+(i===0?' active':'')+'" data-fill="'+esc(c.fill)+'"><span><code>'+esc(c.cmd)+'</code><br>'+esc(c.desc)+'</span><span>Tab</span></button>';}).join(''); Array.prototype.forEach.call(help.querySelectorAll('.uz-command-suggestion'),function(btn){btn.onclick=function(){input.value=btn.dataset.fill; input.focus(); render();};}); }
     function buildCommand(kind){ var u=(document.getElementById('uz-cmd-user').value||'').trim(); var t=(document.getElementById('uz-cmd-time').value||'10m').trim(); var ro=(document.getElementById('uz-cmd-role').value||'member').trim(); var re=(document.getElementById('uz-cmd-reason').value||'').trim(); if(kind==='/setrole') return kind+' '+u+' '+ro; if(kind==='/mute'||kind==='/kick') return kind+' '+u+' '+t+(re?' '+re:''); return kind+' '+u+(re?' '+re:''); }
@@ -8985,11 +8985,12 @@ let DATA = {
   window.openUZAuditPanel = async function(){
     var old=document.getElementById('uz-audit-overlay'); if(old) old.remove();
     var logs=[]; try{logs=JSON.parse(localStorage.getItem('uzAuditLog')||'[]')}catch(e){}
-    if(window.UZCommunity&&window.UZCommunity.loadStaffLogs){try{var cloudLogs=await window.UZCommunity.loadStaffLogs();if(cloudLogs&&cloudLogs.length)logs=cloudLogs;}catch(e){}}
+    var sharedLogError='';
+    if(window.UZCommunity&&window.UZCommunity.loadStaffLogs){try{var cloudLogs=await window.UZCommunity.loadStaffLogs();if(cloudLogs)logs=cloudLogs;sharedLogError=window.UZCommunity.staffLogError?window.UZCommunity.staffLogError():'';}catch(e){sharedLogError=e.message||'Shared log unavailable';}}
     var cfg=window.UZ_COMMUNITY_CONFIG||{}, api=String(cfg.mongoApiUrl||'').replace(/\/$/,''), token=localStorage.getItem('uzMongoToken')||sessionStorage.getItem('uzMongoToken')||'';
     if(api&&token){try{var res=await fetch(api+'/audit',{headers:{Authorization:'Bearer '+token}});var data=await res.json();if(res.ok&&data.audit)logs=data.audit;}catch(e){}}
     var overlay=document.createElement('div'); overlay.id='uz-audit-overlay'; overlay.className='uz-command-overlay';
-    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Staff Audit Log</span><button id="uz-audit-close">Close</button></div><div class="uz-command-help">'+(logs.length?logs.map(function(l){return '<button type="button" class="uz-command-suggestion"><span><code>'+clean(l.action||'event')+'</code><br>'+clean(l.detail||'')+'<br><small>by '+clean(l.by||l.username||'system')+'</small></span><span>'+clean(new Date(l.at||Date.now()).toLocaleString())+'</span></button>';}).join(''):'<div class="community-message">No audit entries yet.</div>')+'</div><div class="uz-command-status">Mongo audit logs usernames and actions. Passwords are hashed and never shown in plaintext.</div></div>';
+    overlay.innerHTML='<div class="uz-command-card"><div class="uz-command-title"><span>Staff Audit Log</span><button id="uz-audit-close">Close</button></div>'+(sharedLogError?'<div class="uz-command-status" role="alert">Shared logs unavailable: '+clean(sharedLogError)+'. Showing only this device\'s entries.</div>':'')+'<div class="uz-command-help">'+(logs.length?logs.map(function(l){return '<button type="button" class="uz-command-suggestion"><span><code>'+clean(l.action||'event')+'</code><br>'+clean(l.detail||'')+'<br><small>by '+clean(l.by||l.username||'system')+'</small></span><span>'+clean(new Date(l.at||Date.now()).toLocaleString())+'</span></button>';}).join(''):'<div class="community-message">No audit entries yet.</div>')+'</div><div class="uz-command-status">Shared entries depend on Firestore access; local entries are available on this device.</div></div>';
     document.body.appendChild(overlay); document.getElementById('uz-audit-close').onclick=function(){overlay.remove();}; overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
   };
 })();
@@ -9203,19 +9204,22 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function audit(action, detail) {
     var entry = { action: action, detail: detail || '', by: profileUsername(), at: new Date().toISOString() };
     try { var logs = JSON.parse(localStorage.getItem('uzAuditLog') || '[]'); logs.unshift(entry); localStorage.setItem('uzAuditLog', JSON.stringify(logs.slice(0, 300))); } catch(e) {}
-    if (firebaseMode && state.client && state.user && isStaff()) {
-      state.client.db.collection('staffLogs').add({ action: entry.action, detail: entry.detail, actor_id: state.user.id, actor_username: entry.by, created_at: entry.at }).catch(function(error){ debugLog('staff-log-failed', error && error.message); });
+    if (firebaseMode && state.client && state.user) {
+      state.client.db.collection('staffLogs').add({ action: entry.action, detail: entry.detail, actor_id: state.user.id, actor_username: entry.by, created_at: entry.at }).catch(function(error){ debugLog('staff-log-failed', error && error.message); state.staffLogError = error && error.message || 'Shared log write failed'; status('Shared staff log could not save: ' + state.staffLogError); });
     }
   }
   async function loadStaffLogs() {
     var local = [];
     try { local = JSON.parse(localStorage.getItem('uzAuditLog') || '[]'); } catch(e) {}
+    state.staffLogError = '';
     if (!firebaseMode || !state.client || !state.user || !isStaff()) return local;
     try {
       var snap = await state.client.db.collection('staffLogs').limit(300).get();
-      return snap.docs.map(function(doc){ var row = doc.data() || {}; return { action: row.action, detail: row.detail, by: row.actor_username || row.actor_id || 'staff', at: row.created_at || Date.now() }; }).sort(function(a,b){ return new Date(b.at).getTime() - new Date(a.at).getTime(); });
-    } catch(e) { debugLog('staff-log-read-failed', e && e.message); return local; }
+      var cloud = snap.docs.map(function(doc){ var row = doc.data() || {}; return { action: row.action, detail: row.detail, by: row.actor_username || row.actor_id || 'staff', at: row.created_at || Date.now() }; });
+      var seen = {}; return cloud.concat(local).filter(function(row){ var key = [row.action,row.detail,row.by,row.at].join('|'); if (seen[key]) return false; seen[key] = true; return true; }).sort(function(a,b){ return new Date(b.at).getTime() - new Date(a.at).getTime(); }).slice(0,300);
+    } catch(e) { state.staffLogError = e && e.message || 'Shared log read failed'; debugLog('staff-log-read-failed', state.staffLogError); return local; }
   }
+  function staffLogError() { return state.staffLogError || ''; }
   function subscribeCloudNotifications() {
     if (!firebaseMode || !state.client || !state.user) return;
     if (typeof state.notificationUnsub === 'function') state.notificationUnsub();
@@ -9539,17 +9543,22 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var tools = document.createElement('div');
     tools.id = 'community-pop-tools';
     tools.className = 'community-pop-tools';
-    tools.innerHTML = '<button class="community-btn secondary" id="community-expand-toggle" type="button">Expand</button><button class="community-btn secondary" id="community-go-top" type="button">Top</button><button class="community-btn secondary" id="community-go-bottom" type="button">Bottom</button>';
+    tools.innerHTML = '<button class="community-btn secondary" id="community-expand-toggle" type="button">Expand</button>';
     shell.insertBefore(tools, shell.firstChild);
     document.getElementById('community-expand-toggle').onclick = function(){ document.body.classList.toggle('community-expanded'); this.textContent = document.body.classList.contains('community-expanded') ? 'Shrink' : 'Expand'; };
-    document.getElementById('community-go-top').onclick = function(){ var list = $('community-list'); if (list) list.scrollTo({ top: 0, behavior: 'smooth' }); };
-    document.getElementById('community-go-bottom').onclick = function(){ var list = $('community-list'); if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); };
   }
-  function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p>'; }
+  function updateChatNavigation() {
+    var list = $('community-list'), top = $('community-go-top'), bottom = $('community-go-bottom');
+    if (!list || !top || !bottom) return;
+    var scrollable = list.scrollHeight > list.clientHeight + 24;
+    top.hidden = !scrollable || list.scrollTop < 24;
+    bottom.hidden = !scrollable || list.scrollHeight - list.clientHeight - list.scrollTop < 24;
+  }
+  function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<div class="community-channel-title"><h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p></div><div class="community-channel-actions"><button class="community-btn secondary" id="community-go-top" type="button">Top</button><button class="community-btn secondary" id="community-go-bottom" type="button">Latest</button></div>'; var top = $('community-go-top'), bottom = $('community-go-bottom'), list = $('community-list'); if (top) top.onclick = function(){ list.scrollTo({ top: 0, behavior: 'smooth' }); }; if (bottom) bottom.onclick = function(){ list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); }; if (list) list.onscroll = updateChatNavigation; updateChatNavigation(); }
   function setTab(tab, channel) {
     state.tab = tab || 'chat'; state.channelName = channel || (tab === 'chat' ? 'chat' : state.channelName || 'chat');
     Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ var active = btn.dataset.communityChannel === state.channelName; btn.classList.toggle('active', active); btn.classList.toggle('secondary', !active); });
-    renderChannelHeader(); renderComposer(); loadItems(); subscribe();
+    state.jumpToLatest = true; renderChannelHeader(); renderComposer(); loadItems(); subscribe();
   }
   function announcementCard(row) {
     var p = row.profiles || {};
@@ -9733,6 +9742,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function stripPostChannel(title) { return String(title || '').replace(/^\[[^\]]+\]\s*/, ''); }
   async function loadItems() {
     var list = $('community-list'); if (!list) return; renderChannelHeader();
+    var oldTop = list.scrollTop, wasNearBottom = list.scrollHeight - list.clientHeight - oldTop < 48;
+    function restoreScroll(){ if (state.jumpToLatest || wasNearBottom) list.scrollTop = list.scrollHeight; else list.scrollTop = oldTop; state.jumpToLatest = false; updateChatNavigation(); }
     if (firebaseMode && !firebaseAvailable()) { list.innerHTML = '<div class="community-message community-locked">Firebase is temporarily rate-limited. The countdown at the top shows when reads resume.</div>'; return; }
     if (state.tab === 'voice') { renderVoiceRoom(); loadMembers(false); return; }
     if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Check community/config.js.</div>'; return; }
@@ -9750,7 +9761,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         rows.forEach(function(r){ r.profiles = state.profileByUser[String(r.user_id)] || { username: r.username, display_name: r.username, role: 'member' }; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-        wireProfileLinks(); list.scrollTop = list.scrollHeight;
+        wireProfileLinks(); restoreScroll();
       } catch(e) { firebaseCooldown(e); list.innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
       return;
     }
@@ -9763,7 +9774,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-        wireProfileLinks(); list.scrollTop = list.scrollHeight; if (!state.memberRows.length) loadMembers(false);
+        wireProfileLinks(); restoreScroll(); if (!state.memberRows.length) loadMembers(false);
       } catch(e) { list.innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
       return;
     }
@@ -9778,7 +9789,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     state.profileByUser = {}; rows.forEach(function(r){ if (r.profiles && r.user_id) state.profileByUser[String(r.user_id)] = r.profiles; });
     list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-    wireProfileLinks(); list.scrollTop = list.scrollHeight; if (!state.memberRows.length) loadMembers(false);
+    wireProfileLinks(); restoreScroll(); if (!state.memberRows.length) loadMembers(false);
   }
   function metaEmail(p) { if (!isOwner() || !p.email) return ''; return ' / ' + esc(p.email); }
   function renderItem(row) {
@@ -10085,7 +10096,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (target.tab) setTab(target.tab, target.channel || (target.tab === 'chat' ? 'chat' : state.channelName));
     setTimeout(function(){ var selector = target.id ? '[data-message-id="' + String(target.id).replace(/"/g, '') + '"],[data-post-id="' + String(target.id).replace(/"/g, '') + '"],[data-announcement-id="' + String(target.id).replace(/"/g, '') + '"]' : ''; var found = selector ? document.querySelector(selector) : null; if (found) { found.scrollIntoView({ behavior: 'smooth', block: 'center' }); found.classList.add('community-notification-focus'); setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800); } }, 220);
   });
-  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
+  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, staffLogError: staffLogError, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
   window.UZ_ACCOUNT_DEBUG.push('community-js-ready');
   window.initCommunity = function () { ensureCommunityTools(); Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initCommunity); else window.initCommunity();

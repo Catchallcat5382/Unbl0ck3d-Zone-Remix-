@@ -169,19 +169,22 @@
   function audit(action, detail) {
     var entry = { action: action, detail: detail || '', by: profileUsername(), at: new Date().toISOString() };
     try { var logs = JSON.parse(localStorage.getItem('uzAuditLog') || '[]'); logs.unshift(entry); localStorage.setItem('uzAuditLog', JSON.stringify(logs.slice(0, 300))); } catch(e) {}
-    if (firebaseMode && state.client && state.user && isStaff()) {
-      state.client.db.collection('staffLogs').add({ action: entry.action, detail: entry.detail, actor_id: state.user.id, actor_username: entry.by, created_at: entry.at }).catch(function(error){ debugLog('staff-log-failed', error && error.message); });
+    if (firebaseMode && state.client && state.user) {
+      state.client.db.collection('staffLogs').add({ action: entry.action, detail: entry.detail, actor_id: state.user.id, actor_username: entry.by, created_at: entry.at }).catch(function(error){ debugLog('staff-log-failed', error && error.message); state.staffLogError = error && error.message || 'Shared log write failed'; status('Shared staff log could not save: ' + state.staffLogError); });
     }
   }
   async function loadStaffLogs() {
     var local = [];
     try { local = JSON.parse(localStorage.getItem('uzAuditLog') || '[]'); } catch(e) {}
+    state.staffLogError = '';
     if (!firebaseMode || !state.client || !state.user || !isStaff()) return local;
     try {
       var snap = await state.client.db.collection('staffLogs').limit(300).get();
-      return snap.docs.map(function(doc){ var row = doc.data() || {}; return { action: row.action, detail: row.detail, by: row.actor_username || row.actor_id || 'staff', at: row.created_at || Date.now() }; }).sort(function(a,b){ return new Date(b.at).getTime() - new Date(a.at).getTime(); });
-    } catch(e) { debugLog('staff-log-read-failed', e && e.message); return local; }
+      var cloud = snap.docs.map(function(doc){ var row = doc.data() || {}; return { action: row.action, detail: row.detail, by: row.actor_username || row.actor_id || 'staff', at: row.created_at || Date.now() }; });
+      var seen = {}; return cloud.concat(local).filter(function(row){ var key = [row.action,row.detail,row.by,row.at].join('|'); if (seen[key]) return false; seen[key] = true; return true; }).sort(function(a,b){ return new Date(b.at).getTime() - new Date(a.at).getTime(); }).slice(0,300);
+    } catch(e) { state.staffLogError = e && e.message || 'Shared log read failed'; debugLog('staff-log-read-failed', state.staffLogError); return local; }
   }
+  function staffLogError() { return state.staffLogError || ''; }
   function subscribeCloudNotifications() {
     if (!firebaseMode || !state.client || !state.user) return;
     if (typeof state.notificationUnsub === 'function') state.notificationUnsub();
@@ -505,17 +508,22 @@
     var tools = document.createElement('div');
     tools.id = 'community-pop-tools';
     tools.className = 'community-pop-tools';
-    tools.innerHTML = '<button class="community-btn secondary" id="community-expand-toggle" type="button">Expand</button><button class="community-btn secondary" id="community-go-top" type="button">Top</button><button class="community-btn secondary" id="community-go-bottom" type="button">Bottom</button>';
+    tools.innerHTML = '<button class="community-btn secondary" id="community-expand-toggle" type="button">Expand</button>';
     shell.insertBefore(tools, shell.firstChild);
     document.getElementById('community-expand-toggle').onclick = function(){ document.body.classList.toggle('community-expanded'); this.textContent = document.body.classList.contains('community-expanded') ? 'Shrink' : 'Expand'; };
-    document.getElementById('community-go-top').onclick = function(){ var list = $('community-list'); if (list) list.scrollTo({ top: 0, behavior: 'smooth' }); };
-    document.getElementById('community-go-bottom').onclick = function(){ var list = $('community-list'); if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); };
   }
-  function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p>'; }
+  function updateChatNavigation() {
+    var list = $('community-list'), top = $('community-go-top'), bottom = $('community-go-bottom');
+    if (!list || !top || !bottom) return;
+    var scrollable = list.scrollHeight > list.clientHeight + 24;
+    top.hidden = !scrollable || list.scrollTop < 24;
+    bottom.hidden = !scrollable || list.scrollHeight - list.clientHeight - list.scrollTop < 24;
+  }
+  function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<div class="community-channel-title"><h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p></div><div class="community-channel-actions"><button class="community-btn secondary" id="community-go-top" type="button">Top</button><button class="community-btn secondary" id="community-go-bottom" type="button">Latest</button></div>'; var top = $('community-go-top'), bottom = $('community-go-bottom'), list = $('community-list'); if (top) top.onclick = function(){ list.scrollTo({ top: 0, behavior: 'smooth' }); }; if (bottom) bottom.onclick = function(){ list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); }; if (list) list.onscroll = updateChatNavigation; updateChatNavigation(); }
   function setTab(tab, channel) {
     state.tab = tab || 'chat'; state.channelName = channel || (tab === 'chat' ? 'chat' : state.channelName || 'chat');
     Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ var active = btn.dataset.communityChannel === state.channelName; btn.classList.toggle('active', active); btn.classList.toggle('secondary', !active); });
-    renderChannelHeader(); renderComposer(); loadItems(); subscribe();
+    state.jumpToLatest = true; renderChannelHeader(); renderComposer(); loadItems(); subscribe();
   }
   function announcementCard(row) {
     var p = row.profiles || {};
@@ -699,6 +707,8 @@
   function stripPostChannel(title) { return String(title || '').replace(/^\[[^\]]+\]\s*/, ''); }
   async function loadItems() {
     var list = $('community-list'); if (!list) return; renderChannelHeader();
+    var oldTop = list.scrollTop, wasNearBottom = list.scrollHeight - list.clientHeight - oldTop < 48;
+    function restoreScroll(){ if (state.jumpToLatest || wasNearBottom) list.scrollTop = list.scrollHeight; else list.scrollTop = oldTop; state.jumpToLatest = false; updateChatNavigation(); }
     if (firebaseMode && !firebaseAvailable()) { list.innerHTML = '<div class="community-message community-locked">Firebase is temporarily rate-limited. The countdown at the top shows when reads resume.</div>'; return; }
     if (state.tab === 'voice') { renderVoiceRoom(); loadMembers(false); return; }
     if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Check community/config.js.</div>'; return; }
@@ -716,7 +726,7 @@
         rows.forEach(function(r){ r.profiles = state.profileByUser[String(r.user_id)] || { username: r.username, display_name: r.username, role: 'member' }; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-        wireProfileLinks(); list.scrollTop = list.scrollHeight;
+        wireProfileLinks(); restoreScroll();
       } catch(e) { firebaseCooldown(e); list.innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
       return;
     }
@@ -729,7 +739,7 @@
         state.profileByUser = {}; (state.memberRows || []).forEach(function(p){ state.profileByUser[String(p.id)] = p; });
         list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-        wireProfileLinks(); list.scrollTop = list.scrollHeight; if (!state.memberRows.length) loadMembers(false);
+        wireProfileLinks(); restoreScroll(); if (!state.memberRows.length) loadMembers(false);
       } catch(e) { list.innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
       return;
     }
@@ -744,7 +754,7 @@
     state.profileByUser = {}; rows.forEach(function(r){ if (r.profiles && r.user_id) state.profileByUser[String(r.user_id)] = r.profiles; });
     list.innerHTML = rows.map(renderItem).join('') || '<div class="community-message">Nothing here yet.</div>';
         if (state.tab === 'chat') wireMessageActions(rows); else wirePostActionsV2(rows);
-    wireProfileLinks(); list.scrollTop = list.scrollHeight; if (!state.memberRows.length) loadMembers(false);
+    wireProfileLinks(); restoreScroll(); if (!state.memberRows.length) loadMembers(false);
   }
   function metaEmail(p) { if (!isOwner() || !p.email) return ''; return ' / ' + esc(p.email); }
   function renderItem(row) {
@@ -1051,7 +1061,7 @@
     if (target.tab) setTab(target.tab, target.channel || (target.tab === 'chat' ? 'chat' : state.channelName));
     setTimeout(function(){ var selector = target.id ? '[data-message-id="' + String(target.id).replace(/"/g, '') + '"],[data-post-id="' + String(target.id).replace(/"/g, '') + '"],[data-announcement-id="' + String(target.id).replace(/"/g, '') + '"]' : ''; var found = selector ? document.querySelector(selector) : null; if (found) { found.scrollIntoView({ behavior: 'smooth', block: 'center' }); found.classList.add('community-notification-focus'); setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800); } }, 220);
   });
-  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
+  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, staffLogError: staffLogError, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
   window.UZ_ACCOUNT_DEBUG.push('community-js-ready');
   window.initCommunity = function () { ensureCommunityTools(); Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initCommunity); else window.initCommunity();

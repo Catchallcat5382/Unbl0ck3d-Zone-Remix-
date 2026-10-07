@@ -167,9 +167,12 @@ service cloud.firestore {
       allow read: if signedIn() && staff();
 
       allow create: if signedIn()
-        && staff()
+        && request.resource.data.keys().hasOnly(['action', 'detail', 'actor_id', 'actor_username', 'created_at'])
         && request.resource.data.actor_id == request.auth.uid
-        && request.resource.data.action is string;
+        && request.resource.data.action is string
+        && request.resource.data.detail is string
+        && request.resource.data.detail.size() <= 1000
+        && (staff() || request.resource.data.action in ['message', 'message-edit', 'message-delete', 'post', 'post-edit', 'post-delete']);
 
       allow update, delete: if signedIn() && owner();
     }
