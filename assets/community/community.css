@@ -146,3 +146,11 @@ body.uz-auth-locked #sidebar,body.uz-auth-locked #sidebar-toggle,body.uz-auth-lo
 body.community-expanded .community-discord-shell{width:100%!important;max-width:none!important;grid-template-columns:minmax(150px,210px) minmax(0,1fr) minmax(170px,250px)!important}
 @media(max-width:1050px){body.community-expanded .community-discord-shell{grid-template-columns:minmax(145px,185px) minmax(0,1fr)!important;height:auto!important}}
 @media(max-width:660px){body.community-expanded .community-discord-shell{grid-template-columns:minmax(0,1fr)!important}}
+
+/* Community must not inherit the 1100px limit used by ordinary tabs. */
+#community.tab-content{width:min(1600px,calc(100vw - 24px));max-width:none;box-sizing:border-box}
+#community .community-discord-shell{width:100%!important;max-width:none!important;grid-template-columns:minmax(160px,200px) minmax(0,1fr) minmax(190px,240px)!important;gap:10px!important}
+#community .community-grid{min-width:0}
+@media(max-width:1200px){#community .community-discord-shell{grid-template-columns:minmax(150px,180px) minmax(0,1fr)!important}#community .community-info-panel{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,2fr);align-items:start}#community .community-info-panel>h2,#community .community-info-panel>p{display:none}#community .community-side-members{grid-column:2;grid-row:1/5;max-height:150px}}
+@media(max-width:900px){#community .community-discord-shell{grid-template-columns:minmax(0,1fr)!important}#community .community-channel-panel{display:flex;align-items:center;gap:10px;overflow-x:auto;padding:8px!important}#community .community-channel-panel h2{flex:0 0 auto;font-size:16px!important;margin:0!important}#community .community-channel-section{display:flex;flex:0 0 auto;align-items:center;gap:3px;margin:0!important}#community .community-channel-section>span{display:none}#community .community-channel-section .community-tab{width:auto;white-space:nowrap;padding:8px}#community .community-grid{height:min(720px,calc(100dvh - 185px))!important;min-height:400px!important}#community .community-info-panel{grid-column:1}}
+@media(max-width:600px){#community.tab-content{width:calc(100vw - 12px)}#community .community-discord-shell{padding:4px!important}#community .community-info-panel{display:block}#community .community-side-members{max-height:140px}}
