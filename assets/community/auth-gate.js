@@ -72,13 +72,12 @@
     'cloakTitle', 'cloakFavicon', 'hiddenPageCover', 'sidebarIconsOnly', 'uzRequireLogin',
     'uzNotifications', 'uzAuditLog'
   ];
-  var LOCAL_ONLY_SETTINGS = ['uzNotifications', 'uzAuditLog', 'uzVoiceJoined', 'panicCoverMedia'];
+  var LOCAL_ONLY_SETTINGS = ['uzNotifications', 'uzAuditLog', 'uzVoiceJoined', 'panicCoverMedia', 'bgMode', 'customWallpaper', 'gradientC1', 'gradientC2', 'gradientAngle'];
   function cloudSettingAllowed(key, value) {
     return ACCOUNT_SETTING_KEYS.indexOf(key) !== -1
       && LOCAL_ONLY_SETTINGS.indexOf(key) === -1
       && value != null
-      && String(value).length <= 200000
-      && !(key === 'customWallpaper' && String(value).indexOf('local-media:') === 0);
+      && String(value).length <= 200000;
   }
   function accountSettingKey(username, key) { return 'uzacct:settings:' + cleanUsername(username) + ':' + key; }
   window.UZExportAccountSettings = function () {
@@ -667,6 +666,7 @@
     }
     var data = doc.data() || {};
     data.id = user.uid;
+    if (/^co[-_ ]?owner$/i.test(String(data.role || ''))) data.role = 'co_owner';
     window.UZPendingProfileSettings = { username: username, settings: data.settings && typeof data.settings === 'object' ? data.settings : {} };
     if (data.role === 'banned' || (data.banned_until && new Date(data.banned_until) > new Date())) { try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzSiteBannedUid', user.uid); localStorage.setItem('uzBannedAccount:' + username, '1'); } catch(e) {} renderBannedGate(username); return null; }
     return data;
