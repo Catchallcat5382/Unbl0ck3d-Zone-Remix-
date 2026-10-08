@@ -18,8 +18,20 @@
         var rawSet = Storage.prototype.setItem;
         var rawRemove = Storage.prototype.removeItem;
         var rawKey = Storage.prototype.key;
-        var shared = /^(uzLoginEmail|uzRememberMe|uzRecentAccounts|uzSessionOk|uzCommunityProfileName:|uzCommunityAvatar:|sb-|supabase\.|community\.|__|ownerBypassHash)/;
+        var shared = /^(uzLoginEmail|uzRememberMe|uzRecentAccounts|uzSessionOk|uzSiteBanned|uzBannedAccount:|uzCommunityProfileName:|uzCommunityAvatar:|sb-|supabase\.|community\.|__|ownerBypassHash)/;
         function user() { return String(rawGet.call(localStorage, 'uzLoginEmail') || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '') || ''; }
+        (function () {
+          var existing = rawGet.call(localStorage, 'uzSiteBanned');
+          var oldKeys = [];
+          for (var i = 0; i < localStorage.length; i++) {
+            var key = rawKey.call(localStorage, i) || '';
+            if (/^uzacct:[^:]+:uzSiteBanned$/.test(key)) oldKeys.push(key);
+          }
+          var preferred = 'uzacct:' + user() + ':uzSiteBanned';
+          var chosen = oldKeys.indexOf(preferred) !== -1 ? preferred : oldKeys[oldKeys.length - 1];
+          if (!existing && chosen) rawSet.call(localStorage, 'uzSiteBanned', rawGet.call(localStorage, chosen));
+          oldKeys.forEach(function (key) { rawRemove.call(localStorage, key); });
+        })();
         function scoped(k) {
           k = String(k || '');
           if (!k || shared.test(k) || k.indexOf('uzacct:') === 0) return k;
@@ -9126,7 +9138,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
   window.UZ_ACCOUNT_DEBUG.push('community-js-start');
   var cfg = window.UZ_COMMUNITY_CONFIG || {};
-  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, profileRealtime: null, notificationUnsub: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachments: [], pendingPostAttachment: null, pendingAnnouncementAttachments: [], pendingAnnouncementEdits: {}, pendingPostEdits: {}, recentlyDeletedMessages: {}, jumpToLatest: true, firestoreCooldownUntil: 0 };
+  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, snapshotCollection: null, snapshotUserId: null, latestSnapshot: null, profileRealtime: null, profileUserId: null, notificationUnsub: null, notificationUserId: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachments: [], pendingPostAttachment: null, pendingAnnouncementAttachments: [], pendingAnnouncementEdits: {}, pendingPostEdits: {}, recentlyDeletedMessages: {}, jumpToLatest: true, firestoreCooldownUntil: 0 };
   var MAX_ATTACHMENTS = 20;
   var mongoApiUrl = String(cfg.mongoApiUrl || '').replace(/\/$/, '');
   var mongoMode = !!mongoApiUrl;
@@ -9260,7 +9272,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (firebaseMode) {
       if (!ready || !state.client || !state.user) return;
       subscribeCloudNotifications();
+      if (state.profileRealtime && state.profileUserId === state.user.id) return;
       if (typeof state.profileRealtime === 'function') state.profileRealtime();
+      state.profileUserId = state.user.id;
       state.profileRealtime = state.client.db.collection('profiles').doc(state.user.id).onSnapshot(async function(doc){
         if (!doc.exists) { await forceSignedOut('This account was deleted.', null, profileUsername()); return; }
         mergeProfile(fromFirebaseProfile(doc.id, doc.data()));
@@ -9315,7 +9329,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function staffLogError() { return state.staffLogError || ''; }
   function subscribeCloudNotifications() {
     if (!firebaseMode || !state.client || !state.user) return;
+    if (state.notificationUnsub && state.notificationUserId === state.user.id) return;
     if (typeof state.notificationUnsub === 'function') state.notificationUnsub();
+    state.notificationUserId = state.user.id;
     state.notificationUnsub = state.client.db.collection('notifications').where('recipient_id', '==', state.user.id).limit(100).onSnapshot(function(snapshot){
       snapshot.docChanges().forEach(function(change){
         if (change.type !== 'added') return;
@@ -9340,7 +9356,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     return notifyUsers(ids, profileUsername() + ' mentioned you: ' + String(text || '').slice(0, 420), target);
   }
   function pingEveryone(title) { var text = '@everyone: ' + (title || 'New announcement'); if (window.UZNotify && window.UZNotify.add) window.UZNotify.add(text); notifyUsers((state.memberRows || []).map(function(profile){ return profile.id; }), text, { tab: 'posts' }); }
-  function clearDeviceBan(username) { try { var u = String(username || '').toLowerCase(); if (!u || localStorage.getItem('uzSiteBanned') === u) localStorage.removeItem('uzSiteBanned'); if (u) localStorage.removeItem('uzBannedAccount:' + u); localStorage.removeItem('uzSiteBannedUid'); } catch(e) {} }
+  function clearDeviceBan(username) { try { var u = String(username || '').toLowerCase(); if (!u || localStorage.getItem('uzSiteBanned') === u) { localStorage.removeItem('uzSiteBanned'); sessionStorage.removeItem('uzSiteBanned'); } if (u) localStorage.removeItem('uzBannedAccount:' + u); localStorage.removeItem('uzSiteBannedUid'); } catch(e) {} }
   async function forceSignedOut(message, bannedName, deletedName) { try { if (state.client && !mongoMode && !bannedName) await state.client.auth.signOut(); } catch(e) {} try { sessionStorage.removeItem('uzSessionOk'); if (!bannedName) localStorage.removeItem('uzLoginEmail'); localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); if (deletedName) { var u = String(deletedName).toLowerCase(); localStorage.setItem('uzRecentAccounts', JSON.stringify((JSON.parse(localStorage.getItem('uzRecentAccounts') || '[]') || []).filter(function(a){ return String(a.username || '').toLowerCase() !== u; }))); } if (bannedName) { localStorage.setItem('uzBannedAccount:' + String(bannedName).toLowerCase(), '1'); localStorage.setItem('uzSiteBanned', String(bannedName).toLowerCase()); if (state.user && state.user.id) localStorage.setItem('uzSiteBannedUid', state.user.id); } } catch(e) {} if (!bannedName) { state.user = null; state.profile = null; } renderUser(); renderComposer(); if (bannedName && window.UZAuthGate && window.UZAuthGate.showBanned) window.UZAuthGate.showBanned(bannedName); else if (window.UZAuthGate) window.UZAuthGate.showLogin(message || 'Your account session ended.'); }
   function renderSetup() { var setup = $('community-setup'); if (setup) setup.classList.toggle('community-hidden', ready); }
   function renderUser() {
@@ -9414,6 +9430,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (!ready || !state.user) return;
     initClient();
     if (firebaseMode) {
+      if (state.profile && state.profile.id === state.user.id) return;
       var username = (state.user.email || '').split('@')[0] || state.user.id;
       var ref = state.client.db.collection('profiles').doc(state.user.id);
        var deletedMarker = await state.client.db.collection('deletedAccounts').doc(state.user.id).get();
@@ -9436,7 +9453,15 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var res = await state.client.from('profiles').upsert(payload, { onConflict: 'id' }).select(profileFields()).single();
     if (!res.error && res.data) mergeProfile(res.data);
   }
-  async function refreshSession() { if (!ready) { renderSetup(); renderUser(); renderComposer(); loadItems(); return; } if (firebaseMode) { initClient(); var fb = state.client.auth.currentUser; state.user = fb ? { id: fb.uid, email: fb.email || '' } : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribeOwnProfile(); } if (!state.authUnsub) state.authUnsub = state.client.auth.onAuthStateChanged(async function(user){ state.user = user ? { id: user.uid, email: user.email || '' } : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribeOwnProfile(); } else { clearInterval(state.heartbeatTimer); if (typeof state.profileRealtime === 'function') { state.profileRealtime(); state.profileRealtime = null; } if (typeof state.realtime === 'function') { state.realtime(); state.realtime = null; } state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); return; } if (mongoMode) { try { var mine = await mongoFetch('/me'); var p = fromMongoUser(mine.user); state.user = { id: p.id, email: p.username + '@' + (cfg.internalAuthDomain || 'uzlogin.net') }; mergeProfile(p); startHeartbeat(); } catch(e) { state.user = null; state.profile = null; } renderSetup(); renderUser(); renderComposer(); loadMembers(state.tab === 'members'); loadItems(); return; } initClient(); var session = await state.client.auth.getSession(); state.user = session.data && session.data.session ? session.data.session.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } state.client.auth.onAuthStateChange(async function (_event, sessionData) { state.user = sessionData && sessionData.user ? sessionData.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } else { clearInterval(state.heartbeatTimer); if (state.presenceChannel) state.client.removeChannel(state.presenceChannel); if (state.profileRealtime) state.client.removeChannel(state.profileRealtime); state.onlineIds = {}; state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); }
+  function stopFirebaseListeners() {
+    if (typeof state.profileRealtime === 'function') state.profileRealtime();
+    if (typeof state.notificationUnsub === 'function') state.notificationUnsub();
+    if (typeof state.realtime === 'function') state.realtime();
+    state.profileRealtime = null; state.profileUserId = null;
+    state.notificationUnsub = null; state.notificationUserId = null;
+    state.realtime = null; state.snapshotCollection = null; state.snapshotUserId = null; state.latestSnapshot = null;
+  }
+  async function refreshSession() { if (!ready) { renderSetup(); renderUser(); renderComposer(); loadItems(); return; } if (firebaseMode) { initClient(); var fb = state.client.auth.currentUser; state.user = fb ? { id: fb.uid, email: fb.email || '' } : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribeOwnProfile(); } if (!state.authUnsub) state.authUnsub = state.client.auth.onAuthStateChanged(async function(user){ state.user = user ? { id: user.uid, email: user.email || '' } : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribeOwnProfile(); } else { clearInterval(state.heartbeatTimer); stopFirebaseListeners(); state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); return; } if (mongoMode) { try { var mine = await mongoFetch('/me'); var p = fromMongoUser(mine.user); state.user = { id: p.id, email: p.username + '@' + (cfg.internalAuthDomain || 'uzlogin.net') }; mergeProfile(p); startHeartbeat(); } catch(e) { state.user = null; state.profile = null; } renderSetup(); renderUser(); renderComposer(); loadMembers(state.tab === 'members'); loadItems(); return; } initClient(); var session = await state.client.auth.getSession(); state.user = session.data && session.data.session ? session.data.session.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } state.client.auth.onAuthStateChange(async function (_event, sessionData) { state.user = sessionData && sessionData.user ? sessionData.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } else { clearInterval(state.heartbeatTimer); if (state.presenceChannel) state.client.removeChannel(state.presenceChannel); if (state.profileRealtime) state.client.removeChannel(state.profileRealtime); state.onlineIds = {}; state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); }
   function postAllowedMessage() { if (state.channelName === 'announcements') return 'Announcements are staff-only. Members can read and copy.'; return 'Sign in to post here.'; }
   function renderComposer() {
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
@@ -9862,14 +9887,20 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       updateChatNavigation();
     }
     if (firebaseMode && !firebaseAvailable()) { list.innerHTML = '<div class="community-message community-locked">Firebase is temporarily rate-limited. The countdown at the top shows when reads resume.</div>'; return; }
+    if (firebaseMode && !state.user) { list.innerHTML = '<div class="community-message community-locked">Sign in to see the community.</div>'; return; }
     if (state.tab === 'voice') { renderVoiceRoom(); loadMembers(false); return; }
     if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Check community/config.js.</div>'; return; }
     if (firebaseMode) {
       try {
         initClient();
+        var currentCollection = state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts');
+        if (!firebaseSnapshot && state.snapshotCollection === currentCollection && state.snapshotUserId === (state.user && state.user.id)) {
+          if (!state.latestSnapshot) return;
+          firebaseSnapshot = state.latestSnapshot;
+        } else if (!firebaseSnapshot) { subscribe(); return; }
         if (state.tab === 'members') { if (firebaseSnapshot) { state.memberRows = firebaseSnapshot.docs.map(function(doc){ return fromFirebaseProfile(doc.id, doc.data()); }).filter(function(profile){ return !isDeleted(profile); }); renderCachedMembers(true); } else await loadMembers(true); return; }
         var collection = state.tab === 'chat' ? 'messages' : 'posts';
-        var snap = firebaseSnapshot || await state.client.db.collection(collection).orderBy('created_at', 'desc').limit(60).get();
+        var snap = firebaseSnapshot;
         var rows = snap.docs.map(firebaseRow).reverse().filter(function(row){ return !row.deleted_at || !!state.recentlyDeletedMessages[String(row.id)]; });
         if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
         await loadFirebaseAttachments(collection, rows);
@@ -10218,13 +10249,18 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function subscribe() {
     if (!ready || !state.client || !firebaseAvailable()) return;
+    if (firebaseMode && !state.user) return;
+    var collection = firebaseMode ? (state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts')) : null;
+    var userId = state.user && state.user.id;
+    if (firebaseMode && state.tab !== 'voice' && state.realtime && state.snapshotCollection === collection && state.snapshotUserId === userId) return;
     if (typeof state.realtime === 'function') state.realtime(); else if (state.realtime && state.client.removeChannel) state.client.removeChannel(state.realtime);
     state.realtime = null;
+    state.snapshotCollection = null; state.snapshotUserId = null; state.latestSnapshot = null;
     if (state.tab === 'voice') return;
     if (firebaseMode) {
-      var collection = state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts');
       var query = collection === 'profiles' ? state.client.db.collection(collection).limit(200) : state.client.db.collection(collection).orderBy('created_at', 'desc').limit(60);
-      state.realtime = query.onSnapshot(function(snapshot){ if (collection === (state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts'))) loadItems(snapshot); }, function(error){ firebaseCooldown(error); });
+      state.snapshotCollection = collection; state.snapshotUserId = userId;
+      state.realtime = query.onSnapshot(function(snapshot){ if (collection === state.snapshotCollection && userId === state.snapshotUserId) { state.latestSnapshot = snapshot; loadItems(snapshot); } }, function(error){ state.realtime = null; state.latestSnapshot = null; firebaseCooldown(error); });
       return;
     }
     if (state.tab === 'members') return;
@@ -10708,7 +10744,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     } catch (e) {}
     removeRecentAccount(username);
   }
-  function siteBannedName() { return cleanUsername(localStorage.getItem('uzSiteBanned') || ''); }
+  function siteBannedName() { return cleanUsername(localStorage.getItem('uzSiteBanned') || sessionStorage.getItem('uzSiteBanned') || ''); }
   function recentDaysLeft(a) { return Math.max(1, Math.ceil((2592000000 - (Date.now() - a.time)) / 86400000)); }
   function saveRecentAccount(username) { if (!rememberWanted()) { localStorage.setItem('uzRememberMe', 'false'); return; } var list = recentAccounts().filter(function(a){ return a.username !== username; }); list.unshift({ username: username, time: Date.now() }); localStorage.setItem('uzRecentAccounts', JSON.stringify(list.slice(0, 6))); localStorage.setItem('uzRememberMe', 'true'); }
   function recentAccountsHtml() {
@@ -10762,6 +10798,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     resetAuthBranding();
     var gate = document.getElementById('uz-auth-gate');
     if (!gate) { gate = document.createElement('div'); gate.id = 'uz-auth-gate'; gate.className = 'uz-auth-gate uz-auth-ms-style'; document.body.appendChild(gate); }
+    gate.classList.remove('uz-banned-gate');
     var setup = !ready ? '<div class="uz-auth-setup"><b>Account service could not load</b><span>The account service is blocked or still loading on this network. Refresh once or use the latest hosted link. Accounts stay locked until the real account service loads.</span></div>' : '';
     var disabled = ready ? '' : ' disabled';
     var title = authMode === 'signup' ? 'Create your account' : 'Welcome back';
@@ -10828,11 +10865,12 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function renderBannedGate(username) {
     username = cleanUsername(username || localStorage.getItem('uzLoginEmail') || 'this account');
-    try { localStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzBannedAccount:' + username, '1'); if (client && client.auth && client.auth.currentUser) localStorage.setItem('uzSiteBannedUid', client.auth.currentUser.uid); } catch(e) {}
+    try { localStorage.setItem('uzSiteBanned', username); sessionStorage.setItem('uzSiteBanned', username); localStorage.setItem('uzBannedAccount:' + username, '1'); if (client && client.auth && client.auth.currentUser) localStorage.setItem('uzSiteBannedUid', client.auth.currentUser.uid); } catch(e) {}
     resetAuthBranding();
     document.body.classList.add('uz-auth-locked'); document.body.classList.remove('uz-app-unlocked');
     var gate = document.getElementById('uz-auth-gate');
     if (!gate) { gate = document.createElement('div'); gate.id = 'uz-auth-gate'; gate.className = 'uz-auth-gate uz-auth-ms-style'; document.body.appendChild(gate); }
+    gate.classList.add('uz-banned-gate');
     gate.innerHTML = '<div class="uz-banned-card"><h1>Access Blocked</h1><p><b>' + esc(username || 'This account') + '</b> is banned from Unblocked Zone.</p><span>Appeals have a 24-hour cooldown and a maximum of two submissions for each ban.</span><div class="uz-appeal-form"><label>What happened?<textarea id="uz-appeal-reason" maxlength="1200" placeholder="Explain what happened."></textarea></label><label>Why should the ban be lifted?<textarea id="uz-appeal-details" maxlength="3000" placeholder="Share context, accountability, or what will change."></textarea></label><label>Proof link (optional)<input id="uz-appeal-proof-url" maxlength="1000" placeholder="https://..."></label><label class="community-file-label">Upload proof image (optional)<input id="uz-appeal-proof-file" type="file" accept="image/*"></label><button class="community-btn" id="uz-appeal-submit" type="button">Submit appeal</button><p id="uz-appeal-status" class="uz-appeal-status"></p></div></div>';
     var submit = document.getElementById('uz-appeal-submit'); if (submit) submit.onclick = submitBanAppeal;
   }
@@ -10906,9 +10944,6 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (!doc.exists) {
       var role = 'member';
       await ref.set({ id: user.uid, username: username, display_name: username, role: role, warnings: 0, email: user.email || '', created_at: new Date().toISOString(), last_seen: new Date().toISOString() });
-      doc = await ref.get();
-    } else {
-      await ref.set({ last_seen: new Date().toISOString(), email: user.email || '' }, { merge: true });
       doc = await ref.get();
     }
     var data = doc.data() || {};
@@ -11064,6 +11099,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
         try { await deletedRef.delete(); } catch (markerError) { debugLog('deleted-marker-cleanup-failed', markerError.message || 'unknown'); }
         clearAccountLocalState(username);
         localStorage.removeItem('uzSiteBanned');
+        sessionStorage.removeItem('uzSiteBanned');
         localStorage.removeItem('uzSiteBannedUid');
         localStorage.removeItem('uzBannedAccount:' + cleanUsername(username));
         localStorage.removeItem('uzLoginEmail');
@@ -11250,7 +11286,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     input.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); if (e.key === 'Escape') { modal.remove(); closeOwnerRift(); } });
     setTimeout(function(){ input.focus(); }, 80);
   }
-async function check() { if (authTransition) return; if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } initClient(); if (!cfg.requireLogin && !firebaseMode && (!mongoMode || !mongoToken())) { clearGate(); renderProfile(null, null); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } if (!ready) { renderProfile(null, null); renderGate(''); return; } if (firebaseMode) { var fbUser = client.auth.currentUser; var locked = siteBannedName(); var storedName = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); var fbName = cleanUsername(usernameFromUser(fbUser)); if (fbUser && storedName && fbName && storedName !== fbName) { authTransition = true; try { await client.auth.signOut(); } catch (e) {} authTransition = false; fbUser = null; localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); } if (!fbUser) { renderProfile(null, null); if (locked) renderBannedGate(locked); else renderGate(''); return; } var fbProfile = await ensureFirebaseProfile(fbUser, fbName); if (!fbProfile) { setBusy(''); return; } if (fbProfile.role === 'banned' || (fbProfile.banned_until && new Date(fbProfile.banned_until) > new Date())) { try { await client.auth.signOut(); } catch(e) {} renderProfile(null, null); renderBannedGate(fbProfile.username || fbName); return; } try { localStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(fbProfile.username)); } catch(e) {} prepareAccountSettings(fbProfile.username, fbProfile.settings); setLightspeed(fbProfile.username); clearGate(); renderProfile(firebaseProfileToSession(fbUser, fbProfile), fbProfile); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } var locked = siteBannedName(); if (locked) { renderProfile(null, null); renderBannedGate(locked); return; } if (mongoMode) { if (!mongoToken()) { renderProfile(null, null); renderGate(''); return; } try { var mine = await mongoFetch('/me'); window.UZCurrentProfile = mine.user; prepareAccountSettings(mine.user.username); setLightspeed(mine.user.username); clearGate(); renderProfile(mongoProfileToSession(mine.user), mine.user); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); } catch(e) { var oldName = localStorage.getItem('uzLoginEmail') || 'this account'; localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); if (e.data && e.data.banned) renderBannedGate(oldName); else if (cfg.requireLogin) renderGate(e.message || 'Sign in again.'); else { clearGate(); renderProfile(null, null); } } return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); if (profile && profile.banned_until && new Date(profile.banned_until) > new Date()) { await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); renderBannedGate(username); return; } prepareAccountSettings(username); setLightspeed(username); clearGate(); renderProfile(session, profile); }
+async function check() { if (authTransition) return; if (isTempOwner()) { setLightspeed('temporary-owner'); clearGate(); renderProfile(null, { username: 'temporary-owner', role: 'owner' }); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } initClient(); if (!cfg.requireLogin && !firebaseMode && (!mongoMode || !mongoToken())) { clearGate(); renderProfile(null, null); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } if (!ready) { renderProfile(null, null); renderGate(''); return; } if (firebaseMode) { var fbUser = client.auth.currentUser; var locked = siteBannedName(); var storedName = cleanUsername(localStorage.getItem('uzLoginEmail') || ''); var fbName = cleanUsername(usernameFromUser(fbUser)); if (fbUser && storedName && fbName && storedName !== fbName) { authTransition = true; try { await client.auth.signOut(); } catch (e) {} authTransition = false; fbUser = null; localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); } if (!fbUser) { renderProfile(null, null); if (locked) renderBannedGate(locked); else renderGate(''); return; } var fbProfile = await ensureFirebaseProfile(fbUser, fbName); if (!fbProfile) { setBusy(''); return; } if (fbProfile.role === 'banned' || (fbProfile.banned_until && new Date(fbProfile.banned_until) > new Date())) { try { await client.auth.signOut(); } catch(e) {} renderProfile(null, null); renderBannedGate(fbProfile.username || fbName); return; } try { localStorage.removeItem('uzSiteBanned'); sessionStorage.removeItem('uzSiteBanned'); localStorage.removeItem('uzSiteBannedUid'); localStorage.removeItem('uzBannedAccount:' + cleanUsername(fbProfile.username)); } catch(e) {} prepareAccountSettings(fbProfile.username, fbProfile.settings); setLightspeed(fbProfile.username); clearGate(); renderProfile(firebaseProfileToSession(fbUser, fbProfile), fbProfile); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); return; } var locked = siteBannedName(); if (locked) { renderProfile(null, null); renderBannedGate(locked); return; } if (mongoMode) { if (!mongoToken()) { renderProfile(null, null); renderGate(''); return; } try { var mine = await mongoFetch('/me'); window.UZCurrentProfile = mine.user; prepareAccountSettings(mine.user.username); setLightspeed(mine.user.username); clearGate(); renderProfile(mongoProfileToSession(mine.user), mine.user); if (window.UZCommunity && window.UZCommunity.refresh) window.UZCommunity.refresh(); } catch(e) { var oldName = localStorage.getItem('uzLoginEmail') || 'this account'; localStorage.removeItem('uzMongoToken'); sessionStorage.removeItem('uzMongoToken'); localStorage.removeItem('uzLoginEmail'); clearActiveSettings(); if (e.data && e.data.banned) renderBannedGate(oldName); else if (cfg.requireLogin) renderGate(e.message || 'Sign in again.'); else { clearGate(); renderProfile(null, null); } } return; } var res = await client.auth.getSession(); var session = res.data && res.data.session; if (!session || !session.user) { renderProfile(null, null); renderGate(''); return; } var profile = await ensureProfile(session.user); var username = (profile && profile.username) || usernameFromUser(session.user); if (profile && profile.banned_until && new Date(profile.banned_until) > new Date()) { await client.auth.signOut(); localStorage.removeItem('uzLoginEmail'); renderBannedGate(username); return; } prepareAccountSettings(username); setLightspeed(username); clearGate(); renderProfile(session, profile); }
   document.addEventListener('keydown', function (e) { if (!document.body.classList.contains('uz-auth-locked')) { konamiIndex = 0; return; } var key = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (key === konami[konamiIndex]) { konamiIndex++; ownerRift(konamiIndex / konami.length, false); } else { konamiIndex = key === konami[0] ? 1 : 0; if (konamiIndex) ownerRift(konamiIndex / konami.length, false); } if (konamiIndex === konami.length) { konamiIndex = 0; showOwnerPrompt(); } }, true);
   window.UZAuthGate = { refresh: check, showBanned: renderBannedGate, showLogin: function(msg){ tempOwnerActive=false; window.UZTempOwnerActive=false; renderGate(msg || ''); } };
   window.UZ_ACCOUNT_DEBUG.push('auth-gate-ready');
@@ -11260,6 +11296,8 @@ async function check() { if (authTransition) return; if (isTempOwner()) { setLig
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') saveCurrentAccountSettings(); });
   if (ready && firebaseMode) {
     initClient();
+    var pendingBan = siteBannedName();
+    if (pendingBan) renderBannedGate(pendingBan);
     client.auth.onAuthStateChanged(function (user) {
       // Firebase persistence is authoritative after a refresh. If an old local
       // username is still present, save its settings before adopting the user
