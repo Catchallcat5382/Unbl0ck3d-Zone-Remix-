@@ -347,11 +347,15 @@
   }
   function attachmentData(attachment) { return attachment && String(attachment.data_url || attachment.dataUrl || attachment.url || '').trim(); }
   function attachmentName(attachment) { return attachment && String(attachment.name || 'File').trim().slice(0, 120); }
+  function imageEmbed(src, name) {
+    if (!/^(?:data:image\/|https?:\/\/)/i.test(src)) return '';
+    return '<figure class="community-attachment-embed community-image-embed"><img src="' + esc(src) + '" alt="' + esc(name) + '"><a class="community-image-download" href="' + esc(src) + '" download="' + esc(name || 'image') + '" target="_blank" rel="noopener" title="Download image">Download</a></figure>';
+  }
   function attachmentHtml(attachment, legacy) {
     var data = attachmentData(attachment), name = attachmentName(attachment), type = String((attachment && attachment.type) || '').toLowerCase();
     if (!data) return '';
     if (legacy) return '<div class="community-attachment-embed is-legacy"><b>' + esc(name) + '</b><small>An older attachment cannot be previewed. Upload it again to restore the image.</small></div>';
-    if (/^data:image\//i.test(data) || /^image\//i.test(type)) return '<figure class="community-attachment-embed"><img src="' + esc(data) + '" alt="' + esc(name) + '"></figure>';
+    if (/^data:image\//i.test(data) || /^image\//i.test(type)) return imageEmbed(data, name);
     if (/^data:video\//i.test(data) || /^video\//i.test(type)) return '<figure class="community-attachment-embed"><video controls preload="metadata" src="' + esc(data) + '"></video></figure>';
     if (!/^data:|^https?:\/\//i.test(data)) return '';
     return '<a class="community-file-attachment" href="' + esc(data) + '" download="' + esc(name) + '"><span class="community-file-icon">FILE</span><span><b>' + esc(name) + '</b><small>' + esc(type || 'File attachment') + '</small></span><strong>Download</strong></a>';
@@ -368,7 +372,7 @@
     var attachments = Array.isArray(attachment) ? attachment : (attachment ? [attachment] : []);
     if (legacy && !attachments.length) attachments = [legacy];
     var embeds = (raw.match(/https?:\/\/[^\s<]+/gi) || []).filter(function(url){ return /\.(?:png|jpe?g|gif|webp|avif)(?:[?#].*)?$/i.test(url) || /\.(?:mp4|webm|ogg)(?:[?#].*)?$/i.test(url); }).slice(0, 4).map(function(url){
-      return /\.(?:mp4|webm|ogg)(?:[?#].*)?$/i.test(url) ? '<figure class="community-attachment-embed"><video controls preload="metadata" src="' + esc(url) + '"></video></figure>' : '<figure class="community-attachment-embed"><img src="' + esc(url) + '" alt="Embedded image"></figure>';
+      return /\.(?:mp4|webm|ogg)(?:[?#].*)?$/i.test(url) ? '<figure class="community-attachment-embed"><video controls preload="metadata" src="' + esc(url) + '"></video></figure>' : imageEmbed(url, 'Embedded image');
     }).join('');
     return body + embeds + attachments.map(function(item){ return attachmentHtml(item, !!legacy && item === legacy); }).join('');
   }
@@ -829,17 +833,23 @@
     var groups = ['owner','co_owner','admin','mod','member','banned'];
     return groups.map(function(g){ var members = rows.filter(function(r){ return (r.role || 'member') === g; }); if (!members.length) return ''; return '<section class="community-member-group"><h3>' + esc(g.toUpperCase()) + ' - ' + members.length + '</h3>' + members.map(function(m){ var canChangeRole = full && isRealOwner() && (!state.user || String(m.id) !== String(state.user.id)); var online = isOnline(m); var statusText = online ? 'Online' : 'Offline'; var roleControl = canChangeRole ? '<select class="community-role-select" data-user-id="' + esc(m.id) + '" data-username="' + esc(m.username || '') + '"><option' + (m.role === 'owner' ? ' selected' : '') + '>owner</option><option' + (m.role === 'admin' ? ' selected' : '') + '>admin</option><option' + (m.role === 'mod' ? ' selected' : '') + '>mod</option><option' + ((m.role || 'member') === 'member' ? ' selected' : '') + '>member</option><option' + (m.role === 'banned' ? ' selected' : '') + '>banned</option></select>' : '<em>' + esc(m.role || 'member') + '</em>'; return '<article class="community-member-row ' + (online ? 'is-online' : 'is-offline') + (g === 'banned' ? ' is-banned-member' : '') + '"><span class="community-member-dot" title="' + esc(statusText) + '"></span>' + profileAvatarHtml(m) + '<button class="community-user-link community-member-name" data-user-id="' + esc(m.id) + '"><b>' + esc(m.display_name || m.username || 'member') + '</b><small>@' + esc(m.username || 'unknown') + ' - ' + statusText + '</small></button>' + roleControl + '</article>'; }).join('') + '</section>'; }).join('');
   }
+  function openImagePreview(src, alt) {
+    var existing = document.getElementById('community-avatar-lightbox');
+    if (existing) existing.remove();
+    var lightbox = document.createElement('div');
+    lightbox.id = 'community-avatar-lightbox';
+    lightbox.className = 'community-avatar-lightbox';
+    lightbox.innerHTML = '<div class="community-image-preview"><img src="' + esc(src) + '" alt="' + esc(alt || 'Image') + '"><div class="community-image-preview-actions"><a href="' + esc(src) + '" download="image" target="_blank" rel="noopener">Download</a><button type="button">Close</button></div></div>';
+    lightbox.addEventListener('click', function(event) { if (event.target === lightbox || event.target.closest('.community-image-preview-actions button')) lightbox.remove(); });
+    document.body.appendChild(lightbox);
+  }
   function wireAvatarPreviews(root) {
-    (root || document).querySelectorAll('.community-profile-avatar[data-avatar-preview]').forEach(function(button){ button.onclick = function(event){ event.stopPropagation(); var existing = document.getElementById('community-avatar-lightbox'); if (existing) existing.remove(); var lightbox = document.createElement('div'); lightbox.id = 'community-avatar-lightbox'; lightbox.className = 'community-avatar-lightbox'; lightbox.innerHTML = '<button type="button" aria-label="Close image"><img src="' + esc(button.dataset.avatarPreview || '') + '" alt="Profile image"></button>'; document.body.appendChild(lightbox); lightbox.onclick = function(){ lightbox.remove(); }; }; });
+    (root || document).querySelectorAll('.community-profile-avatar[data-avatar-preview]').forEach(function(button){ button.onclick = function(event){ event.stopPropagation(); openImagePreview(button.dataset.avatarPreview || '', 'Profile image'); }; });
   }
   document.addEventListener('click', function(event) {
     var image = event.target && event.target.closest && event.target.closest('.community-attachment-embed img');
     if (!image) return;
-    var lightbox = document.createElement('div');
-    lightbox.className = 'community-avatar-lightbox';
-    lightbox.innerHTML = '<button type="button" aria-label="Close image"><img src="' + esc(image.currentSrc || image.src) + '" alt="' + esc(image.alt || 'Attached image') + '"></button>';
-    lightbox.addEventListener('click', function(event) { if (event.button === 0) lightbox.remove(); });
-    document.body.appendChild(lightbox);
+    openImagePreview(image.currentSrc || image.src, image.alt || 'Attached image');
   });
   function wireProfileLinks() { Array.prototype.forEach.call(document.querySelectorAll('.community-user-link'), function(btn){ btn.onclick = function(){ showCommunityProfile(btn.dataset.userId); }; }); wireAvatarPreviews(document); }
   function wireMemberActions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ sel.onchange = async function(){ await changeUserRoleV2(sel.dataset.username, sel.value); }; }); ensureCoOwnerOptions(); }
