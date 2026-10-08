@@ -420,7 +420,7 @@
   function fileToImageAttachment(file) {
     if (!file) return Promise.resolve(null);
     if (!/^image\//i.test(file.type || '')) {
-      if (file.size > 350000) return Promise.reject(new Error('Files must be below 350 KB. Images can be up to 8 MB and are compressed automatically.'));
+      if (file.size > 350000) return Promise.reject(new Error(/^video\//i.test(file.type || '') ? 'This MP4 cannot be stored in Firestore. For now, paste a direct .mp4 URL to embed it. Large video uploads need Firebase Storage and a Blaze project.' : 'Files must be below 350 KB. Images can be up to 8 MB and are compressed automatically.'));
       return new Promise(function(resolve, reject) {
         var reader = new FileReader();
         reader.onerror = function(){ reject(new Error('The file could not be read.')); };
@@ -472,27 +472,31 @@
   }
   async function createFirebaseItemWithAttachments(collection, record, attachments) {
     var files = (attachments || []).slice(0, MAX_ATTACHMENTS);
-    var ref = await state.client.db.collection(collection).add(Object.assign({}, record, { attachment_count: 0 }));
-    if (!files.length) return ref;
-    try {
-      var batch = state.client.db.batch();
-      files.forEach(function(attachment, index) {
-        batch.set(ref.collection('attachments').doc(), Object.assign({}, attachment, { sort_index: index, created_at: new Date().toISOString() }));
-      });
-      batch.update(ref, { attachment_count: files.length });
-      await batch.commit();
-      return ref;
-    } catch (error) {
-      try { await ref.delete(); } catch (cleanupError) {}
-      throw error;
-    }
+    if (!files.length) return state.client.db.collection(collection).add(Object.assign({}, record, { attachment_count: 0 }));
+    var ref = state.client.db.collection(collection).doc();
+    var batch = state.client.db.batch();
+    batch.set(ref, Object.assign({}, record, { attachment_count: files.length }));
+    files.forEach(function(attachment, index) {
+      batch.set(ref.collection('attachments').doc(), Object.assign({}, attachment, { sort_index: index, created_at: new Date().toISOString() }));
+    });
+    await batch.commit();
+    return ref;
   }
   async function loadFirebaseAttachments(collection, rows) {
     await Promise.all((rows || []).filter(function(row){ return Number(row.attachment_count || 0) > 0; }).map(async function(row) {
+      var key = collection + '/' + row.id;
+      var version = String(row.updated_at || '') + ':' + String(row.attachment_count);
+      var cached = state.attachmentCache && state.attachmentCache[key];
+      if (cached && cached.version === version) { row.attachments = cached.attachments; return; }
+      if (cached && cached.version === version && cached.pending) { row.attachments = await cached.pending; return; }
       try {
-        var snapshot = await state.client.db.collection(collection).doc(String(row.id)).collection('attachments').orderBy('sort_index', 'asc').limit(MAX_ATTACHMENTS).get();
-        row.attachments = snapshot.docs.map(function(doc){ return doc.data() || {}; });
+        state.attachmentCache = state.attachmentCache || {};
+        var pending = state.client.db.collection(collection).doc(String(row.id)).collection('attachments').orderBy('sort_index', 'asc').limit(MAX_ATTACHMENTS).get().then(function(snapshot){ return snapshot.docs.map(function(doc){ return doc.data() || {}; }); });
+        state.attachmentCache[key] = { version: version, pending: pending };
+        row.attachments = await pending;
+        state.attachmentCache[key] = { version: version, attachments: row.attachments };
       } catch (error) {
+        delete state.attachmentCache[key];
         row.attachments = [];
         console.warn('Could not load attachments for ' + collection + '/' + row.id, error);
       }
