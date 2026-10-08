@@ -1608,8 +1608,9 @@
   </style>
 <base target="_blank">
 <base target="_blank">
-<style id="uz-notification-layout">.uz-notification-item{line-height:1.4;overflow-wrap:anywhere}.uz-notification-item>b{display:block;margin-bottom:6px;font-size:12px;white-space:normal}.uz-notification-item.is-read{opacity:1!important}.uz-notification-item.is-read>b{color:#aaa}.uz-notification-item .uz-notification-actions button{opacity:1!important}body.uz-notifications-off #uz-notification-tray{display:none!important}</style>
+<style id="uz-notification-layout">.uz-notification-item{line-height:1.4;overflow-wrap:anywhere}.uz-notification-item>b{display:block;margin-bottom:6px;font-size:12px;white-space:normal}.uz-notification-item.is-read{opacity:1!important}.uz-notification-item.is-read>b{color:#aaa}.uz-notification-item .uz-notification-actions button{opacity:1!important}body.uz-app-unlocked.uz-notifications-off #uz-notification-tray{display:none!important}#uz-notification-inbox-open{border:1px solid var(--accent);background:#101014;color:var(--accent);border-radius:8px;padding:8px 10px;cursor:pointer}#uz-notification-inbox{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.8);display:grid;place-items:center;padding:12px}#uz-notification-inbox[hidden]{display:none}#uz-notification-inbox-panel{width:min(560px,100%);max-height:min(720px,90vh);overflow:auto;background:#101014;color:#fff;border:1px solid var(--accent);padding:16px}#uz-notification-inbox-panel header{display:flex;justify-content:space-between;align-items:center;gap:12px}#uz-notification-inbox-panel button{cursor:pointer;border:1px solid var(--accent);background:#101014;color:var(--accent);padding:6px 9px;border-radius:4px}</style>
 <style>body:has(#panic-cover-frame.open) #glass-nav-wrap{visibility:hidden!important}</style>
+<style>.uz-embed-cover{height:100%;overflow:auto;background:#f2f4f8;color:#1e293b;font:16px Arial,sans-serif}.uz-embed-cover header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#fff;border-bottom:1px solid #d9dee7}.uz-embed-cover header strong{font-size:20px;color:#1967a4}.uz-embed-cover main{max-width:1100px;margin:auto;padding:28px 20px}.uz-embed-cover h1{font-size:24px;margin:0 0 24px}.uz-embed-cover-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:14px}.uz-embed-cover-grid a{display:grid;place-items:center;min-height:112px;background:#fff;border:1px solid #d9dee7;border-radius:6px;color:#235b89;text-align:center;text-decoration:none;font-weight:700;padding:10px}.uz-embed-cover-grid a:hover{border-color:#235b89;box-shadow:0 2px 9px #0002}</style>
 <style id="uz-image-actions">.community-image-embed{position:relative;width:max-content;max-width:100%}.community-image-embed img{cursor:zoom-in}.community-image-download{position:absolute;top:14px;right:14px;z-index:1;padding:7px 10px;border:1px solid var(--accent,#ff6a00);border-radius:5px;background:#09090c;color:#fff!important;text-decoration:none;font:700 12px Arial,sans-serif;opacity:0;transition:opacity .15s}.community-image-embed:hover .community-image-download,.community-image-download:focus-visible{opacity:1}.community-image-preview{display:grid;justify-items:center;gap:10px;max-width:94vw;max-height:94vh}.community-image-preview>img{display:block;max-width:94vw;max-height:calc(94vh - 52px);object-fit:contain}.community-image-preview-actions{display:flex;gap:10px}.community-image-preview-actions a,.community-image-preview-actions button{position:static;display:inline-flex;align-items:center;justify-content:center;width:auto;height:auto;padding:8px 12px;border:1px solid var(--accent,#ff6a00);border-radius:5px;background:#09090c;color:#fff;text-decoration:none;font:700 12px Arial,sans-serif;cursor:pointer}@media(hover:none){.community-image-download{opacity:1}}</style>
 </head>
 <body>
@@ -1724,7 +1725,7 @@
     <button id="console-close" onclick="toggleConsoleOverlay()"></button>
     <div id="luna-console"></div>
   </div>
-  <div id="uz-notification-tray" aria-hidden="true"><button id="uz-notification-toggle" type="button">Notifications <b id="uz-notification-count">0</b></button><div id="uz-notification-list" hidden></div></div>
+  <div id="uz-notification-tray"><button id="uz-notification-toggle" type="button">Notifications <b id="uz-notification-count">0</b></button> <button id="uz-notification-inbox-open" type="button">Inbox</button><div id="uz-notification-list" hidden></div></div>
   <div id="main-content">
     <aside id="sidebar">
       <nav class="sidebar-nav">
@@ -3189,6 +3190,7 @@
             <h3>Notifications</h3>
             <label style="display:flex;align-items:center;gap:10px;margin:12px 0;"><input id="uz-notifications-enabled" type="checkbox"> In-site notifications</label>
             <label style="display:flex;align-items:center;gap:10px;margin:12px 0;"><input id="uz-browser-notifications-enabled" type="checkbox"> Browser alerts for pings</label>
+            <button class="settings-btn" id="uz-notification-test" type="button">Test notification</button>
             <p id="uz-browser-notification-status" role="status" style="font-size:12px;color:#aaa;"></p>
           </div>
           <div class="g4mes-card" style="padding:20px;">
@@ -3308,6 +3310,7 @@
             <select id="panic-action-select" class="settings-input" onchange="savePanicSettings()" style="margin-top:12px;">
               <option value="redirect">Redirect to URL</option>
               <option value="cover">Visual cover</option>
+              <option value="embed">Embed cover</option>
               <option value="close">Close this tab</option>
               <option value="blank">Blank page</option>
               <option value="history-back" disabled>Legacy cover</option>
@@ -5195,7 +5198,7 @@
       var old = document.getElementById('panic-cover-frame');
       if (old) {
         if (old.classList.contains('open')) { old.classList.remove('open'); return; }
-        if (old.dataset.url === getPanicUrl() && old.dataset.media === (localStorage.getItem('panicCoverMedia') || '')) { old.classList.add('open'); return; }
+        if (old.dataset.url === getPanicUrl() && old.dataset.mode === getPanicAction() && old.dataset.media === (localStorage.getItem('panicCoverMedia') || '')) { old.classList.add('open'); return; }
         old.remove(); clearPanicCoverObjectUrl();
       }
       ensurePanicCoverStyle();
@@ -5206,9 +5209,23 @@
       try { var parsed = new URL(url); if (!/^https?:$/.test(parsed.protocol)) throw new Error(); url = parsed.href; }
       catch (e) { url = 'https://www.google.com'; }
       wrap.dataset.url = getPanicUrl();
+      wrap.dataset.mode = getPanicAction();
       wrap.dataset.media = localStorage.getItem('panicCoverMedia') || '';
-      buildPanicCoverPreview(wrap, url);
+      if (getPanicAction() === 'embed') buildPanicEmbedPreview(wrap);
+      else buildPanicCoverPreview(wrap, url);
       document.body.appendChild(wrap);
+    }
+    function buildPanicEmbedPreview(wrap) {
+      var page = document.createElement('div'); page.className = 'uz-embed-cover';
+      var header = document.createElement('header'); header.innerHTML = '<strong>Learning Apps</strong><span>My Apps</span>'; page.appendChild(header);
+      var main = document.createElement('main'); var title = document.createElement('h1'); title.textContent = 'My Apps'; main.appendChild(title);
+      var grid = document.createElement('div'); grid.className = 'uz-embed-cover-grid';
+      [
+        ['Canva', 'https://www.canva.com/'], ['Code.org', 'https://code.org/'],
+        ['Desmos', 'https://www.desmos.com/calculator'], ['Google Translate', 'https://translate.google.com/'],
+        ['Adobe Express', 'https://www.adobe.com/express/'], ['ReadWorks', 'https://www.readworks.org/']
+      ].forEach(function(app){ var link = document.createElement('a'); link.href = app[1]; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = app[0]; grid.appendChild(link); });
+      main.appendChild(grid); page.appendChild(main); wrap.appendChild(page);
     }
     function panicKeyLabel(key) {
       var map = {
@@ -5289,7 +5306,7 @@
       e.preventDefault();
       window.__panicBypass = true;
       var action = getPanicAction();
-      if (action === 'cover') { togglePanicCover(); return; }
+      if (action === 'cover' || action === 'embed') { togglePanicCover(); return; }
       if (action === 'close') { window.close(); location.href = 'about:blank'; return; }
       if (action === 'blank') { location.href = 'about:blank'; return; }
       if (action === 'history-back') { togglePanicCover(); return; }
@@ -9101,9 +9118,11 @@ let DATA = {
     if(browser) browser.addEventListener('change', async function(){
       if(!browser.checked){ localStorage.setItem(browserKey, 'false'); syncControls(); return; }
       if(!('Notification' in window)){ status.textContent = 'This browser does not support notifications.'; syncControls(); return; }
-      var permission = await Notification.requestPermission();
+      var permission;
+      try { permission = await Notification.requestPermission(); }
+      catch(e){ permission = 'denied'; }
       localStorage.setItem(browserKey, permission === 'granted' ? 'true' : 'false');
-      status.textContent = permission === 'granted' ? 'Browser alerts enabled while this page is open.' : 'Browser notification permission was not granted.';
+      status.textContent = permission === 'granted' ? 'Browser alerts enabled while this page is open.' : 'Browser alerts were blocked. Open the site on HTTPS and allow notifications in browser settings.';
       syncControls();
     });
   }
@@ -9117,6 +9136,29 @@ let DATA = {
     }
   };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+})();
+</script>
+
+<script>
+(function(){
+  function inboxRows(){ try { var rows = JSON.parse(localStorage.getItem('uzNotifications') || '[]'); return Array.isArray(rows) ? rows : []; } catch(e) { return []; } }
+  function showInbox(){
+    var modal = document.getElementById('uz-notification-inbox');
+    if(!modal){ modal = document.createElement('div'); modal.id = 'uz-notification-inbox'; modal.innerHTML = '<div id="uz-notification-inbox-panel"><header><h2>Notification Inbox</h2><button type="button" id="uz-notification-inbox-close">Close</button></header><div id="uz-notification-inbox-rows"></div></div>'; document.body.appendChild(modal); modal.querySelector('#uz-notification-inbox-close').onclick = function(){ modal.hidden = true; }; modal.onclick = function(e){ if(e.target === modal) modal.hidden = true; }; }
+    var list = modal.querySelector('#uz-notification-inbox-rows'); list.replaceChildren();
+    var rows = inboxRows(); if(!rows.length){ list.textContent = 'No notifications yet.'; }
+    rows.forEach(function(row){
+      var item = document.createElement('div'); item.className = 'uz-notification-item';
+      var date = document.createElement('small'); date.textContent = new Date(row.time || Date.now()).toLocaleString(); item.appendChild(date);
+      var message = document.createElement('p'); message.textContent = row.text || 'Notification'; item.appendChild(message);
+      if(row.target){ var go = document.createElement('button'); go.type = 'button'; go.textContent = 'Open'; go.onclick = function(){ row.read = true; localStorage.setItem('uzNotifications', JSON.stringify(rows)); if(window.UZNotify) window.UZNotify.render(); modal.hidden = true; document.dispatchEvent(new CustomEvent('uz-notification-open', { detail: row })); }; item.appendChild(go); }
+      list.appendChild(item);
+    });
+    modal.hidden = false;
+  }
+  document.addEventListener('click', function(e){ if(e.target && e.target.id === 'uz-notification-inbox-open') showInbox(); });
+  function setupTest(){ var button = document.getElementById('uz-notification-test'); if(!button) return; button.onclick = function(){ var status = document.getElementById('uz-browser-notification-status'); if(localStorage.getItem('uzNotificationsEnabled') === 'false'){ if(status) status.textContent = 'Turn on in-site notifications first.'; return; } window.UZNotify.add('Test notification', 'test:' + Date.now()); if(status) status.textContent = 'Test added to the Inbox.'; }; }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupTest); else setupTest();
 })();
 </script>
 
@@ -9403,9 +9445,10 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function notifyMentionedUsers(text, target) {
     var names = String(text || '').match(/@([a-z0-9_.-]+)/ig) || [];
-    var wanted = names.map(function(value){ return value.slice(1).toLowerCase(); }).filter(function(name){ return name !== 'everyone'; });
+    var wanted = names.map(function(value){ return value.slice(1).toLowerCase(); }).filter(function(name){ return name !== 'everyone' && name !== 'here'; });
     var ids = (state.memberRows || []).filter(function(profile){ return wanted.indexOf(String(profile.username || '').toLowerCase()) !== -1; }).map(function(profile){ return profile.id; });
     if (names.some(function(value){ return value.toLowerCase() === '@everyone'; })) ids = ids.concat((state.memberRows || []).map(function(profile){ return profile.id; }));
+    if (names.some(function(value){ return value.toLowerCase() === '@here'; })) ids = ids.concat((state.memberRows || []).filter(isOnline).map(function(profile){ return profile.id; }));
     return notifyUsers(ids, profileUsername() + ' mentioned you: ' + String(text || '').slice(0, 420), target);
   }
   function pingEveryone(title) { var text = '@everyone: ' + (title || 'New announcement'); if (window.UZNotify && window.UZNotify.add) window.UZNotify.add(text); notifyUsers((state.memberRows || []).map(function(profile){ return profile.id; }), text, { tab: 'posts' }); }
@@ -9522,7 +9565,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
     chat.classList.toggle('community-hidden', state.tab !== 'chat'); post.classList.toggle('community-hidden', state.tab !== 'posts'); staff.classList.toggle('community-hidden', true);
     var ok = state.user && !isBanned(state.profile) && !isMuted(state.profile);
-    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload files<input id="community-chat-file-input" type="file" multiple></label><span class="community-attachment-choice" id="community-chat-file-choice">No files selected</span><button class="community-btn" id="community-send-chat">Send</button></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
+    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload files<input id="community-chat-file-input" type="file" multiple></label><span class="community-attachment-choice" id="community-chat-file-choice">No files selected</span><button class="community-btn secondary" id="community-emoji-toggle" type="button" title="Emoji">☺</button><button class="community-btn" id="community-send-chat">Send</button></div><div id="community-emoji-picker" hidden></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
     if (ok) showAttachmentQueue('community-chat-file-choice', state.pendingChatAttachments);
     var postOk = ok && canPost();
     var titlePh = state.channelName === 'settings' ? 'Preset name' : (state.channelName === 'suggestions' ? 'Suggestion title' : 'Thread title');
@@ -9534,6 +9577,12 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
     var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost;
     var chatInput = $('community-chat-input');
+    var emojiToggle = $('community-emoji-toggle'), emojiPicker = $('community-emoji-picker');
+    if (emojiToggle && emojiPicker) {
+      emojiPicker.innerHTML = ['😀','😂','😭','❤️','👍','👎','🔥','🎉','💀','😎','🙏','✅','❌','👀','💯','😅','🤔','😮','😍','🚀'].map(function(emoji){ return '<button type="button" class="community-emoji-choice">' + emoji + '</button>'; }).join('');
+      emojiToggle.onclick = function(){ emojiPicker.hidden = !emojiPicker.hidden; };
+      emojiPicker.onclick = function(event){ var button = event.target.closest('button'); if (!button || !chatInput) return; var start = chatInput.selectionStart, end = chatInput.selectionEnd; chatInput.setRangeText(button.textContent, start, end, 'end'); chatInput.dispatchEvent(new Event('input', { bubbles: true })); chatInput.focus(); };
+    }
     if (chatInput && state.user) {
       var draftKey = 'uz-chat-draft:' + state.user.id + ':' + state.channelName;
       chatInput.value = sessionStorage.getItem(draftKey) || '';
@@ -9549,7 +9598,11 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function decorateMentions(text) {
     var output = esc(text);
     output = output.replace(/(https?:\/\/[^\s<]+)/gi, function(url){ return '<a class="community-external-link" href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>'; });
-    output = output.replace(/@([a-z0-9_.-]+)/gi, function(_all, name){ return '<span class="community-mention' + (String(name).toLowerCase() === 'everyone' ? ' is-everyone' : '') + '">@' + name + '</span>'; });
+    output = output.replace(/@([a-z0-9_.-]+)/gi, function(_all, name){
+      var profile = (state.memberRows || []).find(function(row){ return String(row.username || '').toLowerCase() === name.toLowerCase(); });
+      if (!profile) return '<span class="community-mention">@' + name + '</span>';
+      return '<button type="button" class="community-mention community-user-link" data-user-id="' + esc(profile.id) + '">@' + name + '</button>';
+    });
     return output.replace(/\n/g, '<br>');
   }
   function attachmentData(attachment) { return attachment && String(attachment.data_url || attachment.dataUrl || attachment.url || '').trim(); }
@@ -10006,6 +10059,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var body = row.deleted_at ? 'Deleted message: ' + (row.deleted_body || row.body || '') : row.body;
     var renderedBody = row.deleted_at ? esc(body) : renderRichBody(body, row.attachments || row.attachment);
     var chatActions = '<div class="community-actions">';
+    if (state.user && !row.deleted_at) chatActions += '<button class="community-btn secondary community-reply-message" data-message-id="' + esc(row.id) + '">Reply</button>';
     if (canEditMessage(row)) chatActions += '<button class="community-btn secondary community-edit-message" data-message-id="' + esc(row.id) + '">Edit</button>';
     if (canDeleteMessage(row)) chatActions += '<button class="community-btn secondary community-delete-message" data-message-id="' + esc(row.id) + '">Delete</button>';
     chatActions += '</div>';
@@ -10118,7 +10172,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var rr = role();
     var buttons = ['<button class="community-btn secondary community-profile-command" data-profile-cmd="warn">Warn</button>'];
     if (['owner','admin','mod'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="mute">Mute</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unmute">Unmute</button>');
-    if (['owner','admin'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="kick">Kick</button>');
+    if (['owner','admin'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="kick">Kick</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unkick">Unkick</button>');
     if (isRealSeniorStaff()) buttons.push('<button class="community-btn danger community-profile-command" data-profile-cmd="ban">Ban</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unban">Unban</button><button class="community-btn danger community-profile-command" data-profile-cmd="deleteuser">Delete account</button>');
     return '<div class="community-profile-actions"><h3>Run command</h3><div class="community-profile-command-grid">' + buttons.join('') + '</div></div>';
   }
@@ -10128,9 +10182,15 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var ban = p.banned_until && new Date(p.banned_until) > new Date() ? '<p>Banned until: <b>' + esc(when(p.banned_until)) + '</b></p>' : '';
     var kick = p.kicked_until && new Date(p.kicked_until) > new Date() ? '<p>Kicked until: <b>' + esc(when(p.kicked_until)) + '</b></p>' : '';
     var mute = p.muted_until && new Date(p.muted_until) > new Date() ? '<p>Muted until: <b>' + esc(when(p.muted_until)) + '</b></p>' : '';
-    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><div class="community-profile-heading">' + profileAvatarHtml(p, 'large') + '<h2>' + esc(p.display_name || p.username || 'Member') + '</h2></div><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + profileCommandButtons(p) + '</div>';
+    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><div class="community-profile-heading">' + profileAvatarHtml(p, 'large') + '<h2>' + esc(p.display_name || p.username || 'Member') + '</h2></div><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + (firebaseMode && isRealOwner() && p.username ? '<button class="community-btn secondary" id="community-profile-rename" type="button">Edit nickname</button>' : '') + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + profileCommandButtons(p) + '</div>';
     document.body.appendChild(modal); document.getElementById('community-profile-close').onclick = function(){ modal.remove(); };
     wireAvatarPreviews(modal);
+    var rename = document.getElementById('community-profile-rename'); if (rename) rename.onclick = async function(){
+      var nickname = prompt('New nickname', p.display_name || p.username); if (nickname == null) return;
+      nickname = normalizeName(nickname); if (!validName(nickname)) { status('Choose a valid nickname.'); return; }
+      try { await state.client.db.collection('profiles').doc(String(p.id)).set({ display_name: nickname }, { merge: true }); audit('nickname', p.username + ' -> ' + nickname); modal.remove(); notifySaved('Nickname updated'); }
+      catch (error) { status(error.message || 'Nickname could not be updated.'); }
+    };
     var roleSel = document.getElementById('community-profile-role'); if (roleSel) roleSel.onchange = async function(){ await changeUserRoleV2(p.username, roleSel.value); modal.remove(); };
     Array.prototype.forEach.call(modal.querySelectorAll('.community-profile-command'), function(btn){ btn.onclick = async function(){ var result = await runProfileCommand(p.username, btn.dataset.profileCmd); status(result.message); if (result.ok) { modal.remove(); await loadMembers(state.tab === 'members'); await loadItems(); } }; });
     modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
@@ -10141,7 +10201,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var reason = '';
     var minutes = '';
     if (action === 'mute' || action === 'kick') { minutes = prompt(action === 'kick' ? 'Kick length, like 10m, 1h, 1d, or perma' : 'Mute length, like 10m, 1h, 1d, or perma', '10m'); if (minutes == null) return { ok: false, message: 'Command cancelled.' }; }
-    if (['warn','mute','kick','ban','unban','unmute'].indexOf(action) !== -1) { reason = prompt('Reason for /' + action + ' ' + username, action === 'unban' || action === 'unmute' ? 'appeal accepted' : 'profile action'); if (reason == null) return { ok: false, message: 'Command cancelled.' }; }
+    if (['warn','mute','kick','unkick','ban','unban','unmute'].indexOf(action) !== -1) { reason = prompt('Reason for /' + action + ' ' + username, ['unban','unmute','unkick'].indexOf(action) !== -1 ? 'appeal accepted' : 'profile action'); if (reason == null) return { ok: false, message: 'Command cancelled.' }; }
     var command = '/' + action + ' ' + username + (minutes ? ' ' + minutes : '') + (reason ? ' ' + reason : '');
     return runStaffCommandTextV2(command);
   }
@@ -10220,12 +10280,25 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function wirePostActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; var title = prompt('Post title', stripPostChannel(row.title || '')); if (title == null) return; var body = prompt('Post body', row.body || ''); if (body == null) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).set({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }, { merge: true }); audit('post-edit', row.id); notifySaved('Post updated'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').update({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post updated'); loadItems(); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row)) return; if (!confirm('Delete this post?')) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).delete(); audit('post-delete', row.id); notifySaved('Post deleted'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post deleted'); loadItems(); } }; }); }
   function messageById(rows, id) { return rows.filter(function(r){ return String(r.id) === String(id); })[0]; }
   function wireMessageActions(rows) {
+    Array.prototype.forEach.call(document.querySelectorAll('.community-reply-message'), function(btn){ btn.onclick = function(){
+      var row = messageById(rows, btn.dataset.messageId), input = $('community-chat-input'); if (!row || !input) return;
+      var name = (row.profiles && row.profiles.username) || row.username || 'member';
+      input.value = '> @' + name + ': ' + String(row.body || '').replace(/\s+/g, ' ').slice(0, 120) + '\n' + input.value;
+      input.dispatchEvent(new Event('input', { bubbles: true })); input.focus();
+    }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-edit-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canEditMessage(row)) return; var body = prompt('Edit message', row.body || ''); if (body == null) return; body = body.trim(); if (!body) return; if (hasBadWord(body)) { status('Blocked word found. This edit will not save.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ body: body, updated_at: new Date().toISOString() }, { merge: true }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'PATCH', body: JSON.stringify({ body: body }) }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ body: body, updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-delete-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canDeleteMessage(row)) return; if (!confirm('Delete this message? It remains visible in this tab until you refresh or leave.')) return; state.recentlyDeletedMessages[String(row.id)] = true; var auditDetail = String(row.id) + ': ' + String(row.deleted_body || row.body || '').slice(0, 900); if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }, { merge: true }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'DELETE' }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }).eq('id', row.id); if (res.error) { delete state.recentlyDeletedMessages[String(row.id)]; status(res.error.message); } else { audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } }; });
   }
   function parseDurationToken(v, fallback) { v = String(v || '').toLowerCase(); if (v === 'perm' || v === 'perma' || v === 'forever') return 52560000; var m = v.match(/^(\d+)(m|h|d)?$/); if (!m) return fallback; var n = parseInt(m[1], 10); return m[2] === 'h' ? n * 60 : (m[2] === 'd' ? n * 1440 : n); }
   function parseStaffCommand(text) { var parts = String(text || '').trim().split(/\s+/); var cmd = (parts.shift() || '').replace(/^\//, '').toLowerCase(); if (!cmd) return null; if (cmd === 'role') return { local: 'Current role: ' + role() }; if (cmd === 'setrole') return { action: 'setrole', target: (parts.shift() || '').toLowerCase(), newRole: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (cmd === 'deleteuser') return { action: 'deleteuser', target: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (cmd === 'mute' || cmd === 'kick') { var target = (parts.shift() || '').toLowerCase(); var minutes = parseDurationToken(parts[0], cmd === 'kick' ? 10 : 10); if (/^(\d+)(m|h|d)?$|^perm|^perma|^forever/i.test(parts[0] || '')) parts.shift(); return { action: cmd, target: target, minutes: minutes, reason: parts.join(' ') }; } if (['warn','ban','unban','unmute'].indexOf(cmd) !== -1) return { action: cmd, target: (parts.shift() || '').toLowerCase(), minutes: null, reason: parts.join(' ') }; return { error: 'Unknown command.' }; }
   async function runStaffCommandTextV2(text) {
+    if (/^\/?unkick\s+/i.test(String(text || ''))) {
+      if (!firebaseMode || !state.user || !['owner','co_owner','admin'].includes(role()) || isTempOwner()) return { ok: false, message: 'Admin or owner account required.' };
+      var username = String(text).trim().replace(/^\/?unkick\s+/i, '').split(/\s+/)[0].toLowerCase();
+      try { var user = await firebaseFindUser(username); if (!user) return { ok: false, message: 'Target not found.' };
+        await user.ref.set({ kicked_until: null }, { merge: true }); audit('command', '/unkick ' + username); notifySaved('Kick removed'); return { ok: true, message: 'Kick removed for ' + username }; }
+      catch (error) { return { ok: false, message: error.message || 'Could not remove kick.' }; }
+    }
     if (!firebaseMode) return runStaffCommandText(text);
     var parsed = parseStaffCommand(text);
     if (!parsed) return { ok: false, message: 'Type a command first.' };
@@ -10268,7 +10341,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (state.user) sessionStorage.removeItem('uz-chat-draft:' + state.user.id + ':' + state.channelName);
   }
   async function sendMessageV2() {
-    if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; return sendMessage(); }
+    if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; var sentText = plainInput && plainInput.value.trim(); await sendMessage(); if (firebaseMode && plainInput && !plainInput.value && sentText) await notifyMentionedUsers(sentText, { tab: 'chat' }); return; }
     if (!state.user) { status('Sign in first.'); return; }
     var input = $('community-chat-input'); var body = String((input && input.value) || '').trim();
     var attachments = state.pendingChatAttachments || [];

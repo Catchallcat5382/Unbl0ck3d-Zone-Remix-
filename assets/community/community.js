@@ -227,9 +227,10 @@
   }
   function notifyMentionedUsers(text, target) {
     var names = String(text || '').match(/@([a-z0-9_.-]+)/ig) || [];
-    var wanted = names.map(function(value){ return value.slice(1).toLowerCase(); }).filter(function(name){ return name !== 'everyone'; });
+    var wanted = names.map(function(value){ return value.slice(1).toLowerCase(); }).filter(function(name){ return name !== 'everyone' && name !== 'here'; });
     var ids = (state.memberRows || []).filter(function(profile){ return wanted.indexOf(String(profile.username || '').toLowerCase()) !== -1; }).map(function(profile){ return profile.id; });
     if (names.some(function(value){ return value.toLowerCase() === '@everyone'; })) ids = ids.concat((state.memberRows || []).map(function(profile){ return profile.id; }));
+    if (names.some(function(value){ return value.toLowerCase() === '@here'; })) ids = ids.concat((state.memberRows || []).filter(isOnline).map(function(profile){ return profile.id; }));
     return notifyUsers(ids, profileUsername() + ' mentioned you: ' + String(text || '').slice(0, 420), target);
   }
   function pingEveryone(title) { var text = '@everyone: ' + (title || 'New announcement'); if (window.UZNotify && window.UZNotify.add) window.UZNotify.add(text); notifyUsers((state.memberRows || []).map(function(profile){ return profile.id; }), text, { tab: 'posts' }); }
@@ -346,7 +347,7 @@
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
     chat.classList.toggle('community-hidden', state.tab !== 'chat'); post.classList.toggle('community-hidden', state.tab !== 'posts'); staff.classList.toggle('community-hidden', true);
     var ok = state.user && !isBanned(state.profile) && !isMuted(state.profile);
-    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload files<input id="community-chat-file-input" type="file" multiple></label><span class="community-attachment-choice" id="community-chat-file-choice">No files selected</span><button class="community-btn" id="community-send-chat">Send</button></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
+    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload files<input id="community-chat-file-input" type="file" multiple></label><span class="community-attachment-choice" id="community-chat-file-choice">No files selected</span><button class="community-btn secondary" id="community-emoji-toggle" type="button" title="Emoji">☺</button><button class="community-btn" id="community-send-chat">Send</button></div><div id="community-emoji-picker" hidden></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
     if (ok) showAttachmentQueue('community-chat-file-choice', state.pendingChatAttachments);
     var postOk = ok && canPost();
     var titlePh = state.channelName === 'settings' ? 'Preset name' : (state.channelName === 'suggestions' ? 'Suggestion title' : 'Thread title');
@@ -358,6 +359,12 @@
     var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
     var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost;
     var chatInput = $('community-chat-input');
+    var emojiToggle = $('community-emoji-toggle'), emojiPicker = $('community-emoji-picker');
+    if (emojiToggle && emojiPicker) {
+      emojiPicker.innerHTML = ['😀','😂','😭','❤️','👍','👎','🔥','🎉','💀','😎','🙏','✅','❌','👀','💯','😅','🤔','😮','😍','🚀'].map(function(emoji){ return '<button type="button" class="community-emoji-choice">' + emoji + '</button>'; }).join('');
+      emojiToggle.onclick = function(){ emojiPicker.hidden = !emojiPicker.hidden; };
+      emojiPicker.onclick = function(event){ var button = event.target.closest('button'); if (!button || !chatInput) return; var start = chatInput.selectionStart, end = chatInput.selectionEnd; chatInput.setRangeText(button.textContent, start, end, 'end'); chatInput.dispatchEvent(new Event('input', { bubbles: true })); chatInput.focus(); };
+    }
     if (chatInput && state.user) {
       var draftKey = 'uz-chat-draft:' + state.user.id + ':' + state.channelName;
       chatInput.value = sessionStorage.getItem(draftKey) || '';
@@ -373,7 +380,11 @@
   function decorateMentions(text) {
     var output = esc(text);
     output = output.replace(/(https?:\/\/[^\s<]+)/gi, function(url){ return '<a class="community-external-link" href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>'; });
-    output = output.replace(/@([a-z0-9_.-]+)/gi, function(_all, name){ return '<span class="community-mention' + (String(name).toLowerCase() === 'everyone' ? ' is-everyone' : '') + '">@' + name + '</span>'; });
+    output = output.replace(/@([a-z0-9_.-]+)/gi, function(_all, name){
+      var profile = (state.memberRows || []).find(function(row){ return String(row.username || '').toLowerCase() === name.toLowerCase(); });
+      if (!profile) return '<span class="community-mention">@' + name + '</span>';
+      return '<button type="button" class="community-mention community-user-link" data-user-id="' + esc(profile.id) + '">@' + name + '</button>';
+    });
     return output.replace(/\n/g, '<br>');
   }
   function attachmentData(attachment) { return attachment && String(attachment.data_url || attachment.dataUrl || attachment.url || '').trim(); }
@@ -830,6 +841,7 @@
     var body = row.deleted_at ? 'Deleted message: ' + (row.deleted_body || row.body || '') : row.body;
     var renderedBody = row.deleted_at ? esc(body) : renderRichBody(body, row.attachments || row.attachment);
     var chatActions = '<div class="community-actions">';
+    if (state.user && !row.deleted_at) chatActions += '<button class="community-btn secondary community-reply-message" data-message-id="' + esc(row.id) + '">Reply</button>';
     if (canEditMessage(row)) chatActions += '<button class="community-btn secondary community-edit-message" data-message-id="' + esc(row.id) + '">Edit</button>';
     if (canDeleteMessage(row)) chatActions += '<button class="community-btn secondary community-delete-message" data-message-id="' + esc(row.id) + '">Delete</button>';
     chatActions += '</div>';
@@ -942,7 +954,7 @@
     var rr = role();
     var buttons = ['<button class="community-btn secondary community-profile-command" data-profile-cmd="warn">Warn</button>'];
     if (['owner','admin','mod'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="mute">Mute</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unmute">Unmute</button>');
-    if (['owner','admin'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="kick">Kick</button>');
+    if (['owner','admin'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="kick">Kick</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unkick">Unkick</button>');
     if (isRealSeniorStaff()) buttons.push('<button class="community-btn danger community-profile-command" data-profile-cmd="ban">Ban</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unban">Unban</button><button class="community-btn danger community-profile-command" data-profile-cmd="deleteuser">Delete account</button>');
     return '<div class="community-profile-actions"><h3>Run command</h3><div class="community-profile-command-grid">' + buttons.join('') + '</div></div>';
   }
@@ -952,9 +964,15 @@
     var ban = p.banned_until && new Date(p.banned_until) > new Date() ? '<p>Banned until: <b>' + esc(when(p.banned_until)) + '</b></p>' : '';
     var kick = p.kicked_until && new Date(p.kicked_until) > new Date() ? '<p>Kicked until: <b>' + esc(when(p.kicked_until)) + '</b></p>' : '';
     var mute = p.muted_until && new Date(p.muted_until) > new Date() ? '<p>Muted until: <b>' + esc(when(p.muted_until)) + '</b></p>' : '';
-    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><div class="community-profile-heading">' + profileAvatarHtml(p, 'large') + '<h2>' + esc(p.display_name || p.username || 'Member') + '</h2></div><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + profileCommandButtons(p) + '</div>';
+    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><div class="community-profile-heading">' + profileAvatarHtml(p, 'large') + '<h2>' + esc(p.display_name || p.username || 'Member') + '</h2></div><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + (firebaseMode && isRealOwner() && p.username ? '<button class="community-btn secondary" id="community-profile-rename" type="button">Edit nickname</button>' : '') + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + profileCommandButtons(p) + '</div>';
     document.body.appendChild(modal); document.getElementById('community-profile-close').onclick = function(){ modal.remove(); };
     wireAvatarPreviews(modal);
+    var rename = document.getElementById('community-profile-rename'); if (rename) rename.onclick = async function(){
+      var nickname = prompt('New nickname', p.display_name || p.username); if (nickname == null) return;
+      nickname = normalizeName(nickname); if (!validName(nickname)) { status('Choose a valid nickname.'); return; }
+      try { await state.client.db.collection('profiles').doc(String(p.id)).set({ display_name: nickname }, { merge: true }); audit('nickname', p.username + ' -> ' + nickname); modal.remove(); notifySaved('Nickname updated'); }
+      catch (error) { status(error.message || 'Nickname could not be updated.'); }
+    };
     var roleSel = document.getElementById('community-profile-role'); if (roleSel) roleSel.onchange = async function(){ await changeUserRoleV2(p.username, roleSel.value); modal.remove(); };
     Array.prototype.forEach.call(modal.querySelectorAll('.community-profile-command'), function(btn){ btn.onclick = async function(){ var result = await runProfileCommand(p.username, btn.dataset.profileCmd); status(result.message); if (result.ok) { modal.remove(); await loadMembers(state.tab === 'members'); await loadItems(); } }; });
     modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
@@ -965,7 +983,7 @@
     var reason = '';
     var minutes = '';
     if (action === 'mute' || action === 'kick') { minutes = prompt(action === 'kick' ? 'Kick length, like 10m, 1h, 1d, or perma' : 'Mute length, like 10m, 1h, 1d, or perma', '10m'); if (minutes == null) return { ok: false, message: 'Command cancelled.' }; }
-    if (['warn','mute','kick','ban','unban','unmute'].indexOf(action) !== -1) { reason = prompt('Reason for /' + action + ' ' + username, action === 'unban' || action === 'unmute' ? 'appeal accepted' : 'profile action'); if (reason == null) return { ok: false, message: 'Command cancelled.' }; }
+    if (['warn','mute','kick','unkick','ban','unban','unmute'].indexOf(action) !== -1) { reason = prompt('Reason for /' + action + ' ' + username, ['unban','unmute','unkick'].indexOf(action) !== -1 ? 'appeal accepted' : 'profile action'); if (reason == null) return { ok: false, message: 'Command cancelled.' }; }
     var command = '/' + action + ' ' + username + (minutes ? ' ' + minutes : '') + (reason ? ' ' + reason : '');
     return runStaffCommandTextV2(command);
   }
@@ -1044,12 +1062,25 @@
   function wirePostActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; var title = prompt('Post title', stripPostChannel(row.title || '')); if (title == null) return; var body = prompt('Post body', row.body || ''); if (body == null) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).set({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }, { merge: true }); audit('post-edit', row.id); notifySaved('Post updated'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').update({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post updated'); loadItems(); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row)) return; if (!confirm('Delete this post?')) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).delete(); audit('post-delete', row.id); notifySaved('Post deleted'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post deleted'); loadItems(); } }; }); }
   function messageById(rows, id) { return rows.filter(function(r){ return String(r.id) === String(id); })[0]; }
   function wireMessageActions(rows) {
+    Array.prototype.forEach.call(document.querySelectorAll('.community-reply-message'), function(btn){ btn.onclick = function(){
+      var row = messageById(rows, btn.dataset.messageId), input = $('community-chat-input'); if (!row || !input) return;
+      var name = (row.profiles && row.profiles.username) || row.username || 'member';
+      input.value = '> @' + name + ': ' + String(row.body || '').replace(/\s+/g, ' ').slice(0, 120) + '\n' + input.value;
+      input.dispatchEvent(new Event('input', { bubbles: true })); input.focus();
+    }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-edit-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canEditMessage(row)) return; var body = prompt('Edit message', row.body || ''); if (body == null) return; body = body.trim(); if (!body) return; if (hasBadWord(body)) { status('Blocked word found. This edit will not save.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ body: body, updated_at: new Date().toISOString() }, { merge: true }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'PATCH', body: JSON.stringify({ body: body }) }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ body: body, updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-delete-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canDeleteMessage(row)) return; if (!confirm('Delete this message? It remains visible in this tab until you refresh or leave.')) return; state.recentlyDeletedMessages[String(row.id)] = true; var auditDetail = String(row.id) + ': ' + String(row.deleted_body || row.body || '').slice(0, 900); if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }, { merge: true }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'DELETE' }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }).eq('id', row.id); if (res.error) { delete state.recentlyDeletedMessages[String(row.id)]; status(res.error.message); } else { audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } }; });
   }
   function parseDurationToken(v, fallback) { v = String(v || '').toLowerCase(); if (v === 'perm' || v === 'perma' || v === 'forever') return 52560000; var m = v.match(/^(\d+)(m|h|d)?$/); if (!m) return fallback; var n = parseInt(m[1], 10); return m[2] === 'h' ? n * 60 : (m[2] === 'd' ? n * 1440 : n); }
   function parseStaffCommand(text) { var parts = String(text || '').trim().split(/\s+/); var cmd = (parts.shift() || '').replace(/^\//, '').toLowerCase(); if (!cmd) return null; if (cmd === 'role') return { local: 'Current role: ' + role() }; if (cmd === 'setrole') return { action: 'setrole', target: (parts.shift() || '').toLowerCase(), newRole: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (cmd === 'deleteuser') return { action: 'deleteuser', target: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (cmd === 'mute' || cmd === 'kick') { var target = (parts.shift() || '').toLowerCase(); var minutes = parseDurationToken(parts[0], cmd === 'kick' ? 10 : 10); if (/^(\d+)(m|h|d)?$|^perm|^perma|^forever/i.test(parts[0] || '')) parts.shift(); return { action: cmd, target: target, minutes: minutes, reason: parts.join(' ') }; } if (['warn','ban','unban','unmute'].indexOf(cmd) !== -1) return { action: cmd, target: (parts.shift() || '').toLowerCase(), minutes: null, reason: parts.join(' ') }; return { error: 'Unknown command.' }; }
   async function runStaffCommandTextV2(text) {
+    if (/^\/?unkick\s+/i.test(String(text || ''))) {
+      if (!firebaseMode || !state.user || !['owner','co_owner','admin'].includes(role()) || isTempOwner()) return { ok: false, message: 'Admin or owner account required.' };
+      var username = String(text).trim().replace(/^\/?unkick\s+/i, '').split(/\s+/)[0].toLowerCase();
+      try { var user = await firebaseFindUser(username); if (!user) return { ok: false, message: 'Target not found.' };
+        await user.ref.set({ kicked_until: null }, { merge: true }); audit('command', '/unkick ' + username); notifySaved('Kick removed'); return { ok: true, message: 'Kick removed for ' + username }; }
+      catch (error) { return { ok: false, message: error.message || 'Could not remove kick.' }; }
+    }
     if (!firebaseMode) return runStaffCommandText(text);
     var parsed = parseStaffCommand(text);
     if (!parsed) return { ok: false, message: 'Type a command first.' };
@@ -1092,7 +1123,7 @@
     if (state.user) sessionStorage.removeItem('uz-chat-draft:' + state.user.id + ':' + state.channelName);
   }
   async function sendMessageV2() {
-    if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; return sendMessage(); }
+    if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; var sentText = plainInput && plainInput.value.trim(); await sendMessage(); if (firebaseMode && plainInput && !plainInput.value && sentText) await notifyMentionedUsers(sentText, { tab: 'chat' }); return; }
     if (!state.user) { status('Sign in first.'); return; }
     var input = $('community-chat-input'); var body = String((input && input.value) || '').trim();
     var attachments = state.pendingChatAttachments || [];
