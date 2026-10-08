@@ -1596,7 +1596,7 @@
   </style>
 <base target="_blank">
 <base target="_blank">
-<style id="uz-remove-movies">[data-media="movies"],#media-movies{display:none!important}</style>
+<style id="uz-notification-layout">.uz-notification-item{line-height:1.4;overflow-wrap:anywhere}.uz-notification-item>b{display:block;margin-bottom:6px;font-size:12px;white-space:normal}.uz-notification-item.is-read{opacity:1!important}.uz-notification-item.is-read>b{color:#aaa}.uz-notification-item .uz-notification-actions button{opacity:1!important}</style>
 </head>
 <body>
 
@@ -1883,28 +1883,13 @@
       </div>
       <div class="tab-content" id="media">
 
-        <div class="media-section" id="media-movies" style="display:none">
-          <div class="search-bar" style="position:relative;">
-            <input type="text" id="movie-search" placeholder="Search movies..." style="padding-right:44px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <div class="media-categories">
-            <button class="media-cat active" data-media="tv"> TV Shows</button>
-            <button class="media-cat" data-media="movies" data-external="https://sites.google.com/view/3xp7vm9zq2wb5nr8tyv4xc1om6pz3k/kP9vX2mQ7zWb5nR4tYv8xC1oM6pZ3jK9sBf4hG7dX2wL1vN5mQ8zP3kR9sBf4hG7dX2wL1vN5m/1a2b3C4d5E6f7G8h9I0j1K2l3M4n5O6p7Q8r9S0t1U2v3W4x5Y6z7A8b9C0d1E2f3G4h5I6j7K/w8Y9vK2xM4qR1pL5zC3bN8mX7jA9vF2wP6kL3hJ9nC4xZ8mB7vN1qW4rD6yT2pM9sK4cQ8/7bN4mK9xQ2wP8zR3vT6yL1fG5hD8jS2kX4mQ9zP1vB7nR3tW6jK2sF5hG8dX4wL1vN9mQ3zP/F9vM3xQ7zWb5nR1tYv8xC4oM2pZ6jK9sBf3hG7dX5wL1vN8mQ2zP4kR6sBf9hG3dX7wL1vN5/"> Movies</button>
-            <button class="media-cat" data-media="manga"> Manga</button>
-            <button class="media-cat" data-media="music"> Music</button>
-          </div>
-          <div class="card-grid" id="movie-grid"></div>
-        </div>
         <div class="media-section" id="media-tv">
           <div class="search-bar" style="position:relative;">
             <input type="text" placeholder="Search TV shows..." style="padding-right:44px;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
           <div class="media-categories">
-            <button class="media-cat active" data-media="tv"> TV Shows</button>
-            <button class="media-cat" data-media="movies" data-external="https://sites.google.com/view/3xp7vm9zq2wb5nr8tyv4xc1om6pz3k/kP9vX2mQ7zWb5nR4tYv8xC1oM6pZ3jK9sBf4hG7dX2wL1vN5mQ8zP3kR9sBf4hG7dX2wL1vN5m/1a2b3C4d5E6f7G8h9I0j1K2l3M4n5O6p7Q8r9S0t1U2v3W4x5Y6z7A8b9C0d1E2f3G4h5I6j7K/w8Y9vK2xM4qR1pL5zC3bN8mX7jA9vF2wP6kL3hJ9nC4xZ8mB7vN1qW4rD6yT2pM9sK4cQ8/7bN4mK9xQ2wP8zR3vT6yL1fG5hD8jS2kX4mQ9zP1vB7nR3tW6jK2sF5hG8dX4wL1vN9mQ3zP/F9vM3xQ7zWb5nR1tYv8xC4oM2pZ6jK9sBf3hG7dX5wL1vN8mQ2zP4kR6sBf9hG3dX7wL1vN5/"> Movies</button>
-            <button class="media-cat" data-media="manga"> Manga</button>
+            <button class="media-cat active" data-media="tv"> TV Shows</button>            <button class="media-cat" data-media="manga"> Manga</button>
             <button class="media-cat" data-media="music"> Music</button>
           </div>
           <div class="card-grid">
@@ -2132,9 +2117,7 @@
         </div>
         <div class="media-section" id="media-music" style="display:none">
           <div class="media-categories">
-            <button class="media-cat active" data-media="tv"> TV Shows</button>
-            <button class="media-cat" data-media="movies" data-external="https://sites.google.com/view/3xp7vm9zq2wb5nr8tyv4xc1om6pz3k/kP9vX2mQ7zWb5nR4tYv8xC1oM6pZ3jK9sBf4hG7dX2wL1vN5mQ8zP3kR9sBf4hG7dX2wL1vN5m/1a2b3C4d5E6f7G8h9I0j1K2l3M4n5O6p7Q8r9S0t1U2v3W4x5Y6z7A8b9C0d1E2f3G4h5I6j7K/w8Y9vK2xM4qR1pL5zC3bN8mX7jA9vF2wP6kL3hJ9nC4xZ8mB7vN1qW4rD6yT2pM9sK4cQ8/7bN4mK9xQ2wP8zR3vT6yL1fG5hD8jS2kX4mQ9zP1vB7nR3tW6jK2sF5hG8dX4wL1vN9mQ3zP/F9vM3xQ7zWb5nR1tYv8xC4oM2pZ6jK9sBf3hG7dX5wL1vN8mQ2zP4kR6sBf9hG3dX7wL1vN5/"> Movies</button>
-            <button class="media-cat" data-media="manga"> Manga</button>
+            <button class="media-cat active" data-media="tv"> TV Shows</button>            <button class="media-cat" data-media="manga"> Manga</button>
             <button class="media-cat" data-media="music"> Music</button>
           </div>
           <div class="music-tabbar">
@@ -2154,9 +2137,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
           <div class="media-categories">
-            <button class="media-cat active" data-media="tv"> TV Shows</button>
-            <button class="media-cat" data-media="movies" data-external="https://sites.google.com/view/3xp7vm9zq2wb5nr8tyv4xc1om6pz3k/kP9vX2mQ7zWb5nR4tYv8xC1oM6pZ3jK9sBf4hG7dX2wL1vN5mQ8zP3kR9sBf4hG7dX2wL1vN5m/1a2b3C4d5E6f7G8h9I0j1K2l3M4n5O6p7Q8r9S0t1U2v3W4x5Y6z7A8b9C0d1E2f3G4h5I6j7K/w8Y9vK2xM4qR1pL5zC3bN8mX7jA9vF2wP6kL3hJ9nC4xZ8mB7vN1qW4rD6yT2pM9sK4cQ8/7bN4mK9xQ2wP8zR3vT6yL1fG5hD8jS2kX4mQ9zP1vB7nR3tW6jK2sF5hG8dX4wL1vN9mQ3zP/F9vM3xQ7zWb5nR1tYv8xC4oM2pZ6jK9sBf3hG7dX5wL1vN8mQ2zP4kR6sBf9hG3dX7wL1vN5/"> Movies</button>
-            <button class="media-cat" data-media="manga"> Manga</button>
+            <button class="media-cat active" data-media="tv"> TV Shows</button>            <button class="media-cat" data-media="manga"> Manga</button>
             <button class="media-cat" data-media="music"> Music</button>
           </div>
           <div class="card-grid">
@@ -4760,6 +4741,30 @@
     })();
 
     /*  CUSTOM WALLPAPER  */
+    function prepareAccountImage(file) {
+      if (!file || !/^image\//.test(file.type) || file.size > 8 * 1024 * 1024) return Promise.reject(new Error('Choose an image under 8 MB for account sync.'));
+      return new Promise(function(resolve, reject) {
+        var url = URL.createObjectURL(file);
+        var image = new Image();
+        image.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Image could not be opened.')); };
+        image.onload = function() {
+          URL.revokeObjectURL(url);
+          var edge = 960;
+          for (var attempt = 0; attempt < 5; attempt++) {
+            var scale = Math.min(1, edge / Math.max(image.naturalWidth, image.naturalHeight));
+            var canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+            var data = canvas.toDataURL('image/jpeg', Math.max(.55, .84 - attempt * .07));
+            if (data.length <= 150000) { resolve(data); return; }
+            edge = Math.round(edge * .72);
+          }
+          reject(new Error('Image is too detailed to sync; use a direct URL.'));
+        };
+        image.src = url;
+      });
+    }
     var wallpaperObjectUrl = null;
     var wallpaperRenderId = 0;
     function wallpaperStatus(message) {
@@ -4854,6 +4859,16 @@
       if (!file) return;
       if (!/^image\//.test(file.type) && !/^(video\/mp4|video\/webm)$/.test(file.type)) { wallpaperStatus('Choose an image, MP4, or WebM file.'); return; }
       if (file.size > 350 * 1024 * 1024) { wallpaperStatus('File is too large (350 MB maximum).'); return; }
+      if (/^image\//.test(file.type) && file.size <= 8 * 1024 * 1024) {
+        wallpaperStatus('Preparing image for account sync...');
+        prepareAccountImage(file).then(function(data) {
+          localStorage.setItem('customWallpaper', data);
+          setBackground('custom');
+          document.getElementById('bg-select').value = 'custom';
+          wallpaperStatus('Image saved to account settings.');
+        }).catch(function(error) { wallpaperStatus(error.message); });
+        return;
+      }
       var key = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random());
       wallpaperStatus('Saving media on this device...');
       wallpaperFileStore(key, file).then(function() {
@@ -5085,6 +5100,18 @@
       if (!file) return;
       if (!/^image\//.test(file.type)) { panicCoverStatus('Choose an image file.'); return; }
       if (file.size > 350 * 1024 * 1024) { panicCoverStatus('File is too large (350 MB maximum).'); return; }
+      if (file.size <= 8 * 1024 * 1024) {
+        panicCoverStatus('Preparing cover for account sync...');
+        prepareAccountImage(file).then(function(data) {
+          localStorage.setItem('panicCoverImage', data);
+          localStorage.removeItem('panicCoverMedia');
+          var old = document.getElementById('panic-cover-frame');
+          if (old) old.remove();
+          clearPanicCoverObjectUrl();
+          panicCoverStatus('Cover image saved to account settings.');
+        }).catch(function(error) { panicCoverStatus(error.message); });
+        return;
+      }
       var key = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random());
       panicCoverStatus('Saving cover on this device...');
       wallpaperFileStore('panic-cover:' + key, file).then(function() {
@@ -5097,6 +5124,7 @@
     }
     function clearPanicCoverImage() {
       localStorage.removeItem('panicCoverMedia');
+      localStorage.removeItem('panicCoverImage');
       var old = document.getElementById('panic-cover-frame');
       if (old) old.remove();
       clearPanicCoverObjectUrl();
@@ -5128,6 +5156,15 @@
       main.appendChild(search);
       preview.appendChild(address); preview.appendChild(main);
       wrap.appendChild(preview);
+      var accountImage = localStorage.getItem('panicCoverImage');
+      if (accountImage && /^data:image\//.test(accountImage)) {
+        var syncedImage = document.createElement('img');
+        syncedImage.className = 'panic-cover-image';
+        syncedImage.alt = 'Uploaded visual cover';
+        syncedImage.src = accountImage;
+        preview.replaceChildren(syncedImage);
+        return;
+      }
       var key = localStorage.getItem('panicCoverMedia');
       if (key) wallpaperFileLoad('panic-cover:' + key).then(function(file) {
         if (!file || !wrap.isConnected) return;
@@ -5154,12 +5191,6 @@
       wrap.dataset.url = getPanicUrl();
       wrap.dataset.media = localStorage.getItem('panicCoverMedia') || '';
       buildPanicCoverPreview(wrap, url);
-      var close = document.createElement('button');
-      close.className = 'panic-cover-close';
-      close.type = 'button';
-      close.textContent = 'Close cover';
-      close.onclick = function() { wrap.classList.remove('open'); };
-      wrap.appendChild(close);
       document.body.appendChild(wrap);
     }
     function panicKeyLabel(key) {
@@ -5551,68 +5582,12 @@
 
     // Quote Rotator
     const quotes = [
-      "Imagination is more important than knowledge. - Albert Einstein",
+      "That's la peace. - Kai Cenat",
+      "Job's not finished. - Kobe Bryant",
+      "Impossible is nothing.",
+      "I am the greatest. - Muhammad Ali",
       "Stay hungry. Stay foolish. - Steve Jobs",
-      "The secret of getting ahead is getting started. - Mark Twain",
-      "Well done is better than well said. - Benjamin Franklin",
-      "Simplicity is the ultimate sophistication. - Leonardo da Vinci",
-      "What we know is a drop; what we do not know is an ocean. - Isaac Newton",
-      "The journey of a thousand miles begins with one step. - Lao Tzu",
-      "No great mind has ever existed without a touch of madness. - Aristotle",
-      "It always seems impossible until it is done. - Nelson Mandela",
-      "The only true wisdom is knowing you know nothing. - Socrates",
-      "If you tell the truth, you do not have to remember anything. - Mark Twain",
-      "Genius is one percent inspiration and ninety-nine percent perspiration. - Thomas Edison",
-      "The unexamined life is not worth living. - Socrates",
-      "Knowing yourself is the beginning of all wisdom. - Aristotle",
-      "I have not failed. I have found 10,000 ways that will not work. - Thomas Edison",
-      "A person who never made a mistake never tried anything new. - Albert Einstein",
-      "Do what you can, with what you have, where you are. - Theodore Roosevelt",
-      "The best way out is always through. - Robert Frost",
-      "Fortune favors the bold. - Virgil",
-      "Knowledge speaks, but wisdom listens. - Often attributed to Jimi Hendrix",
-      "The loading screen has more confidence than I do.",
-      "Chat, I meant to do that. Totally planned.",
-      "This build is held together by orange glow and optimism.",
-      "If lag was a boss fight, I would be underleveled.",
-      "The tab is innocent. The user is complicated.",
-      "My strategy is simple: panic, then pretend it was a feature.",
-      "That button has main-character energy.",
-      "A watched deploy never builds.",
-      "The pixels are negotiating their contract.",
-      "I am not lost; I am exploring the UI aggressively.",
-      "Cache is just yesterday refusing to leave.",
-      "This page has survived more refreshes than most relationships.",
-      "The settings menu is where confidence goes to be tested.",
-      "If the font loaded, we are already winning.",
-      "The browser said maybe, so we called it progress.",
-      "Today we choose elegance, after trying chaos first.",
-      "One more click and you are basically tech support.",
-      "The command panel is not judging you. Much.",
-      "Streamer brain says send it. Engineer brain says backup first.",
-      "The UI is doing its best with the information provided.",
-      "If it works locally, celebrate quietly.",
-      "The safest link is the one you actually checked.",
-      "A good forum starts with one normal post and five weird replies.",
-      "Settings shared successfully, probably with too much confidence.",
-      "Online status: present, confused, glowing orange.",
-      "The bug report was emotional but valid.",
-      "Small buttons, large consequences.",
-      "The terminal has entered the chat.",
-      "Progress is still progress if it has bugs.",
-      "Do not argue with the reload button. It has seen things.",
-      "What's up, brother? - Sketch",
-      "Special teams, special plays, special players. - Sketch",
-      "Are you serious, right neow? - IShowSpeed",
-      "Broski. Is that a W or an L? - Kai Cenat",
-      "If things never changed, you'd never miss them. - Joe Bartolozzi",
-      "Growth and comfort cannot coexist. You cannot have an easy life and a great character. - Streamer University wisdom",
-      "A diamond is just a piece of coal that never quit. - Whambas",
-      "Maybe your path is harder because your calling is higher. - Twitch community mantra",
-      "Technoblade never dies! - Technoblade",
-      "The best clip starts right after someone says watch this.",
-      "If the squad says one more round, your bedtime has been peer-reviewed.",
-      "A clutch is just panic with good timing."
+      "Technoblade never dies! - Technoblade"
     ];
     const quoteEl = document.getElementById('quote');
     var shown = [];
@@ -7788,76 +7763,6 @@ let DATA = {
     });
 
     //  Movie Links
-    var movieLinks = ["https://drive.google.com/file/d/13KF2oQ-b1WRvbjL0vMMAMlI0Vj8TYBuM/view", "https://drive.google.com/file/d/1e2UIrJdsz_0k5tp2v0EnPZiPv2ZQSTzg/view", "https://drive.google.com/file/d/1VWLpj4G4CEgHnjpxfc67MrlEWu5pD75Y/view", "https://drive.google.com/file/d/1uCRRJZj1GAaweX996uHbF2zxPoessmGW/view", "https://drive.google.com/file/d/1ehi9tidOYHb1RMldxtBw6-L3UhyEKVm9/view", "https://drive.google.com/file/d/1wSrQaIbtaTYn9wvwWmLK3dn_FUxhf3_2/view", "https://drive.google.com/file/d/1em55qHTtdrWD4Dox9CXs9r1042TLu_cu/view", "https://drive.google.com/file/d/1eGdgQ9I1TxldaNk-gKqTNb7X2qDUe1oC/view", "https://drive.google.com/file/d/1GYQqHUdyWMNQJKj4Sa8SGW0ZRX32D5og/view", "https://drive.google.com/file/d/1LTKy48IbusfXsl5nSNDTd0M3A8B3aPke/view", "https://drive.google.com/file/d/1AIq4OqiMWiY9zZSayF5VID7pfTwSH6BM/view", "https://drive.google.com/file/d/1e4NzmeC84qest_9Wzmtvmi80brGPYnsN/view", "https://drive.google.com/file/d/15eSd5qT_fDyKZGSvEdNZ4gPecfKO3YM2/view", "https://drive.google.com/file/d/1ify_EMaQW-ZAn2F0STztn2AGU-jE7aHL/view", "https://drive.google.com/file/d/1_qJqk2Ss1f45puz3xGQcdD1NxM3ipupj/view", "https://drive.google.com/file/d/1JttHmQ0nz7UhvgK0QDUJP5vBQUPGkfTX/view", "https://drive.google.com/file/d/0B-uFeCO4yCFISTFmNlE3akNDbU0/view", "https://drive.google.com/file/d/16tKuEYtxi7EeKtX3yZZR-nXgZ_oGTxXS/view", "https://drive.google.com/file/d/1_2QvQwCTByZYYzSKCjUWuYPdjBM37OdH/view", "https://drive.google.com/file/d/1GLkdpNumWIYJ8rw6kUJgf5NiDLsaUDLU/view", "https://drive.google.com/file/d/1K88LvZ6q9KRwsdiVQ72Wrh5DQqWVLkd3/view", "https://drive.google.com/file/d/1vmA2LTkSzbtUJve8TTy2UVkPAfHMtGwK/view", "https://drive.google.com/file/d/1wdUOiz7tI3R5vTz779h7CesAW5h0kUh1/view", "https://drive.google.com/file/d/16A4hzHFTcNduq6F-u4zQw7iTha5aEKD-/view", "https://drive.google.com/file/d/198qUcefIK54KnZzxAx6_L8u7l37oCfhK/view", "https://drive.google.com/file/d/14PdqUTFgHjYSFHxVAYaDeYVMzJU_puBW/view", "https://drive.google.com/file/d/1fCv2dJuy8k_NQWAxbNRxqW0_zKetF-uy/view", "https://drive.google.com/file/d/18As-PyI9E5z5iYu2ns3meSiusKI9KLEv/view", "https://drive.google.com/file/d/1wEmEjdaO0dp1nonCewG8URl6YsQOk0ru/view", "https://drive.google.com/file/d/1AShi8tLLzbPiPO6vDokf8ew-qBbzh5Pb/view", "https://drive.google.com/file/d/1ZwP0FLdFdAoeskqGvQYX5CwqEeSFWS1G/view", "https://drive.google.com/file/d/1qZxoOGQTxqwlJtOQbwN8jeyD_yVvX7yc/view", "https://drive.google.com/file/d/1T2XMXtDAlohPcGdi-u2p9zXF9Os9zkY1/view", "https://drive.google.com/file/d/1fs2-oBGADuUeepkLX2V3zxNNUstHvBTs/view", "https://drive.google.com/file/d/1OsCtW4NUV94utDNxmFejUFoH6euf8Ind/view", "https://drive.google.com/file/d/1Nnkb35gi9f-jc4LvwVDUq8MTLur7mK3L/view", "https://drive.google.com/file/d/1IuwCkN-QY-y--RCNay1sJC-WJQtVBvvL/view", "https://drive.google.com/file/d/1wqi9Wk--koq0SqRkoVZWXLVJBtABkjPy/view", "https://drive.google.com/file/d/1TFiL16cNmQmG5pSi-s6od4xgymFqK1kJ/view", "https://drive.google.com/file/d/1FPO2K8Oqb1O3qm1qb57NhZHhaGCvQjAz/view", "https://drive.google.com/file/d/194M4dGCwh1hTxVM1-_axnLSdt4trnbK2/view", "https://drive.google.com/file/d/1zECVNreFAl8LNGcOrlPqtMzw_Su1S3AC/view", "https://drive.google.com/file/d/1BW7yv_y4uk99Nsjbc--z1beQ_bYYmUXk/view", "https://drive.google.com/file/d/1zcOWY_OTVctnY1sHg1KRjhDVls_3ebWs/view", "https://drive.google.com/file/d/1RoWQ2LZecPYvsZ48Sah7_xBvZzEHcXL1/view", "https://drive.google.com/file/d/1vrClp3nIYkdIBRPzZDxxq7ICIOWHioAh/view", "https://drive.google.com/file/d/1YinG1kmgSqWI5kQwfDsQO6vK1xzM6K7o/view", "https://drive.google.com/file/d/1w9nVBGOKDax-xCr-caqekW4hcjRUQWZA/view", "https://drive.google.com/file/d/1zGu4JvRmEG1B041H7DRBcdRGSgTdskPo/view", "https://drive.google.com/file/d/1KnW-KW6LV-fH0S0R_2sbsEKkKhSFK-OP/view", "https://drive.google.com/file/d/1j8pGyNx9PHk_Gicns9JlDaX82qBIi1_m/view", "https://drive.google.com/file/d/1iwnluIU4neLKqcJt4q5n2YhZLJbJbRkI/view", "https://drive.google.com/file/d/1sd8H5oqtZwgNj1x54L2RdDOXxgUP50Yx/view", "https://drive.google.com/file/d/1sy0E41GNhba6yPMdC62cvjaTl_VtjJaz/view", "https://drive.google.com/file/d/1cWJ8McRHEq7wtrnO1BfWlymjTIGVbJA0/view", "https://drive.google.com/file/d/1XUjU4fhDH7qpPEg_me8vlMba1uelRIwj/view", "https://drive.google.com/file/d/1siki1wYP3LpfjFpUT8Z9lJuJzl7MdBhX/view", "https://drive.google.com/file/d/1wcE3D19t54BnWtLNl5cruklfPVPh92nY/view", "https://drive.google.com/file/d/197KssJtLD2MgUPhm5psXN6xULrYgmjDo/view", "https://drive.google.com/file/d/1B_eiKUt7N5OxyUN9c37LG0pxcErP4yJ6/view", "https://drive.google.com/file/d/1iX6QbaV3Oi_yGDvqRcFvrJ4_gzIOisnT/view", "https://drive.google.com/file/d/1q5wcbuy536XQKTBAF7ImApMAlNMVHM5T/view", "https://drive.google.com/file/d/1rKRsgdNioFs3rtkZai7Gz97FtAX0jdJ_/view", "https://drive.google.com/file/d/1B9UlP9E81nAepDOVt18YFbOxl60FoQdW/view", "https://drive.google.com/file/d/1-cJP_6uvuboesHkiYPgfIg49eKvsBsF0/view", "https://drive.google.com/file/d/1yblYpS-_kvX6GMWy8Ksgn9yAReHPdpLv/view", "https://drive.google.com/file/d/1D0EgRNfJOZFkhvQDgazFiVpSsk8ogXoU/view", "https://drive.google.com/file/d/0B3mvUq8g3_1qV2stVmJnUnM1WUU/view", "https://drive.google.com/file/d/1G4C_sOWW3IEih7LVTGmeLpm9TaoVaQMq/view", "https://drive.google.com/file/d/1y5q4v_Sx6Kj9nIrNjaAbCVcX36nRC3qB/view", "https://drive.google.com/file/d/1OyO1OdhtfwR883Uvi0QPP5iooGcxTVSY/view", "https://drive.google.com/file/d/1njTri-d6eamwa3AFwuVD9nORZ7K6-D-N/view", "https://drive.google.com/file/d/1ZXmi1ifbr4wlvGt8cE1S68nUePCLEjCj/view", "https://drive.google.com/file/d/1Ak82TmSBG3_lpbUgsDq22AcZ5gzGvTTB/view", "https://drive.google.com/file/d/1doiq4ss2pVDSKbkOkxV6wtKEaQvdHq3s/view", "https://drive.google.com/file/d/1dW1XsOWtiL0mGHOFIB8n0rEhLPoa2buJ/view", "https://drive.google.com/file/d/1KcgJ-y5NjN6MsD-SscW4Qteqlz_nikFH/view", "https://drive.google.com/file/d/1IQjXZgoOjm8E1A7wqtrrc7iBU0oemfHX/view", "https://drive.google.com/file/d/1M2OD-EPO3AjkzwYNvJLXCNe4B7y6bmM6/view", "https://drive.google.com/file/d/1gEaEAiu7U4iFgIWRkM1k_NrLJBMGUC6H/view", "https://drive.google.com/file/d/1jP7PoHapLf_S_n75Afdc0RvzSwRqPcwm/view", "https://drive.google.com/file/d/1JCzIrmPWbgCdcSBfn4K4YSg5cyW47sx9/view", "https://drive.google.com/file/d/1QWUvYQ3XCFtyuddcCqAkbNecztXM6mzs/view", "https://drive.google.com/file/d/1NPB0oCsIuiPAc471b_XOGDnchbCZ72yh/view", "https://drive.google.com/file/d/1cBhl_4yyqtXZXvTMaAsS3zFBC076lHUe/view", "https://drive.google.com/file/d/1uDOp65KtEnID520JjNC_kMOm91mNfGq6/view", "https://drive.google.com/file/d/1XHIiXE91mx6K_vtZ-AvE_JZLhKUPk_O_/view", "https://drive.google.com/file/d/17VuqbLGq3I_OvgPClg59rEBvl-APxDsA/view", "https://drive.google.com/file/d/0B-pxQwOjtZ8gMzJRRWxQWnAxTTA/view", "https://drive.google.com/file/d/1hpUpKEdeT9ta-8FjSpMUAXw17E-8uwIY/view", "https://drive.google.com/file/d/1XIuN4Zp35mW0iN4p0ME5APxH18-6Zqft/view", "https://drive.google.com/file/d/1FvLZVBTBATp3DG6sudNyOb9v0lCJwxZw/view", "https://drive.google.com/file/d/1Tu0WxRUC-gADzYFEnSvudZ3MZ7Y735jH/view", "https://drive.google.com/file/d/1EPl07sM8LNMssAVzKmICliFrgKp3aCTf/view", "https://drive.google.com/file/d/0B-uFeCO4yCFIa3hNRDc5eVlBSjQ/view", "https://drive.google.com/file/d/1SKE9sQ-DnHRRVGxU10Qk2QJ1Ws2jvv5M/view", "https://drive.google.com/file/d/1kWubGA5tk1GMcHmNn4Q6VeH1M-5jYAYa/view", "https://drive.google.com/file/d/1ROenMVwRyMGW0EIsf4Xg67EvRAAT5kcX/view", "https://drive.google.com/file/d/1J_WyATYoZH9qcaX5RNFrjrwmvySFPTom/view", "https://drive.google.com/file/d/1VKxhPEp2ATQVqwmX9q2sedyHFer4-Riz/view", "https://drive.google.com/file/d/1jucPocCb8aq23Bh-GFLcniAk-k5UU-wC/view", "https://drive.google.com/file/d/1pP6Kkr-1WmcWWt2IKEIUv7RTkgMLXTmp/view", "https://drive.google.com/file/d/1Kur_TXv1AOx8hhs0qGc_IwZXKmWvD6Y7/view", "https://drive.google.com/file/d/1rin01fF2JeTiqBkvae2SJLZIuv2UUp2v/view", "https://drive.google.com/file/d/17dmsvcnKRCNhW3zD8lMgdTqqv8SEuGqw/view", "https://drive.google.com/file/d/1xMRDhscsmtcrECXXuOsqpAADTHJ0FxGS/view", "https://drive.google.com/file/d/1emaZNk8shYA98Sq_K0x_iVT78_coOByR/view", "https://drive.google.com/file/d/1pFavPs7Mi9rx_BrAjxbeHNWg7ClAB2_K/view", "https://drive.google.com/file/d/1g_YZyeIbjua21PNL4ZLfeIzJx-givpPE/view", "https://drive.google.com/file/d/1-QiYxJYgk4gw8fRHez7gUWMS6zE7vG-u/view", "https://drive.google.com/file/d/1lWeO09nNvc1beWyYUJJRDRnJ7p4xtmtk/view", "https://drive.google.com/file/d/1TOjPbqSF5UqnPrn1zFqEWvkUeBNiyMax/view", "https://drive.google.com/file/d/1ejFJmseRX08D8AW4AchpuYzl5rsJK22t/view", "https://drive.google.com/file/d/1VPN-P5xWjbEHv-VtlzjryjyV-nx7Z_w_/view", "https://drive.google.com/file/d/1RRlgtnQiIZEm8mgF45J0iOa6S3-ArDdE/view", "https://drive.google.com/file/d/1PvzOPEZp09GjSj3PEDuxb0Y1ceQvo1AX/view", "https://drive.google.com/file/d/1cS4L5FYnWergTViVgJJpKbMIIi8sju4P/view", "https://drive.google.com/file/d/1l7dSSnBmw9Fnku5lxl7zYk7CsQa4JU3d/view", "https://drive.google.com/file/d/1sXad7VvXVn7qIilwdspq5RtjmInpa7mQ/view", "https://drive.google.com/file/d/1sH3RXs-OiYr7ROKCtmB5miWVpX9G2b4Q/view", "https://drive.google.com/file/d/1c47Nko9vdJfe-KKF4nkpd-U-aMT_ZaQe/view", "https://drive.google.com/file/d/1_1kjmaNVAhaccTH3mCV5FfcML3MTiT0E/view", "https://drive.google.com/file/d/1bJMKhvzwuVfAYECLheyA_h38T9oYvkgX/view", "https://drive.google.com/file/d/1AC6j5pNVDl6fcvdT3e3hsAUkkBU-o3xD/view", "https://drive.google.com/file/d/1_z5TUQlNH-IWdeFo_jDZDKsuVi32VdRs/view", "https://drive.google.com/file/d/1Zu15ykGtc1xxKIKfAeUV_L1vAbCt--zO/view", "https://drive.google.com/file/d/1yYxqmSv99zFBsJkT0cZYd4C4PTNC9bUU/view", "https://drive.google.com/file/d/1eVK_s8Sp-Gvv1J65ocyLbwyqC7vkuoFK/view", "https://drive.google.com/file/d/0B_gF_cJaMa7FZ1ZJYnp6NnN0NXM/view", "https://drive.google.com/file/d/17UlhT2qVX10O8AksEEdWuaUqoVF78-oH/view", "https://drive.google.com/file/d/1gZ4FVX5GLCSv2-i_sabXWhgl9u_3FeOB/view", "https://drive.google.com/file/d/16jXkeJny6L8MrC_7issz4AtANAzNDJqw/view", "https://drive.google.com/file/d/1CdhzdqiTQvWMCvmLE_zFLuc2jHvTMqq8/view", "https://drive.google.com/file/d/0B5GBDxHMg1PHbG1pNFV3ZXM2Ym8/view", "https://drive.google.com/file/d/1tESCAvTcUvbjyGB_x4bPahm9ZsBCs33u/view", "https://drive.google.com/file/d/1BuNmXFmhFBoSKvcnbi5W1_hQkVLTrzwu/view", "https://drive.google.com/file/d/1H0nZ4WOP6B8iWU8YoMjbnbzrlDJ1YSan/view", "https://drive.google.com/file/d/1QOIBXMPZk86AVo0jI-zXYAuJGiWRUnNg/view", "https://drive.google.com/file/d/1vLFTFzlvu9TJXbcL40gnag9Xart3pKQI/view", "https://drive.google.com/file/d/1BEPGPg_iR7L5QFJ91SizjlA6khwj6j1e/view", "https://drive.google.com/file/d/1X4KKLClyHK_yIa_mYqFd4K6s_tvRAD1_/view", "https://drive.google.com/file/d/148ae2JtLzIZwy-AKjtRgLZPNf3vEmQOE/view", "https://drive.google.com/file/d/1XZrELbZbBqHShrCiPr4I4_pmOeT_gvwY/view", "https://drive.google.com/file/d/1T5xeDfwFXqP0WJMExe3nwnwHgUozfXK2/view", "https://drive.google.com/file/d/1XZ0pSe4bccOpJeF_VkXhkOhxQ3Tzp8RB/view", "https://drive.google.com/file/d/1bB65cEOgbz2Y0ic6nGDZfUQlECXBk2qt/view", "https://drive.google.com/file/d/1yeabiyT6b_WeWkktgHdlsTNY6qkhwegd/view", "https://drive.google.com/file/d/1oD0MwA_C9OVb7HeO70m9gAAs-dbm9SJG/view", "https://drive.google.com/file/d/1wiipkIcZ8r4itPij4w7CpOvC6uz-2wCS/view", "https://drive.google.com/file/d/1yLc26yxLh0fLJhk3xQvb6Qw8V66BX9kS/view", "https://drive.google.com/file/d/1X9Kflcg0LuRjceV6JghCzs49px8cRTIk/view", "https://drive.google.com/file/d/14pJGESxKXcFj3R3ysrQJ3bZIRCOPQpny/view", "https://drive.google.com/file/d/1W9RJS1N_rBcNFAA73Y3B6leLhhjXXY9k/view", "https://drive.google.com/file/d/10LUlcX6Hu9pn3c3xmPlfJOf20Qjwgxq_/view", "https://drive.google.com/file/d/16e_h0zUsyFcjJBK-7Ck2OtTOm8DImN39/view", "https://drive.google.com/file/d/1EX4kEXNgSrXoFo-KeUUSiBhXwcCtJdqu/view", "https://drive.google.com/file/d/1ys7CQlyywTD5YlMeCpfp0ThltWcMH99E/view", "https://drive.google.com/file/d/1x84uwAQzm7-j9MhDdNF5sb_jCRQFhjIa/view", "https://drive.google.com/file/d/1gA6fN27Rm6lj2FUUKiGv-sRZkLWmLly7/view", "https://drive.google.com/file/d/1cPYsXfP2YqdtUNnqXg3ycANRQQOuVOmR/view", "https://drive.google.com/file/d/19Iz7pU-A9RUMHe6q1I9faYi02ht5MwbT/view", "https://drive.google.com/file/d/1v7ujloX-mQ_2kSN7inxSSDIYnkpymWBU/view", "https://drive.google.com/file/d/1lfSnf9FQoB1xyeDJxEEh5JSG4ocnmqgx/view", "https://drive.google.com/file/d/1O7IPP73pLpqj6qH4mfqjDhwNbeDMSU7N/view", "https://drive.google.com/file/d/19e3HaItYsMHMCjHE0HD78-GsG1rbftJl/view", "https://drive.google.com/file/d/1p5DfNhB87k8bE-OQi7ELONmPkIhJIjC-/view", "https://drive.google.com/file/d/1zT4SAUoKx29aoNVS3scuTMvTqyNgMQ7E/view", "https://drive.google.com/file/d/1cAO1BUfYYBt8pnFSja9UHoPb8jfdksuB/view", "https://drive.google.com/file/d/1tMJAooF8bG9ghav9CU4GPYF3t07ySMXL/view", "https://drive.google.com/file/d/1j2kFu1apjVp0E2_xojdiqASlQOc8RBit/view", "https://drive.google.com/file/d/1_sb4Ogn-0xQX3Znf21COpLMrfs_x6Nuv/view", "https://drive.google.com/file/d/1YM5NTVfowYB6FzLQ2w6l23TMcyXv5EJS/view", "https://drive.google.com/file/d/1g6ZVlbeJ05SY5jleCqn_PMUMzevqPX6Y/view", "https://drive.google.com/file/d/1VcUlwoH5kBsHK6vYEMYMJuhpYgTCng20/view", "https://drive.google.com/file/d/1Xn4F4GNvfKOljko2ZE_JUQcBWIHhO0ql/view", "https://drive.google.com/file/d/1KaW5Mzc7eqOPv0OSz_-Wntp7tqkEWi4J/view", "https://drive.google.com/file/d/1fpkFiPnyvjxCtN6a89i-U2H1cr5_Y_HC/view", "https://drive.google.com/file/d/1wQIj-ZVsTxgTktceYFgyFei_XX-eXAt-/view", "https://drive.google.com/file/d/1sFYkkRX85JK-a2LRl8_QmZPhYkYIn6KG/view", "https://drive.google.com/file/d/1uQXNlwz-_1PwGdnJqTGUswBhJWgH8zMP/view", "https://drive.google.com/file/d/1TvrE3-T2tdfFhmEdhG_-NJlGNMnhHt2J/view", "https://drive.google.com/file/d/1Zkep5HZHk6daQhYjAN5Y9fBGy-K9dCu3/view", "https://drive.google.com/file/d/1Xg-DLA7N4hHN38uQ4IxReyxMeC10pAJT/view", "https://drive.google.com/file/d/1zFKXArAVk7j_yx2RdLFzrZdBckaH-uI0/view", "https://drive.google.com/file/d/1khAaDGsMt8pAGqtIPJERCqM_PgpiLShO/view", "https://drive.google.com/file/d/1pV4ujRFH3wIRE0GPZAWeEMFmnLMzvwYE/view", "https://drive.google.com/file/d/1temXH9CFHCd7gjIsu8TMCFiqxMy8jXfj/view", "https://drive.google.com/file/d/1ye-qQ6ZmBW98Xab4sjDJw1oxmUw_piBz/view", "https://drive.google.com/file/d/1iVJq1FsNG577gesP7CaTWPLgdqAtnaEg/view", "https://drive.google.com/file/d/1Ly6kH4RMc1kHLQJ1sdejKZHeA58oaKOZ/view", "https://drive.google.com/file/d/1W4aM_WbjjxTlE_f5zcKPYZ5pNOym_W8K/view", "https://drive.google.com/file/d/1SH1liTGeW3xZT37iIIzNmyIyqNZVEaWT/view", "https://drive.google.com/file/d/1MMl1EYr_OYdc9R-va2IIdPUmkqcj1UpR/view", "https://drive.google.com/file/d/1HOBF8qYxnEXjbjouFThL4B3ttoBiNUOY/view", "https://drive.google.com/file/d/1PUIzjrlfRen4M7CqwIcmVdABNBpMWt5s/view", "https://drive.google.com/file/d/1wBXYvvXlGsI7g6h-cMMZQ1YhoJ4SxHpl/view", "https://drive.google.com/file/d/1GLqywDPqfZSLmLAiKC8j2l0o52cAGP8S/view", "https://drive.google.com/file/d/1SxMLkaBMyPSuruaAmGWoA7AKB4FV9j3J/view", "https://drive.google.com/file/d/1Wpvc4eawdHc3DjkVVop959tYmJL6m3J2/view", "https://drive.google.com/file/d/1TNihEVsEiUIzxYV_6KHQKXC5pDR_nWW9/view", "https://drive.google.com/file/d/1PIQExpRvAPANHRDAZ-On7ld9je2O-5He/view", "https://drive.google.com/file/d/16Ze08q_XKmANPNYreDVZnEbZEZTSLwOa/view", "https://drive.google.com/file/d/13PKSmF1dnXkByra1B5NLarzB_ux4cU0T/view", "https://drive.google.com/file/d/1GhJnl35m05XYpjooWoxeg0lw54VpjCEx/view", "https://drive.google.com/file/d/1kjVDdXtZ3-O0SndMHeIwMXe4jNZJ4w2C/view", "https://drive.google.com/file/d/12oiUUNl2_I7l1GsXLD74FA0wJlrRX7v_/view", "https://drive.google.com/file/d/1nKl-oBgmnWygnF7xm6CfSWikp22ElVZY/view", "https://drive.google.com/file/d/1w3PdNgN0AXDmG1CYRv7v0kMYrC1Ywu_0/view", "https://drive.google.com/file/d/1DIHKkPm7JVwOWWgM5RvYgOhAbFXWOAhf/view", "https://drive.google.com/file/d/1ZcBKqjCxKjyddbVmb8sdOtCo-14v6fTp/view", "https://drive.google.com/file/d/13qCLa-UbWgLKDkm5EYs7y3-n5NVx7-73/view", "https://drive.google.com/file/d/1mnNpYvlG_QNVxpq8LniD4hOPLPinnBEP/view", "https://drive.google.com/file/d/1MQMWT5mYBF07GXiqgzAU8h9BcFe0phu9/view", "https://drive.google.com/file/d/1fIOuM1hV1Ga0O6eQrhvozLNc35Rw-XB8/view", "https://drive.google.com/file/d/0B7Z9hjzLxrtXZDBEZ29wOG90MGs/view", "https://drive.google.com/file/d/1vCPMrNGFL3Kyf1J4qaySzKnACtg8eAqj/view", "https://drive.google.com/file/d/1Sd1l_LhKRp_2OE5gRJJyPubnZjJccLgQ/view", "https://drive.google.com/file/d/1EMTjbbbBCnF6SoQNLPQ_IoLwqdO9NcJV/view", "https://drive.google.com/file/d/1VXxo8cvPI7-zigV3FR5JP3-C2WSXvkXt/view", "https://drive.google.com/file/d/1vi0w7U65XeR-u00AQ8uS9s3C-IoiV-_1/view", "https://drive.google.com/file/d/152-KeFdBMBscGESWVWLuDS-YUf8VsRCd/view", "https://drive.google.com/file/d/1V3Bq0lrDQUxJay5DDs3gK69ZvRNb1j2u/view", "https://drive.google.com/file/d/17hubcXZlc8AQCick-5kdB11mpEQlM1Zw/view", "https://drive.google.com/file/d/1QxSURVJ3CzrTMQtxs5KnPh7apxF4nkOe/view", "https://drive.google.com/file/d/1Xf8xZcY3kneGFln8NPsQMt7CLtmGhEeD/view", "https://drive.google.com/file/d/1RtaN8_Xsodf4Ub5K_yRp6eOx62tbj7Ap/view", "https://drive.google.com/file/d/1ps_r1YV8y5h93_mUu4OFlPVVkPzT0Rui/view", "https://drive.google.com/file/d/1mwatNbn0A7PeIm_alMZGYobXbsNIgBlo/view", "https://drive.google.com/file/d/1vPNUTkubVVmguVfwstRQm5xgbkRRii6z/view", "https://drive.google.com/file/d/1hnYa-Pkxqu6Qhhp56QXE34Rnctia_3yw/view", "https://drive.google.com/file/d/1u5u_-G0KReiP4Q4eHvx7qwb4jv6ZARdh/view", "https://drive.google.com/file/d/1h1hi-3Hn1awll6u51WQnGjkHqm3uJejF/view", "https://drive.google.com/file/d/13YPdlfR1BTzXfqwmfbzfiuPycjQsh0Yb/view", "https://drive.google.com/file/d/1mUF4PcT0_ZKofV0KHHdjxgTQdhF2BliQ/view", "https://drive.google.com/file/d/1v2xqKQcAvndfcqsctZH73NR2AjFXsrUr/view", "https://drive.google.com/file/d/1ceTZD9au_Nig69XiY_-X78RqHdKby4s9/view", "https://drive.google.com/file/d/1tqtj-_jOe_a1DtU3ekZSf5n8NEtHT8hn/view", "https://drive.google.com/file/d/1yX9UuVmhkJJrWBVjuhh6RyyvqtcLyfws/view", "https://drive.google.com/file/d/1sqWGrmbGc5lBmoFbtfMSIaqb60eXppvF/view", "https://drive.google.com/file/d/1ViFrWDfc9QNR1zKomCjXwTFOBbQYOANT/view", "https://drive.google.com/file/d/1-USLCEPDFzSOz30HDEiO6uv_fR9ZbTVo/view", "https://drive.google.com/file/d/1QK9RHd2T-ijthIL7A6NQvRztPkTx8NtN/view", "https://drive.google.com/file/d/1mwMlE9sWCZLVtQ4ljJEeLxtVrKknnfUB/view", "https://drive.google.com/file/d/1BJTsBEOeTbpv3fqU0ejzb44aQGrdLhyN/view", "https://drive.google.com/file/d/1PeOUtsdJfWRqJvGwBhRmeBc2fLiQyTJY/view", "https://drive.google.com/file/d/1ZwvqcClpD9K0_y3YKz5pN6NBFvBxvFQF/view", "https://drive.google.com/file/d/1y0T10xJ3KrUrMwWiQxRXGToRE89KyuLm/view", "https://drive.google.com/file/d/19PgqzZUwmwi23kbreRUGpa-Smb5pFOlA/view", "https://drive.google.com/file/d/1LrCBY9F1WJFqMMbHISbQ4ElHtAt_6Ksx/view", "https://drive.google.com/file/d/15PM35uRsY9eTtrjXx9A9TA-NQClfYUYu/view", "https://drive.google.com/file/d/11k9i0O6AkixbXv33LQOFmnrI8KOXXiSB/view", "https://drive.google.com/file/d/1wThJWyfKo3rKu0iZ3orn8XryPMfYeL5K/view", "https://drive.google.com/file/d/1q2pk3lo5VIDWKQq2lCh_UTC_V9Zkv-_X/view", "https://drive.google.com/file/d/1QdGBCLQCcTl2qU4ACaUXtSizJBj4ZZiB/view", "https://drive.google.com/file/d/1FDObnXkCwv9TEB-YAt-SAACGNQIOoqfN/view", "https://drive.google.com/file/d/12OyWGGokKPPKQLtjsLXB42q6acvLV7qt/view", "https://drive.google.com/file/d/13ZLgr8tBzOq3ZuFHbEf5fDwev9jK_pwy/view", "https://drive.google.com/file/d/1kGlS0jKAdlY6ze9l9cn6ALEVEW7dFhO4/view", "https://drive.google.com/file/d/1IZNQlKBJi5HwRJDokQ-YuxfteFKgLZI5/view", "https://drive.google.com/file/d/1WKcmkcQ52UBsN8WcWUEnwasMOA_1J0VK/view", "https://drive.google.com/file/d/1-3BhV5qghqkqn2-xvlawSEvFNLvejMpn/view", "https://drive.google.com/file/d/1SRZU-WaeYNHMvHNEwl3uAIuMSOJ4R1jY/view", "https://drive.google.com/file/d/1_MkoFWTqhvJM4YNqGFzSabwKSSL4fa55/view", "https://drive.google.com/file/d/16si_yvGyZn5mgvNIHil5xXOR3I8RaTKb/view", "https://drive.google.com/file/d/1_Jjo7rOcCkYt3UryVkV2XvTfrL4QvHTE/view", "https://drive.google.com/file/d/1uHLpcd43MtpfXPY2GEIKjLjCKcc7GuYl/view", "https://drive.google.com/file/d/19KYYKqlEQyEuUTUQv32U53WoIDvKTRrx/view", "https://drive.google.com/file/d/1eiY3r9KqM3Dmjtq38eRtR_eJFSGeciPz/view", "https://drive.google.com/file/d/1vELzmz9u6vQ18YtMipK9nSWJhZLP6KaH/view", "https://drive.google.com/file/d/1C0yGUsqW5IT81q8PAebnlw0Ha6oHWYV4/view", "https://drive.google.com/file/d/1NHe16TF1pjvjOD3jnA7A7H5n5Gzsgyys/view", "https://drive.google.com/file/d/18N4_ou-sji02HD3dOFNP0aDqCBleLr7G/view", "https://drive.google.com/file/d/1eirKJt3ulfEusRJ6OM0jwpJ_YbL8iExC/view", "https://drive.google.com/file/d/11zJofD5xdf-jkXTE0jzVgehctEQpyKmy/view", "https://drive.google.com/file/d/1ApUHMkZM-j3vM-rSG-kvjk3KuvJNAsXp/view", "https://drive.google.com/file/d/1BsmXOkJBD9RVJ8kxJNG91bV71gpxy1ye/view", "https://drive.google.com/file/d/1GM7QyJzFwEKM2fM42SWb7oIRN2UPUzqM/view", "https://drive.google.com/file/d/1RpYz_DVZDxYEz-a7f8dsWgeQ7Mh3qSEo/view", "https://drive.google.com/file/d/126Cdq7Z8bBMLPNyVNmxIa9uNnmQhLR8l/view", "https://drive.google.com/file/d/13IzLS6dOFDxCk_mNWpttFncqs1hQoJ3L/view", "https://drive.google.com/file/d/19m3GZmoLNC8qkmFs5d3yMNGOCB1-en4d/view", "https://drive.google.com/file/d/1ipW_qYhGb5ZyE3N3i6zS2BehE8PXq3VQ/view", "https://drive.google.com/file/d/1VXf3yS74swsu20oWAWMvYdHSueP1aRm7/view", "https://drive.google.com/file/d/1joF2I_zdjepCD9ukmjV672HTICUfp4tO/view", "https://drive.google.com/file/d/1iRN197XeJCQnZGza599ZTXsayEG1mdRB/view", "https://drive.google.com/file/d/1N6kL0SF4qR6wFpwfGIZUZjFnz3lQDGGz/view", "https://drive.google.com/file/d/1KOmgE1jMV0jT2QkWFFd3ieEzwf4GbVOw/view", "https://drive.google.com/file/d/1m2ku9im9QkdUw1ExyK_URGFsuAfQNd9S/view", "https://drive.google.com/file/d/1oeD_wjeRQck_3uRIOw9ZXIxG5PuUIPVD/view", "https://drive.google.com/file/d/0BzeqnwcztH5cRERqUGl6TFkyc3M/view", "https://drive.google.com/file/d/1Aau0xkVgqgDPWA8zery4YqgvxqobVNzW/view", "https://drive.google.com/file/d/16fA19e1MhAZaUaosRHey_c1VAZoM1iB8/view", "https://drive.google.com/file/d/1nYh0AJOLUY2FSNsq5yTpsJa1qsynFnjW/view", "https://drive.google.com/file/d/0BxvqXivT-hg5d2VmZDdsNlBNUzQ/view", "https://drive.google.com/file/d/1g82gSwLSB166U4XiW5h9E4H0fBxgaRDb/view", "https://drive.google.com/file/d/16pTCZ70BoJaKkzdcNDJdiIXiscnvbLtd/view", "https://drive.google.com/file/d/10lys4xAmzALt_F081ej_9oP3i7Lm1Qgq/view"];
-
-    var movieNames = {};
-    function extractDriveTitle(html) {
-      var m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-      if (!m) return null;
-      return m[1].replace(/\s*[-]\s*Google\s*Drive.*$/i, '').replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|3gp)$/i, '').trim();
-    }
-
-    function renderMovies(list) {
-      var grid = document.getElementById('movie-grid');
-      grid.innerHTML = '';
-      list.forEach(function(url) {
-        var id = (url.match(/[-\w]{20,}/) || [])[0] || '';
-        var name = movieNames[url] || (id ? id.substring(0, 12) + '' : 'Movie');
-        var card = document.createElement('a');
-        card.className = 'card';
-        card.href = url;
-        card.target = '_blank';
-        card.innerHTML = '<div class="card-img"></div><div class="card-info"><h3>' + name.replace(/</g,'&lt;') + '</h3><p>Google Drive</p><span class="card-tag">HD</span></div>';
-        grid.appendChild(card);
-      });
-    }
-
-    // Fetch movie names from Drive page titles (client-side,  server bot blocking)
-    var _moviesFetched = false;
-    function fetchMovieNames() {
-      if (_moviesFetched) return;
-      _moviesFetched = true;
-      var grid = document.getElementById('movie-grid');
-      movieLinks.forEach(function(url, idx) {
-        setTimeout(function() {
-          fetch(url, {mode: 'cors', credentials: 'include'})
-            .then(function(r) { return r.text(); })
-            .then(function(html) {
-              var title = extractDriveTitle(html);
-              if (title) { movieNames[url] = title; }
-            })
-            .catch(function() {})
-            .then(function() {
-              // Re-render if the movies tab is still visible
-              if (document.getElementById('media-movies').style.display !== 'none') {
-                var q = (document.getElementById('movie-search').value || '').toLowerCase();
-                renderMovies(q ? movieLinks.filter(function(u) { return u.toLowerCase().includes(q); }) : movieLinks);
-              }
-            });
-        }, idx * 200); // 200ms apart to avoid rate limits
-      });
-    }
-
-    renderMovies(movieLinks);
-    // Start fetching names when movies tab is first shown
-    function _scheduleMovieFetch() {
-      if (_moviesFetched) return;
-      setTimeout(fetchMovieNames, 1500);
-    }
-    var _mediaObserver = new MutationObserver(function() {
-      if (document.getElementById('media-movies').style.display !== 'none') _scheduleMovieFetch();
-    });
-    document.querySelectorAll('.media-cat').forEach(function(b) {
-      b.addEventListener('click', function() {
-        if (this.dataset.media === 'movies') _scheduleMovieFetch();
-      });
-    });
-
-    document.getElementById('movie-search').addEventListener('input', function() {
-      var q = this.value.toLowerCase();
-      renderMovies(movieLinks.filter(function(url) { return url.toLowerCase().includes(q); }));
-    });
-
     //  Tab Cloak
     var cloakPresets = {
       classroom: { title: 'Home - Classroom', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAYAAAAmL5yKAAAAAXNSR0IArs4c6QAAAhBJREFUOE9tk89rE1EQx78Tf0A22tg2W4qHVqPVtol3Dyq24M2r7B48WS9F0KNQ0CLoP9CbCJ6zvSiKIlY02ggFr2tvmjbVKGSTIs22iSk7MvM21VIfebz3yHw/7/tmZunW1aN8ZXIbIAYR4mE2zAAhATCB5RwRmOU/AiLCk9I+UGfJZuIQRBItYfFgAZhgESoknuCEgZEF6nxMsdzsb/Xjc8s2LlRsLMiqM2IgMvtcch1565cCqVM6xHKz1xjFfGNU3Rm/DOtAUoXNdjMGROAogpMpw8lU1BX9XjysgPn6KXiN0zsvSB20MDt5W2GzCw/QbIUqFqAAXLtiHLQ/9LC836uP6DQWgBtnp3Axe073xS+LmCs9BHYAK3DttRjwPs2i8YIT8Oon/3GQxL1LM3q+8+o+QnHAXQerCtAntIpHNNeFehZekP1bBQApyQEzwraIJaGSSIZjV+Da34yD1rterV0hOAYvOK6A/OAYcoPjusrwfyxjaeUTykFZIU5mDe7Ad+Ng622fAdSG4QXDuHl+GhMjF3Y56R6e+y/xqPRYxa5dNQ423/SbHNSGUKgN4en1wn/F6qS6jJlnd1Xs2FWtEG0u2FpGP+yBH6ZxZmxqF0AbKh5h+BNfV18gZ20gb20YB+HrAemzbvX23q4AaWX5mVXbW5uNQNcup9md2B8LSWO77byXlog/MNMrXnEbfwCrwRQID/CEeAAAAABJRU5ErkJggg==' },
@@ -9154,9 +9059,9 @@ let DATA = {
    function notificationUnread(list){ return (list||[]).filter(function(n){return !n.read;}).length; }
    function renderNotifications(){ ensureGustStyles(); var list=readNotifications(); var unread=notificationUnread(list); var count=document.getElementById('uz-notification-count'); var box=document.getElementById('uz-notification-list'); var ping=document.getElementById('announcements-ping'); if(count) count.textContent=String(unread); if(ping){ ping.hidden=!unread; ping.textContent=String(Math.min(99,unread)); } if(box) box.innerHTML=(list.length?'<div class="uz-notification-actions"><button type="button" data-notification-read-all>Mark all read</button><button type="button" data-notification-dismiss-all>Dismiss all</button></div>':'')+(list.length?list.map(function(n){return '<div class="uz-notification-item'+(n.read?' is-read':'')+'" data-notification-id="'+esc(n.id||n.text)+'"><b>'+esc(new Date(n.time||Date.now()).toLocaleString())+'</b><br>'+esc(n.text)+'<div class="uz-notification-actions"><button type="button" data-notification-read="'+esc(n.id||n.text)+'">'+(n.read?'Read':'Mark read')+'</button><button type="button" data-notification-dismiss="'+esc(n.id||n.text)+'">Dismiss</button></div></div>';}).join(''):'<div class="uz-notification-item">No notifications yet.</div>'); }
    window.UZNotify = { add:function(text,id){ ensureGustStyles(); text=String(text||'Notification'); var key=String(id||text); var list=readNotifications().filter(function(n){return String(n.id||n.text)!==key;}); list.unshift({id:key,text:text,time:Date.now(),read:false}); writeNotifications(list); renderNotifications(); }, removeText:function(text){ var target=String(text||''); writeNotifications(readNotifications().filter(function(n){return String(n.text)!==target;})); renderNotifications(); }, markAllRead:function(){ var list=readNotifications().map(function(n){n.read=true;return n;}); writeNotifications(list); renderNotifications(); }, dismissAll:function(){ writeNotifications([]); renderNotifications(); }, render:renderNotifications };
-   var uzOriginalNotifyAdd=window.UZNotify.add; window.UZNotify.add=function(text,id,meta){ uzOriginalNotifyAdd(text,id); if(meta){ var key=String(id||text); var list=readNotifications(); list.forEach(function(n){ if(String(n.id||n.text)===key){ n.target=meta.target||null; n.remoteId=key.indexOf('remote:')===0?key.slice(7):''; n.sender_username=meta.sender_username||''; }}); writeNotifications(list); renderNotifications(); } };
+   var uzOriginalNotifyAdd=window.UZNotify.add; window.UZNotify.add=function(text,id,meta){ var key=String(id||text); var existing=readNotifications().some(function(n){return String(n.id||n.text)===key;}); if(!existing){ uzOriginalNotifyAdd(text,id); try{var Context=window.AudioContext||window.webkitAudioContext;if(Context){var ctx=new Context(),tone=ctx.createOscillator(),gain=ctx.createGain();tone.frequency.value=660;gain.gain.setValueAtTime(.06,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.16);tone.connect(gain);gain.connect(ctx.destination);tone.start();tone.stop(ctx.currentTime+.16);tone.onended=function(){ctx.close();};}}catch(e){}} if(meta){ var list=readNotifications(); list.forEach(function(n){ if(String(n.id||n.text)===key){ n.target=meta.target||null; n.remoteId=key.indexOf('remote:')===0?key.slice(7):''; n.sender_username=meta.sender_username||''; }}); writeNotifications(list); renderNotifications(); } };
    document.addEventListener('click',function(e){ var t=e.target; if(!t) return; if(t.id==='uz-notification-toggle'){ var box=document.getElementById('uz-notification-list'); if(box) box.hidden=!box.hidden; return; } var list=readNotifications(); if(t.dataset && t.dataset.notificationReadAll!==undefined){ list=list.map(function(n){n.read=true;return n;}); writeNotifications(list); renderNotifications(); return; } if(t.dataset && t.dataset.notificationDismissAll!==undefined){ writeNotifications([]); renderNotifications(); return; } if(t.dataset && t.dataset.notificationRead){ list=list.map(function(n){if(String(n.id||n.text)===String(t.dataset.notificationRead)) n.read=true;return n;}); writeNotifications(list); renderNotifications(); return; } if(t.dataset && t.dataset.notificationDismiss){ writeNotifications(list.filter(function(n){return String(n.id||n.text)!==String(t.dataset.notificationDismiss);})); renderNotifications(); return; } });
-   document.addEventListener('click',function(e){ var item=e.target && e.target.closest ? e.target.closest('.uz-notification-item') : null; if(!item || (e.target.dataset && (e.target.dataset.notificationRead!==undefined || e.target.dataset.notificationDismiss!==undefined))) return; var id=item.dataset.notificationId; var entry=readNotifications().filter(function(n){return String(n.id||n.text)===String(id);})[0]; if(entry && entry.target) document.dispatchEvent(new CustomEvent('uz-notification-open',{detail:entry})); });
+   document.addEventListener('click',function(e){ var item=e.target && e.target.closest ? e.target.closest('.uz-notification-item') : null; if(!item || (e.target.dataset && (e.target.dataset.notificationRead!==undefined || e.target.dataset.notificationDismiss!==undefined))) return; var id=item.dataset.notificationId; var list=readNotifications(); var entry=list.filter(function(n){return String(n.id||n.text)===String(id);})[0]; if(!entry) return; entry.read=true; writeNotifications(list); renderNotifications(); if(entry.target) document.dispatchEvent(new CustomEvent('uz-notification-open',{detail:entry})); });
    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',renderNotifications); else renderNotifications();
 })();
 </script>
@@ -9544,6 +9449,11 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
     var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost;
     var chatInput = $('community-chat-input');
+    if (chatInput && state.user) {
+      var draftKey = 'uz-chat-draft:' + state.user.id + ':' + state.channelName;
+      chatInput.value = sessionStorage.getItem(draftKey) || '';
+      chatInput.addEventListener('input', function(){ sessionStorage.setItem(draftKey, chatInput.value); });
+    }
     if (chatInput) chatInput.addEventListener('input', function(){ chatInput.classList.toggle('has-mention-preview', /(^|\s)@(everyone|here|[a-z0-9_.-]+)$/i.test(chatInput.value.slice(0, chatInput.selectionStart || chatInput.value.length))); });
     if (chatInput) chatInput.addEventListener('keydown', function(e){
       if (e.key === 'Enter' && !e.shiftKey && !e.defaultPrevented) { e.preventDefault(); sendMessageV2(); }
@@ -9738,6 +9648,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function renderChannelHeader() { var head = $('community-channel-head'); var c = channelInfo[state.channelName] || channelInfo.chat; if (head) head.innerHTML = '<div class="community-channel-title"><h3># ' + esc(c.title) + '</h3><p>' + esc(c.note) + '</p></div><div class="community-channel-actions"><button class="community-btn secondary" id="community-go-top" type="button">Top</button><button class="community-btn secondary" id="community-go-bottom" type="button">Latest</button></div>'; var top = $('community-go-top'), bottom = $('community-go-bottom'), list = $('community-list'); if (top) top.onclick = function(){ list.scrollTo({ top: 0, behavior: 'smooth' }); }; if (bottom) bottom.onclick = function(){ list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); }; if (list) list.onscroll = updateChatNavigation; updateChatNavigation(); }
   function setTab(tab, channel) {
+    var existingChat = $('community-chat-input');
+    if (existingChat && state.user) sessionStorage.setItem('uz-chat-draft:' + state.user.id + ':' + state.channelName, existingChat.value);
     state.tab = tab || 'chat'; state.channelName = channel || (tab === 'chat' ? 'chat' : state.channelName || 'chat');
     Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ var active = btn.dataset.communityChannel === state.channelName; btn.classList.toggle('active', active); btn.classList.toggle('secondary', !active); });
     state.jumpToLatest = true; renderChannelHeader(); renderComposer(); loadItems(); subscribe();
@@ -9746,7 +9658,11 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var p = row.profiles || {};
     var edit = canEditPost(row) ? '<button class="community-btn secondary community-edit-announcement" data-post-id="' + esc(row.id) + '">Edit</button>' : '';
     var del = canDeletePost(row) ? '<button class="community-btn secondary community-delete-announcement" data-post-id="' + esc(row.id) + '">Delete</button>' : '';
-    return '<article class="announcement-card" data-announcement-id="' + esc(row.id) + '"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + authorLabel(p, row) + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + '</div><div class="announcement-body">' + renderRichBody(row.body || '', row.attachments || row.attachment) + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>';
+    return '<article class="announcement-card" data-announcement-id="' + esc(row.id) + '"><h3>' + esc(stripPostChannel(row.title || 'Announcement')) + '</h3><div class="announcement-meta">' + authorLabel(p, row) + ' / ' + esc(p.role || 'staff') + ' / ' + esc(when(row.created_at)) + editedLabel(row) + '</div><div class="announcement-body">' + renderRichBody(row.body || '', row.attachments || row.attachment) + '</div><div class="community-actions"><button class="community-btn secondary community-copy-announcement" data-post-id="' + esc(row.id) + '">Copy</button>' + edit + del + '</div></article>';
+  }
+  function editedLabel(row) {
+    return row.updated_at && row.created_at && new Date(row.updated_at).getTime() - new Date(row.created_at).getTime() > 1000
+      ? ' <span class="community-edited">edited</span>' : '';
   }
   function renderAnnouncementRows(rows) {
     var list = $('announcements-list');
@@ -9925,7 +9841,13 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   async function loadItems() {
     var list = $('community-list'); if (!list) return; renderChannelHeader();
     var oldTop = list.scrollTop, wasNearBottom = list.scrollHeight - list.clientHeight - oldTop < 48;
-    function restoreScroll(){ if (state.jumpToLatest || wasNearBottom) list.scrollTop = list.scrollHeight; else list.scrollTop = oldTop; state.jumpToLatest = false; updateChatNavigation(); }
+    function restoreScroll(){
+      var latest = state.jumpToLatest || wasNearBottom;
+      if (latest) list.scrollTop = list.scrollHeight; else list.scrollTop = oldTop;
+      state.jumpToLatest = false;
+      requestAnimationFrame(function(){ if (latest) list.scrollTop = list.scrollHeight; updateChatNavigation(); });
+      updateChatNavigation();
+    }
     if (firebaseMode && !firebaseAvailable()) { list.innerHTML = '<div class="community-message community-locked">Firebase is temporarily rate-limited. The countdown at the top shows when reads resume.</div>'; return; }
     if (state.tab === 'voice') { renderVoiceRoom(); loadMembers(false); return; }
     if (!ready) { list.innerHTML = '<div class="community-message community-locked">Live database is not connected yet. Check community/config.js.</div>'; return; }
@@ -9976,7 +9898,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function metaEmail(p) { if (!isOwner() || !p.email) return ''; return ' / ' + esc(p.email); }
   function renderItem(row) {
     var p = row.profiles || {}; var name = p.display_name || p.username || row.username || 'Member'; var r = p.role || 'member';
-    if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + '</span></div><h3>' + esc(stripPostChannel(row.title)) + '</h3><div class="community-body">' + renderRichBody(row.body, row.attachments || row.attachment) + '</div>' + actions + '</article>'; }
+    if (state.tab === 'posts') { var actions = '<div class="community-actions"><button class="community-btn secondary community-copy-post" data-post-id="' + esc(row.id) + '">Copy</button>'; if (canEditPost(row)) actions += '<button class="community-btn secondary community-edit-post" data-post-id="' + esc(row.id) + '">Edit</button>'; if (canDeletePost(row)) actions += '<button class="community-btn secondary community-delete-post" data-post-id="' + esc(row.id) + '">Delete</button>'; actions += '</div>'; return '<article class="community-post" data-post-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + '</span><span>' + esc(when(row.created_at)) + editedLabel(row) + '</span></div><h3>' + esc(stripPostChannel(row.title)) + '</h3><div class="community-body">' + renderRichBody(row.body, row.attachments || row.attachment) + '</div>' + actions + '</article>'; }
     var edited = row.updated_at && row.created_at && new Date(row.updated_at).getTime() - new Date(row.created_at).getTime() > 1000 ? '<span class="community-edited">edited</span>' : '';
     var deleted = row.deleted_at ? '<span class="community-deleted-tag">deleted</span>' : '';
     var bodyClass = row.deleted_at ? 'community-body community-deleted-body' : 'community-body';
@@ -10032,9 +9954,18 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function wireAvatarPreviews(root) {
     (root || document).querySelectorAll('.community-profile-avatar[data-avatar-preview]').forEach(function(button){ button.onclick = function(event){ event.stopPropagation(); var existing = document.getElementById('community-avatar-lightbox'); if (existing) existing.remove(); var lightbox = document.createElement('div'); lightbox.id = 'community-avatar-lightbox'; lightbox.className = 'community-avatar-lightbox'; lightbox.innerHTML = '<button type="button" aria-label="Close image"><img src="' + esc(button.dataset.avatarPreview || '') + '" alt="Profile image"></button>'; document.body.appendChild(lightbox); lightbox.onclick = function(){ lightbox.remove(); }; }; });
   }
+  document.addEventListener('click', function(event) {
+    var image = event.target && event.target.closest && event.target.closest('.community-attachment-embed img');
+    if (!image) return;
+    var lightbox = document.createElement('div');
+    lightbox.className = 'community-avatar-lightbox';
+    lightbox.innerHTML = '<button type="button" aria-label="Close image"><img src="' + esc(image.currentSrc || image.src) + '" alt="' + esc(image.alt || 'Attached image') + '"></button>';
+    lightbox.addEventListener('click', function(event) { if (event.button === 0) lightbox.remove(); });
+    document.body.appendChild(lightbox);
+  });
   function wireProfileLinks() { Array.prototype.forEach.call(document.querySelectorAll('.community-user-link'), function(btn){ btn.onclick = function(){ showCommunityProfile(btn.dataset.userId); }; }); wireAvatarPreviews(document); }
   function wireMemberActions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ sel.onchange = async function(){ await changeUserRoleV2(sel.dataset.username, sel.value); }; }); ensureCoOwnerOptions(); }
-  function ensureCoOwnerOptions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ if (!sel.querySelector('option[value="co_owner"]')) { var option = document.createElement('option'); option.value = 'co_owner'; option.textContent = 'co_owner'; if (sel.dataset.currentRole === 'co_owner') option.selected = true; sel.insertBefore(option, sel.querySelector('option[value="admin"]')); } }); }
+  function ensureCoOwnerOptions() { Array.prototype.forEach.call(document.querySelectorAll('.community-role-select'), function(sel){ if (!sel.querySelector('option[value="co_owner"]')) { var option = document.createElement('option'); option.value = 'co_owner'; option.textContent = 'co_owner'; sel.insertBefore(option, sel.querySelector('option[value="admin"]')); } var member = (state.memberRows || []).filter(function(row){ return row.username === sel.dataset.username; })[0]; if (member && member.role === 'co_owner') sel.value = 'co_owner'; }); }
   async function firebaseFindUser(username) { initClient(); var snap = await state.client.db.collection('profiles').where('username', '==', String(username || '').toLowerCase()).limit(1).get(); if (snap.empty) return null; var doc = snap.docs[0]; return { id: doc.id, data: fromFirebaseProfile(doc.id, doc.data()), ref: state.client.db.collection('profiles').doc(doc.id) }; }
   async function changeUserRole(username, newRole) { if (!isRealOwner()) { status('A real owner account is required to change roles.'); return; } if (!username) return; if (state.profile && username.toLowerCase() === String(state.profile.username || '').toLowerCase()) { status('You cannot change your own role here.'); loadMembers(state.tab === 'members'); return; } if (firebaseMode) { try { var target = await firebaseFindUser(username); if (!target) { status('Target not found.'); return; } if (target.data.role === 'owner') { status('Owners cannot change other owners.'); return; } var set = { role: newRole }; if (newRole === 'banned') set.banned_until = '2099-01-01T00:00:00.000Z'; else set.banned_until = null; await target.ref.set(set, { merge: true }); notifySaved('Role updated'); await loadMembers(state.tab === 'members'); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/staff/role', { method: 'POST', body: JSON.stringify({ username: username, role: newRole }) }); notifySaved('Role updated'); await loadMembers(state.tab === 'members'); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.rpc('set_user_role', { target_username: username, new_role: newRole }); if (res.error) { status(res.error.message); return; } notifySaved('Role updated'); await loadMembers(state.tab === 'members'); }
   async function changeUserRoleV2(username, newRole) {
@@ -10044,7 +9975,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     try {
       var target = await firebaseFindUser(username);
       if (!target) throw new Error('Target not found.');
-      if (target.data.role === 'owner') throw new Error('Owners cannot change other owners.');
+      if (state.user && String(target.id) === String(state.user.id)) throw new Error('You cannot change your own role here.');
+      if (target.data.role === 'owner' && !confirm('Change another owner\'s role? This takes effect for their account immediately.')) return;
       var set = { role: newRole };
       if (newRole === 'banned') {
         var now = new Date().toISOString();
@@ -10218,7 +10150,10 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   async function runStaffCommandText(text) { var parsed = parseStaffCommand(text); if (!parsed) return { ok: false, message: 'Type a command first.' }; if (parsed.local) return { ok: true, message: parsed.local }; if (parsed.error) return { ok: false, message: parsed.error }; if (isTempOwner()) return { ok: false, message: 'Temporary owner can view the terminal, but live commands need a real staff account.' }; if (!state.user || !isStaff()) return { ok: false, message: 'Staff account required.' }; if (!parsed.target) return { ok: false, message: 'Add a target username.' }; var rr = role(); if (['ban','unban','setrole','deleteuser'].indexOf(parsed.action) !== -1 && rr !== 'owner') return { ok: false, message: 'Owner role required for /' + parsed.action + '.' }; if (parsed.action === 'kick' && ['owner','admin'].indexOf(rr) === -1) return { ok: false, message: 'Admin or owner required for /kick.' }; if (['warn','mute','unmute'].indexOf(parsed.action) !== -1 && ['owner','admin','mod'].indexOf(rr) === -1) return { ok: false, message: 'Staff role required.' }; if (firebaseMode) { try { var target = await firebaseFindUser(parsed.target); if (!target) return { ok: false, message: 'Target not found.' }; if (target.data.role === 'owner' && target.data.username !== profileUsername()) return { ok: false, message: 'Owners cannot moderate other owners.' }; var set = {}; if (parsed.action === 'setrole') { if (!parsed.newRole) return { ok: false, message: 'Add a role: owner, admin, mod, member, or banned.' }; set.role = parsed.newRole; set.banned_until = parsed.newRole === 'banned' ? '2099-01-01T00:00:00.000Z' : null; if (parsed.newRole !== 'deleted') set.deleted_at = null; } else if (parsed.action === 'deleteuser') { var deletedRef = state.client.db.collection('deletedAccounts').doc(target.id); await deletedRef.set({ username: target.data.username || parsed.target, deleted_at: new Date().toISOString(), deleted_by: state.user.id }); try { await target.ref.delete(); } catch(deleteError) { try { await deletedRef.delete(); } catch(markerError) {} throw deleteError; } audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; } else if (parsed.action === 'ban') { set.role = 'banned'; set.banned_until = '2099-01-01T00:00:00.000Z'; set.deleted_at = null; } else if (parsed.action === 'unban') { set.role = 'member'; set.banned_until = null; set.deleted_at = null; } else if (parsed.action === 'warn') { set.warnings = (Number(target.data.warnings || 0) + 1); } else if (parsed.action === 'mute') { set.muted_until = new Date(Date.now() + (parsed.minutes || 10) * 60000).toISOString(); } else if (parsed.action === 'unmute') { set.muted_until = null; } else if (parsed.action === 'kick') { set.kicked_until = new Date(Date.now() + (parsed.minutes || 10) * 60000).toISOString(); } await target.ref.set(set, { merge: true }); if (parsed.action === 'unban') clearDeviceBan(parsed.target); audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; } catch(e) { return { ok: false, message: e.message }; } } if (mongoMode) { try { if (parsed.action === 'setrole') { if (!parsed.newRole) return { ok: false, message: 'Add a role: owner, admin, mod, member, or banned.' }; await mongoFetch('/staff/role', { method: 'POST', body: JSON.stringify({ username: parsed.target, role: parsed.newRole }) }); } else if (parsed.action === 'deleteuser') { await mongoFetch('/staff/delete-user', { method: 'POST', body: JSON.stringify({ username: parsed.target }) }); } else { await mongoFetch('/staff/moderate', { method: 'POST', body: JSON.stringify({ username: parsed.target, action: parsed.action, reason: parsed.reason || '', minutes: parsed.minutes || null }) }); } if (parsed.action === 'unban') { try { localStorage.removeItem('uzBannedAccount:' + String(parsed.target || '').toLowerCase()); } catch(e) {} } audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; } catch(e) { return { ok: false, message: e.message }; } } initClient(); var res; if (parsed.action === 'setrole') { if (!parsed.newRole) return { ok: false, message: 'Add a role: owner, admin, mod, member, or banned.' }; res = await state.client.rpc('set_user_role', { target_username: parsed.target, new_role: parsed.newRole }); } else if (parsed.action === 'deleteuser') { res = await state.client.rpc('delete_user_by_username', { target_username: parsed.target }); } else { res = await state.client.rpc('moderate_user', { target_username: parsed.target, action_name: parsed.action, reason_text: parsed.reason || '', duration_minutes: parsed.minutes || null }); } if (res.error) return { ok: false, message: res.error.message }; if (parsed.action === 'unban') { try { localStorage.removeItem('uzBannedAccount:' + String(parsed.target || '').toLowerCase()); } catch(e) {} } audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved('Command ran'); loadMembers(true); loadItems(); return { ok: true, message: 'Command ran: /' + parsed.action + ' ' + parsed.target }; }
   function warnBlockedInput(el, msg) { status(msg || 'Blocked word found. This will not send.'); if (el) { el.classList.remove('community-input-warn'); void el.offsetWidth; el.classList.add('community-input-warn'); el.focus(); } }
-  async function sendMessage() { if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').add({ user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages', { method: 'POST', body: JSON.stringify({ body: body }) }); input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); }
+  async function sendMessage() { if (!state.user) { status('Sign in first.'); return; } var input = $('community-chat-input'); if (!input) { status('Chat box is not ready.'); return; } var body = input.value.trim(); if (!body) return; if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').add({ user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }); input.value = ''; clearChatDraft(); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages', { method: 'POST', body: JSON.stringify({ body: body }) }); input.value = ''; clearChatDraft(); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').insert({ user_id: state.user.id, body: body }); if (res.error) { status(res.error.message); return; } input.value = ''; clearChatDraft(); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems(); }
+  function clearChatDraft() {
+    if (state.user) sessionStorage.removeItem('uz-chat-draft:' + state.user.id + ':' + state.channelName);
+  }
   async function sendMessageV2() {
     if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; return sendMessage(); }
     if (!state.user) { status('Sign in first.'); return; }
@@ -10230,7 +10165,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     try {
       initClient();
       await createFirebaseItemWithAttachments('messages', { user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }, attachments);
-      notifyMentionedUsers(body, { tab: 'chat' }); state.pendingChatAttachments = []; if (input) input.value = ''; showAttachmentQueue('community-chat-file-choice', []); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems();
+      notifyMentionedUsers(body, { tab: 'chat' }); state.pendingChatAttachments = []; if (input) input.value = ''; clearChatDraft(); showAttachmentQueue('community-chat-file-choice', []); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems();
     } catch (error) { status(error.message || 'Message could not be sent.'); }
   }
   async function sendPostMessage() {
@@ -10348,7 +10283,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function usernameFromUser(user) { return (user && user.user_metadata && user.user_metadata.username) || (user && user.email ? user.email.split('@')[0] : ''); }
   var ACCOUNT_SETTING_KEYS = [
-    'siteTheme', 'loadingTheme', 'accentColorV2', 'bgMode', 'customWallpaper', 'panicCoverMedia', 'gradientC1', 'gradientC2', 'gradientAngle',
+    'siteTheme', 'loadingTheme', 'accentColorV2', 'bgMode', 'customWallpaper', 'panicCoverMedia', 'panicCoverImage', 'gradientC1', 'gradientC2', 'gradientAngle',
     'sidebarPosition', 'uzSidebarHidden', 'activeCursor', 'customCursor', 'customVideoCursor', 'musicOnStartup', 'startupLoadingScreen', 'startupBlockScreen',
     'g4mesVolume', 'g4mesTabMode', 'favoriteg4mes', 'crosshairEnabled', 'crosshairStyle', 'crosshairSize', 'crosshairColor',
     'crosshairCustomRaw', 'panicEnabled', 'panicKey', 'panicUrl', 'panicAction', 'stealthCover', 'stretchedRes', 'perfMode',

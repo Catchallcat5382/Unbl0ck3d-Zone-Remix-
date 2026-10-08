@@ -60,7 +60,7 @@
   }
   function usernameFromUser(user) { return (user && user.user_metadata && user.user_metadata.username) || (user && user.email ? user.email.split('@')[0] : ''); }
   var ACCOUNT_SETTING_KEYS = [
-    'siteTheme', 'loadingTheme', 'accentColorV2', 'bgMode', 'customWallpaper', 'panicCoverMedia', 'gradientC1', 'gradientC2', 'gradientAngle',
+    'siteTheme', 'loadingTheme', 'accentColorV2', 'bgMode', 'customWallpaper', 'panicCoverMedia', 'panicCoverImage', 'gradientC1', 'gradientC2', 'gradientAngle',
     'sidebarPosition', 'uzSidebarHidden', 'activeCursor', 'customCursor', 'customVideoCursor', 'musicOnStartup', 'startupLoadingScreen', 'startupBlockScreen',
     'g4mesVolume', 'g4mesTabMode', 'favoriteg4mes', 'crosshairEnabled', 'crosshairStyle', 'crosshairSize', 'crosshairColor',
     'crosshairCustomRaw', 'panicEnabled', 'panicKey', 'panicUrl', 'panicAction', 'stealthCover', 'stretchedRes', 'perfMode',
