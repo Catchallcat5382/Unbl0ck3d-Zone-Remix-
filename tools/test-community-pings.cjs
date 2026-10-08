@@ -11,8 +11,10 @@ const input = { value: 'Hi @bob' };
 const delivered = [];
 const context = vm.createContext({
   firebaseMode: true,
-  state: { pendingChatAttachments: [] },
+  state: { pendingChatAttachments: [], replyTo: null },
   $: () => input,
+  replyBody: text => text,
+  updateReplyPreview: () => {},
   rejectRestrictedMention: () => false,
   sendMessage: async () => { input.value = ''; },
   notifyMentionedUsers: async (text, target) => delivered.push({ text, target })

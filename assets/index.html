@@ -1608,9 +1608,11 @@
   </style>
 <base target="_blank">
 <base target="_blank">
-<style id="uz-notification-layout">.uz-notification-item{line-height:1.4;overflow-wrap:anywhere}.uz-notification-item>b{display:block;margin-bottom:6px;font-size:12px;white-space:normal}.uz-notification-item.is-read{opacity:1!important}.uz-notification-item.is-read>b{color:#aaa}.uz-notification-item .uz-notification-actions button{opacity:1!important}body.uz-app-unlocked.uz-notifications-off #uz-notification-tray{display:none!important}#uz-notification-inbox-open{border:1px solid var(--accent);background:#101014;color:var(--accent);border-radius:8px;padding:8px 10px;cursor:pointer}#uz-notification-inbox{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.8);display:grid;place-items:center;padding:12px}#uz-notification-inbox[hidden]{display:none}#uz-notification-inbox-panel{width:min(560px,100%);max-height:min(720px,90vh);overflow:auto;background:#101014;color:#fff;border:1px solid var(--accent);padding:16px}#uz-notification-inbox-panel header{display:flex;justify-content:space-between;align-items:center;gap:12px}#uz-notification-inbox-panel button{cursor:pointer;border:1px solid var(--accent);background:#101014;color:var(--accent);padding:6px 9px;border-radius:4px}</style>
+<style id="uz-notification-layout">#uz-notification-list{width:min(380px,calc(100vw - 24px))!important;box-sizing:border-box!important;max-height:min(70vh,520px)!important;overflow-y:auto!important}#uz-notification-list .uz-notification-item{display:block!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;line-height:1.4;white-space:normal!important;word-break:normal!important;overflow-wrap:break-word!important}#uz-notification-list .uz-notification-item>b{display:block;margin-bottom:6px;font-size:12px;white-space:normal!important}#uz-notification-list .uz-notification-item.is-read{opacity:1!important}#uz-notification-list .uz-notification-item.is-read>b{color:#aaa}#uz-notification-list .uz-notification-actions{display:flex!important;flex-wrap:wrap!important}#uz-notification-list .uz-notification-actions button{opacity:1!important;min-width:62px}body.uz-app-unlocked.uz-notifications-off #uz-notification-tray{display:none!important}#uz-notification-inbox-open{border:1px solid var(--accent);background:#101014;color:var(--accent);border-radius:8px;padding:8px 10px;cursor:pointer}#uz-notification-inbox{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.8);display:grid;place-items:center;padding:12px}#uz-notification-inbox[hidden]{display:none}#uz-notification-inbox-panel{width:min(560px,100%);max-height:min(720px,90vh);overflow:auto;background:#101014;color:#fff;border:1px solid var(--accent);padding:16px}#uz-notification-inbox-panel header{display:flex;justify-content:space-between;align-items:center;gap:12px}#uz-notification-inbox-panel button{cursor:pointer;border:1px solid var(--accent);background:#101014;color:var(--accent);padding:6px 9px;border-radius:4px}</style>
+<style>.sidebar-btn:has(#community-ping){position:relative}</style>
 <style>body:has(#panic-cover-frame.open) #glass-nav-wrap{visibility:hidden!important}</style>
 <style>.uz-embed-cover{height:100%;overflow:auto;background:#f2f4f8;color:#1e293b;font:16px Arial,sans-serif}.uz-embed-cover header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#fff;border-bottom:1px solid #d9dee7}.uz-embed-cover header strong{font-size:20px;color:#1967a4}.uz-embed-cover main{max-width:1100px;margin:auto;padding:28px 20px}.uz-embed-cover h1{font-size:24px;margin:0 0 24px}.uz-embed-cover-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:14px}.uz-embed-cover-grid a{display:grid;place-items:center;min-height:112px;background:#fff;border:1px solid #d9dee7;border-radius:6px;color:#235b89;text-align:center;text-decoration:none;font-weight:700;padding:10px}.uz-embed-cover-grid a:hover{border-color:#235b89;box-shadow:0 2px 9px #0002}</style>
+<style>.uz-embed-cover{display:grid;grid-template-columns:245px minmax(0,1fr);overflow:hidden!important;background:#f8f8f8!important;color:#222!important;font:14px Arial,sans-serif}.uz-embed-cover aside{display:flex;flex-direction:column;gap:4px;background:#d93610;color:white;padding:20px}.uz-embed-cover aside strong{font-size:18px;margin-bottom:28px}.uz-embed-cover aside button{border:0;background:transparent;color:white;text-align:left;padding:12px 6px;cursor:pointer;font-weight:700}.uz-embed-cover aside button:hover{background:#ffffff24}.uz-embed-content{min-width:0;min-height:0;overflow:auto}.uz-embed-cover header{position:sticky;top:0;z-index:1;padding:6px 20px;background:#f1f1f1}.uz-embed-cover header input{width:100%;height:40px;border:0;border-radius:4px;background:white;padding:0 14px;font:14px Arial,sans-serif}.uz-embed-cover main{max-width:none;padding:34px 28px}.uz-embed-cover-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:22px 12px}.uz-embed-app{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:116px;border:0;background:transparent;color:#222;cursor:pointer;font:13px Arial,sans-serif}.uz-embed-app[hidden]{display:none}.uz-embed-app-icon{display:grid;place-items:center;width:72px;height:72px;border-radius:18px;color:white;font-weight:900;font-size:23px;box-shadow:0 3px 10px #0002}.uz-embed-app:hover .uz-embed-app-icon{transform:translateY(-2px)}@media(max-width:650px){.uz-embed-cover{grid-template-columns:82px minmax(0,1fr)}.uz-embed-cover aside{padding:12px 5px}.uz-embed-cover aside strong{font-size:14px}.uz-embed-cover aside button{font-size:10px;padding:8px 2px}.uz-embed-cover main{padding:16px 8px}.uz-embed-cover-grid{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}}</style>
 <style id="uz-image-actions">.community-image-embed{position:relative;width:max-content;max-width:100%}.community-image-embed img{cursor:zoom-in}.community-image-download{position:absolute;top:14px;right:14px;z-index:1;padding:7px 10px;border:1px solid var(--accent,#ff6a00);border-radius:5px;background:#09090c;color:#fff!important;text-decoration:none;font:700 12px Arial,sans-serif;opacity:0;transition:opacity .15s}.community-image-embed:hover .community-image-download,.community-image-download:focus-visible{opacity:1}.community-image-preview{display:grid;justify-items:center;gap:10px;max-width:94vw;max-height:94vh}.community-image-preview>img{display:block;max-width:94vw;max-height:calc(94vh - 52px);object-fit:contain}.community-image-preview-actions{display:flex;gap:10px}.community-image-preview-actions a,.community-image-preview-actions button{position:static;display:inline-flex;align-items:center;justify-content:center;width:auto;height:auto;padding:8px 12px;border:1px solid var(--accent,#ff6a00);border-radius:5px;background:#09090c;color:#fff;text-decoration:none;font:700 12px Arial,sans-serif;cursor:pointer}@media(hover:none){.community-image-download{opacity:1}}</style>
 </head>
 <body>
@@ -1742,7 +1744,7 @@
           <span class="icon"><svg width="24" height="24" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M4,16 L15,16.001 C16.0538182,16.001 16.9181157,16.8164855 16.9945109,17.8516842 L17,18.001 L17,20.5 C16.999,24.7 12.713,26 9.5,26 C6.35126,26 2.1710504,24.75148 2.00510151,20.7485328 L2,20.5 L2,18 C2,16.9461818 2.81639669,16.0818843 3.85080841,16.0054891 L4,16 Z M17.22,16.001 L24,16 C25.0538182,16 25.9181157,16.8163967 25.9945109,17.8508084 L26,18 L26,20 C25.999,23.759 22.57,25 20,25 C18.942,25 17.741,24.785 16.691,24.275 C17.4432667,23.3808667 17.9315867,22.2428222 17.9933526,20.8112714 L18,20.5 L18,18.001 C18,17.2991818 17.7512397,16.6601736 17.3461307,16.1500909 L17.22,16.001 L24,16 L17.22,16.001 Z M9.5,3 C12.537,3 15,5.463 15,8.5 C15,11.537 12.537,14 9.5,14 C6.463,14 4,11.537 4,8.5 C4,5.463 6.463,3 9.5,3 Z M20.5,5 C22.985,5 25,7.015 25,9.5 C25,11.985 22.985,14 20.5,14 C18.015,14 16,11.985 16,9.5 C16,7.015 18.015,5 20.5,5 Z"/></svg></span><span class="sidebar-label">Partners</span>
         </button>
         <button class="sidebar-btn" data-tab="community">
-          <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span><span class="sidebar-label">Community</span>
+          <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span><span class="sidebar-label">Community</span><span id="community-ping" class="uz-ping-dot" hidden>0</span>
         </button>
         <button class="sidebar-btn announcements-taskbar-btn" data-tab="announcements">
           <span class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></span><span class="sidebar-label">Announcements</span><span id="announcements-ping" class="uz-ping-dot" hidden>0</span>
@@ -5217,15 +5219,27 @@
     }
     function buildPanicEmbedPreview(wrap) {
       var page = document.createElement('div'); page.className = 'uz-embed-cover';
-      var header = document.createElement('header'); header.innerHTML = '<strong>Learning Apps</strong><span>My Apps</span>'; page.appendChild(header);
-      var main = document.createElement('main'); var title = document.createElement('h1'); title.textContent = 'My Apps'; main.appendChild(title);
+      var side = document.createElement('aside'); side.innerHTML = '<strong>CBSD</strong><button type="button">Open App Library</button><button type="button">My Classes</button><button type="button">My Files</button><button type="button">My Analytics</button>'; page.appendChild(side);
+      var content = document.createElement('div'); content.className = 'uz-embed-content'; page.appendChild(content);
+      var header = document.createElement('header'); var search = document.createElement('input'); search.type = 'search'; search.placeholder = 'Search All Apps'; search.setAttribute('aria-label', 'Search all apps'); header.appendChild(search); content.appendChild(header);
+      var main = document.createElement('main'); content.appendChild(main);
       var grid = document.createElement('div'); grid.className = 'uz-embed-cover-grid';
       [
-        ['Canva', 'https://www.canva.com/'], ['Code.org', 'https://code.org/'],
-        ['Desmos', 'https://www.desmos.com/calculator'], ['Google Translate', 'https://translate.google.com/'],
-        ['Adobe Express', 'https://www.adobe.com/express/'], ['ReadWorks', 'https://www.readworks.org/']
-      ].forEach(function(app){ var link = document.createElement('a'); link.href = app[1]; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = app[0]; grid.appendChild(link); });
-      main.appendChild(grid); page.appendChild(main); wrap.appendChild(page);
+        'Freckle','Ed','Canva','Canvas','Code.org','Discovery Education','BrainPOP','BrainPOP Jr.','Microsoft 365',
+        'Smart Futures','Think Central','WeVideo','CodeSpark','My Backpack','Teach Your Monster','Breakout EDU','SplashLearn','Scholastic',
+        'Book Creator','Seesaw','Kodable','TCI','Library Resources','Quill','Student Support','Infinite Campus','Learning A-Z',
+        'ConnectEd','Great Minds','NUITEQ Chorus','Status Dashboard','Adobe Express','Gale','Membean','Carolina Science',
+        'Desmos','Edficiency','FlexTime','Naviance','ReadWorks','SketchUp','Google Translate','Lighthouse','Summit K12'
+      ].forEach(function(name, index){
+        var button = document.createElement('button'); button.type = 'button'; button.className = 'uz-embed-app'; button.dataset.name = name.toLowerCase();
+        var icon = document.createElement('span'); icon.className = 'uz-embed-app-icon'; icon.style.backgroundColor = ['#20a9b2','#4d68c5','#dc5d38','#885ac7','#60b476','#3188bd'][index % 6]; icon.textContent = name.slice(0, 2).toUpperCase();
+        var label = document.createElement('span'); label.textContent = name; button.appendChild(icon); button.appendChild(label);
+        button.onclick = function(){ var next = window.open('', '_blank'); if (!next) return; next.document.open(); next.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Error</title></head><body><h1>404</h1><p>Page not found.</p></body></html>'); next.document.close(); };
+        grid.appendChild(button);
+      });
+      search.oninput = function(){ var query = search.value.trim().toLowerCase(); grid.querySelectorAll('.uz-embed-app').forEach(function(button){ button.hidden = !!query && button.dataset.name.indexOf(query) === -1; }); };
+      side.querySelectorAll('button').forEach(function(button){ button.onclick = function(){ search.value = ''; search.dispatchEvent(new Event('input')); content.scrollTop = 0; }; });
+      main.appendChild(grid); wrap.appendChild(page);
     }
     function panicKeyLabel(key) {
       var map = {
@@ -9089,9 +9103,9 @@ let DATA = {
    function readNotifications(){ try { var list=JSON.parse(localStorage.getItem(NOTIFICATION_KEY)||'[]'); return Array.isArray(list)?list.filter(function(n){return n&&n.text;}).slice(0,50):[]; } catch(e) { return []; } }
    function writeNotifications(list){ try { localStorage.setItem(NOTIFICATION_KEY,JSON.stringify((list||[]).slice(0,50))); } catch(e) {} }
    function notificationUnread(list){ return (list||[]).filter(function(n){return !n.read;}).length; }
-   function renderNotifications(){ ensureGustStyles(); var list=readNotifications(); var unread=notificationUnread(list); var count=document.getElementById('uz-notification-count'); var box=document.getElementById('uz-notification-list'); var ping=document.getElementById('announcements-ping'); if(count) count.textContent=String(unread); if(ping){ ping.hidden=!unread; ping.textContent=String(Math.min(99,unread)); } if(box) box.innerHTML=(list.length?'<div class="uz-notification-actions"><button type="button" data-notification-read-all>Mark all read</button><button type="button" data-notification-dismiss-all>Dismiss all</button></div>':'')+(list.length?list.map(function(n){return '<div class="uz-notification-item'+(n.read?' is-read':'')+'" data-notification-id="'+esc(n.id||n.text)+'"><b>'+esc(new Date(n.time||Date.now()).toLocaleString())+'</b><br>'+esc(n.text)+'<div class="uz-notification-actions"><button type="button" data-notification-read="'+esc(n.id||n.text)+'">'+(n.read?'Read':'Mark read')+'</button><button type="button" data-notification-dismiss="'+esc(n.id||n.text)+'">Dismiss</button></div></div>';}).join(''):'<div class="uz-notification-item">No notifications yet.</div>'); }
+   function renderNotifications(){ ensureGustStyles(); var list=readNotifications(); var unread=notificationUnread(list); var count=document.getElementById('uz-notification-count'); var box=document.getElementById('uz-notification-list'); var ping=document.getElementById('announcements-ping'); var communityPing=document.getElementById('community-ping'); var announcementUnread=list.filter(function(n){return !n.read && n.target && n.target.tab==='posts';}).length; var communityUnread=list.filter(function(n){return !n.read && n.target && n.target.tab==='chat';}).length; if(count) count.textContent=String(unread); if(ping){ ping.hidden=!announcementUnread; ping.textContent=String(Math.min(99,announcementUnread)); } if(communityPing){ communityPing.hidden=!communityUnread; communityPing.textContent=String(Math.min(99,communityUnread)); } if(box) box.innerHTML=(list.length?'<div class="uz-notification-actions"><button type="button" data-notification-read-all>Mark all read</button><button type="button" data-notification-dismiss-all>Dismiss all</button></div>':'')+(list.length?list.map(function(n){return '<div class="uz-notification-item'+(n.read?' is-read':'')+'" data-notification-id="'+esc(n.id||n.text)+'"><b>'+esc(new Date(n.time||Date.now()).toLocaleString())+'</b><br>'+esc(n.text)+'<div class="uz-notification-actions"><button type="button" data-notification-read="'+esc(n.id||n.text)+'">'+(n.read?'Read':'Mark read')+'</button><button type="button" data-notification-dismiss="'+esc(n.id||n.text)+'">Dismiss</button></div></div>';}).join(''):'<div class="uz-notification-item">No notifications yet.</div>'); }
    window.UZNotify = { add:function(text,id){ ensureGustStyles(); text=String(text||'Notification'); var key=String(id||text); var list=readNotifications().filter(function(n){return String(n.id||n.text)!==key;}); list.unshift({id:key,text:text,time:Date.now(),read:false}); writeNotifications(list); renderNotifications(); }, removeText:function(text){ var target=String(text||''); writeNotifications(readNotifications().filter(function(n){return String(n.text)!==target;})); renderNotifications(); }, markAllRead:function(){ var list=readNotifications().map(function(n){n.read=true;return n;}); writeNotifications(list); renderNotifications(); }, dismissAll:function(){ writeNotifications([]); renderNotifications(); }, render:renderNotifications };
-   var uzOriginalNotifyAdd=window.UZNotify.add; window.UZNotify.add=function(text,id,meta){ var key=String(id||text); var existing=readNotifications().some(function(n){return String(n.id||n.text)===key;}); if(!existing){ uzOriginalNotifyAdd(text,id); try{var Context=window.AudioContext||window.webkitAudioContext;if(Context){var ctx=new Context(),tone=ctx.createOscillator(),gain=ctx.createGain();tone.frequency.value=660;gain.gain.setValueAtTime(.06,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.16);tone.connect(gain);gain.connect(ctx.destination);tone.start();tone.stop(ctx.currentTime+.16);tone.onended=function(){ctx.close();};}}catch(e){}} if(meta){ var list=readNotifications(); list.forEach(function(n){ if(String(n.id||n.text)===key){ n.target=meta.target||null; n.remoteId=key.indexOf('remote:')===0?key.slice(7):''; n.sender_username=meta.sender_username||''; }}); writeNotifications(list); renderNotifications(); } };
+   var uzOriginalNotifyAdd=window.UZNotify.add; window.UZNotify.add=function(text,id,meta){ var key=String(id||text); var existing=readNotifications().some(function(n){return String(n.id||n.text)===key;}); if(!existing){ uzOriginalNotifyAdd(text,id); try{var Context=window.AudioContext||window.webkitAudioContext;if(Context){var ctx=new Context(),tone=ctx.createOscillator(),gain=ctx.createGain();tone.frequency.value=660;gain.gain.setValueAtTime(.15,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.16);tone.connect(gain);gain.connect(ctx.destination);tone.start();tone.stop(ctx.currentTime+.16);tone.onended=function(){ctx.close();};}}catch(e){}} if(meta){ var list=readNotifications(); list.forEach(function(n){ if(String(n.id||n.text)===key){ n.target=meta.target||null; n.remoteId=key.indexOf('remote:')===0?key.slice(7):''; n.sender_username=meta.sender_username||''; }}); writeNotifications(list); renderNotifications(); } };
    document.addEventListener('click',function(e){ var t=e.target; if(!t) return; if(t.id==='uz-notification-toggle'){ var box=document.getElementById('uz-notification-list'); if(box) box.hidden=!box.hidden; return; } var list=readNotifications(); if(t.dataset && t.dataset.notificationReadAll!==undefined){ list=list.map(function(n){n.read=true;return n;}); writeNotifications(list); renderNotifications(); return; } if(t.dataset && t.dataset.notificationDismissAll!==undefined){ writeNotifications([]); renderNotifications(); return; } if(t.dataset && t.dataset.notificationRead){ list=list.map(function(n){if(String(n.id||n.text)===String(t.dataset.notificationRead)) n.read=true;return n;}); writeNotifications(list); renderNotifications(); return; } if(t.dataset && t.dataset.notificationDismiss){ writeNotifications(list.filter(function(n){return String(n.id||n.text)!==String(t.dataset.notificationDismiss);})); renderNotifications(); return; } });
    document.addEventListener('click',function(e){ var item=e.target && e.target.closest ? e.target.closest('.uz-notification-item') : null; if(!item || (e.target.dataset && (e.target.dataset.notificationRead!==undefined || e.target.dataset.notificationDismiss!==undefined))) return; var id=item.dataset.notificationId; var list=readNotifications(); var entry=list.filter(function(n){return String(n.id||n.text)===String(id);})[0]; if(!entry) return; entry.read=true; writeNotifications(list); renderNotifications(); if(entry.target) document.dispatchEvent(new CustomEvent('uz-notification-open',{detail:entry})); });
    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',renderNotifications); else renderNotifications();
@@ -9158,7 +9172,14 @@ let DATA = {
   }
   document.addEventListener('click', function(e){ if(e.target && e.target.id === 'uz-notification-inbox-open') showInbox(); });
   function setupTest(){ var button = document.getElementById('uz-notification-test'); if(!button) return; button.onclick = function(){ var status = document.getElementById('uz-browser-notification-status'); if(localStorage.getItem('uzNotificationsEnabled') === 'false'){ if(status) status.textContent = 'Turn on in-site notifications first.'; return; } window.UZNotify.add('Test notification', 'test:' + Date.now()); if(status) status.textContent = 'Test added to the Inbox.'; }; }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupTest); else setupTest();
+  function syncBadges(){
+    var rows = inboxRows().filter(function(row){ return !row.read; });
+    var chat = rows.filter(function(row){ return row.target && row.target.tab === 'chat'; }).length;
+    var posts = rows.filter(function(row){ return row.target && row.target.tab === 'posts'; }).length;
+    [['community-ping',chat],['announcements-ping',posts]].forEach(function(pair){ var badge=document.getElementById(pair[0]); if(badge){ badge.hidden = !pair[1]; badge.textContent = String(Math.min(99,pair[1])); } });
+  }
+  function setupNotifications(){ setupTest(); syncBadges(); var count=document.getElementById('uz-notification-count'); if(count) new MutationObserver(syncBadges).observe(count,{childList:true,characterData:true,subtree:true}); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupNotifications); else setupNotifications();
 })();
 </script>
 
@@ -9220,7 +9241,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   window.UZ_ACCOUNT_DEBUG = window.UZ_ACCOUNT_DEBUG || [];
   window.UZ_ACCOUNT_DEBUG.push('community-js-start');
   var cfg = window.UZ_COMMUNITY_CONFIG || {};
-  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', realtime: null, snapshotCollection: null, snapshotUserId: null, latestSnapshot: null, profileRealtime: null, profileUserId: null, membersRealtime: null, membersUserId: null, notificationUnsub: null, notificationUserId: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachments: [], pendingPostAttachment: null, pendingAnnouncementAttachments: [], pendingAnnouncementEdits: {}, pendingPostEdits: {}, recentlyDeletedMessages: {}, jumpToLatest: true, firestoreCooldownUntil: 0 };
+  var state = { client: null, user: null, profile: null, tab: 'chat', channelName: 'chat', replyTo: null, realtime: null, snapshotCollection: null, snapshotUserId: null, latestSnapshot: null, profileRealtime: null, profileUserId: null, membersRealtime: null, membersUserId: null, notificationUnsub: null, notificationUserId: null, presenceChannel: null, onlineIds: {}, profileByUser: {}, memberRows: [], presenceReady: true, kickReady: true, heartbeatTimer: null, authUnsub: null, pendingChatAttachments: [], pendingPostAttachment: null, pendingAnnouncementAttachments: [], pendingAnnouncementEdits: {}, pendingPostEdits: {}, recentlyDeletedMessages: {}, jumpToLatest: true, firestoreCooldownUntil: 0 };
   var MAX_ATTACHMENTS = 20;
   var mongoApiUrl = String(cfg.mongoApiUrl || '').replace(/\/$/, '');
   var mongoMode = !!mongoApiUrl;
@@ -9315,7 +9336,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function mongoMessage(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), body: row.body, deleted_body: row.deletedBody, deleted_at: row.deletedAt, updated_at: row.editedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'member' } }; }
   function mongoPost(row) { var id = row._id && (row._id.$oid || row._id); return { id: id, user_id: row.userId && (row.userId.$oid || row.userId), title: row.title, body: row.body, attachment: row.attachment || null, deleted_at: row.deletedAt, created_at: row.createdAt, profiles: { username: row.username, display_name: row.username, role: 'staff' } }; }
   function normalizedRole(value) { var role = String(value || 'member').toLowerCase().trim(); return /^(?:co[-_ ]?owner)$/.test(role) ? 'co_owner' : role; }
-  function fromFirebaseProfile(id, data) { data = data || {}; return { id: id || data.id, username: data.username, display_name: data.display_name || data.displayName || data.username, avatar_url: data.avatar_url || data.avatarUrl || '', role: normalizedRole(data.role), warnings: data.warnings || 0, banned_until: data.banned_until || data.bannedUntil || null, banned_at: data.banned_at || data.bannedAt || null, ban_id: data.ban_id || data.banId || null, kicked_until: data.kicked_until || data.kickedUntil || null, muted_until: data.muted_until || data.mutedUntil || null, last_seen: data.last_seen || data.lastSeen || null, email: data.email || '' }; }
+  function fromFirebaseProfile(id, data) { data = data || {}; return { id: id || data.id, username: data.username, display_name: data.display_name || data.displayName || data.username, avatar_url: data.avatar_url || data.avatarUrl || '', role: normalizedRole(data.role), warnings: data.warnings || 0, banned_until: data.banned_until || data.bannedUntil || null, banned_at: data.banned_at || data.bannedAt || null, ban_id: data.ban_id || data.banId || null, kicked_until: data.kicked_until || data.kickedUntil || null, muted_until: data.muted_until || data.mutedUntil || null, last_seen: data.last_seen || data.lastSeen || null, staff_note: data.staff_note || '', email: data.email || '' }; }
   function firebaseRow(doc) { var d = doc.data() || {}; d.id = doc.id; d.user_id = d.user_id || d.userId; d.created_at = d.created_at || d.createdAt; d.updated_at = d.updated_at || d.updatedAt; d.deleted_at = d.deleted_at || d.deletedAt; d.deleted_body = d.deleted_body || d.deletedBody; return d; }
   function displayName() { return (state.profile && (state.profile.display_name || state.profile.username)) || getName() || (state.user && state.user.email ? state.user.email.split('@')[0] : 'Member'); }
   function authorLabel(p, row) { p = p || {}; row = row || {}; var display = p.display_name || p.username || row.username || 'Member'; var username = p.username || row.username || ''; return esc(display) + (username ? ' <small>@' + esc(username) + '</small>' : ''); }
@@ -9472,7 +9493,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     return html;
   }
   async function reviewAppeal(id, decision) {
-    if (!firebaseMode || !state.user || ['owner','admin'].indexOf(role()) === -1) { status('Admin or owner required.'); return; }
+    if (!firebaseMode || !state.user || ['owner','co_owner','admin'].indexOf(role()) === -1) { status('Admin or owner required.'); return; }
     try {
       initClient();
       var ref = state.client.db.collection('appeals').doc(String(id));
@@ -9489,7 +9510,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     } catch (error) { status(error.message || 'Appeal review failed.'); }
   }
   async function openAppealReview() {
-    if (!firebaseMode || !state.user || ['owner','admin'].indexOf(role()) === -1) { status('Admin or owner required to review appeals.'); return; }
+    if (!firebaseMode || !state.user || ['owner','co_owner','admin'].indexOf(role()) === -1) { status('Admin or owner required to review appeals.'); return; }
     var old = document.getElementById('community-appeal-pop'); if (old) old.remove();
     var modal = document.createElement('div'); modal.id = 'community-appeal-pop'; modal.className = 'community-profile-pop';
     modal.innerHTML = '<div class="community-profile-card community-appeal-card"><button class="uz-profile-modal-close" id="community-appeal-close">Close</button><h2>Ban appeals</h2><div id="community-appeal-list">Loading appeals...</div></div>';
@@ -9561,11 +9582,20 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   async function refreshSession() { if (!ready) { renderSetup(); renderUser(); renderComposer(); loadItems(); return; } if (firebaseMode) { initClient(); var fb = state.client.auth.currentUser; state.user = fb ? { id: fb.uid, email: fb.email || '' } : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribeOwnProfile(); } if (!state.authUnsub) state.authUnsub = state.client.auth.onAuthStateChanged(async function(user){ state.user = user ? { id: user.uid, email: user.email || '' } : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribeOwnProfile(); } else { clearInterval(state.heartbeatTimer); stopFirebaseListeners(); state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); return; } if (mongoMode) { try { var mine = await mongoFetch('/me'); var p = fromMongoUser(mine.user); state.user = { id: p.id, email: p.username + '@' + (cfg.internalAuthDomain || 'uzlogin.net') }; mergeProfile(p); startHeartbeat(); } catch(e) { state.user = null; state.profile = null; } renderSetup(); renderUser(); renderComposer(); loadMembers(state.tab === 'members'); loadItems(); return; } initClient(); var session = await state.client.auth.getSession(); state.user = session.data && session.data.session ? session.data.session.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } state.client.auth.onAuthStateChange(async function (_event, sessionData) { state.user = sessionData && sessionData.user ? sessionData.user : null; if (state.user) { await upsertProfile(); startHeartbeat(); subscribePresence(); subscribeOwnProfile(); } else { clearInterval(state.heartbeatTimer); if (state.presenceChannel) state.client.removeChannel(state.presenceChannel); if (state.profileRealtime) state.client.removeChannel(state.profileRealtime); state.onlineIds = {}; state.profile = null; } renderUser(); renderComposer(); loadItems(); subscribe(); }); renderSetup(); renderUser(); renderComposer(); loadItems(); subscribe(); }
   function postAllowedMessage() { if (state.channelName === 'announcements') return 'Announcements are staff-only. Members can read and copy.'; return 'Sign in to post here.'; }
+  function updateReplyPreview() {
+    var preview = $('community-reply-preview'); if (!preview) return;
+    preview.hidden = !state.replyTo;
+    if (state.replyTo) preview.querySelector('span').textContent = 'Replying to ' + state.replyTo.name + ': ' + state.replyTo.body;
+  }
+  function replyBody(body) {
+    if (!state.replyTo) return body;
+    return '> @' + state.replyTo.username + ': ' + state.replyTo.body + '\n' + body;
+  }
   function renderComposer() {
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
     chat.classList.toggle('community-hidden', state.tab !== 'chat'); post.classList.toggle('community-hidden', state.tab !== 'posts'); staff.classList.toggle('community-hidden', true);
     var ok = state.user && !isBanned(state.profile) && !isMuted(state.profile);
-    chat.innerHTML = ok ? '<textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload files<input id="community-chat-file-input" type="file" multiple></label><span class="community-attachment-choice" id="community-chat-file-choice">No files selected</span><button class="community-btn secondary" id="community-emoji-toggle" type="button" title="Emoji">☺</button><button class="community-btn" id="community-send-chat">Send</button></div><div id="community-emoji-picker" hidden></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
+    chat.innerHTML = ok ? '<div id="community-reply-preview" class="community-reply-preview" hidden><span></span><button type="button" id="community-reply-cancel" title="Cancel reply">×</button></div><textarea id="community-chat-input" maxlength="1000" placeholder="Message #' + esc(channelInfo[state.channelName].label) + '"></textarea><div class="community-composer-actions"><label class="community-file-label">Upload files<input id="community-chat-file-input" type="file" multiple></label><span class="community-attachment-choice" id="community-chat-file-choice">No files selected</span><button class="community-btn secondary" id="community-emoji-toggle" type="button" title="Emoji">☺</button><button class="community-btn" id="community-send-chat">Send</button></div><div id="community-emoji-picker" hidden></div>' : '<div class="community-message community-locked">Sign in with a real account to chat.</div>';
     if (ok) showAttachmentQueue('community-chat-file-choice', state.pendingChatAttachments);
     var postOk = ok && canPost();
     var titlePh = state.channelName === 'settings' ? 'Preset name' : (state.channelName === 'suggestions' ? 'Suggestion title' : 'Thread title');
@@ -9577,10 +9607,20 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var attachSettings = $('community-attach-settings'); if (attachSettings) attachSettings.onclick = attachSettingsPreset;
     var attachFile = $('community-file-input'); if (attachFile) attachFile.onchange = attachFileToPost;
     var chatInput = $('community-chat-input');
+    updateReplyPreview();
+    var cancelReply = $('community-reply-cancel'); if (cancelReply) cancelReply.onclick = function(){ state.replyTo = null; updateReplyPreview(); };
     var emojiToggle = $('community-emoji-toggle'), emojiPicker = $('community-emoji-picker');
     if (emojiToggle && emojiPicker) {
-      emojiPicker.innerHTML = ['😀','😂','😭','❤️','👍','👎','🔥','🎉','💀','😎','🙏','✅','❌','👀','💯','😅','🤔','😮','😍','🚀'].map(function(emoji){ return '<button type="button" class="community-emoji-choice">' + emoji + '</button>'; }).join('');
-      emojiToggle.onclick = function(){ emojiPicker.hidden = !emojiPicker.hidden; };
+      emojiToggle.onclick = function(){
+        emojiPicker.hidden = !emojiPicker.hidden;
+        if (!emojiPicker.hidden && !emojiPicker.dataset.loaded) {
+          var popular = ['😀','😂','😭','❤️','👍','👎','🔥','🎉','💀','😎','🙏','✅','❌','👀','💯'];
+          var symbols = popular.slice();
+          [[0x2600,0x27bf],[0x1f300,0x1faff]].forEach(function(range){ for(var cp=range[0];cp<=range[1];cp++){ var glyph=String.fromCodePoint(cp); if (/\p{Emoji_Presentation}/u.test(glyph) && symbols.indexOf(glyph) === -1) symbols.push(glyph); } });
+          emojiPicker.innerHTML = symbols.map(function(emoji){ return '<button type="button" class="community-emoji-choice" title="Insert emoji">' + emoji + '</button>'; }).join('');
+          emojiPicker.dataset.loaded = '1';
+        }
+      };
       emojiPicker.onclick = function(event){ var button = event.target.closest('button'); if (!button || !chatInput) return; var start = chatInput.selectionStart, end = chatInput.selectionEnd; chatInput.setRangeText(button.textContent, start, end, 'end'); chatInput.dispatchEvent(new Event('input', { bubbles: true })); chatInput.focus(); };
     }
     if (chatInput && state.user) {
@@ -9622,6 +9662,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function renderRichBody(text, attachment) {
     var raw = String(text || '');
+    var reply = raw.match(/^> @([a-z0-9_.-]+): ([^\n]*)\n/i);
+    var replyHtml = '';
+    if (reply) { replyHtml = '<div class="community-reply-reference">' + decorateMentions('@' + reply[1]) + ' <span>' + esc(reply[2]) + '</span></div>'; raw = raw.slice(reply[0].length); }
     var match = raw.match(/(?:^|\n)Attached file:\s*([^\n]+)\n(data:[^\s]+)/);
     var legacy = null;
     if (match) {
@@ -9634,7 +9677,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var embeds = (raw.match(/https?:\/\/[^\s<]+/gi) || []).filter(function(url){ return /\.(?:png|jpe?g|gif|webp|avif)(?:[?#].*)?$/i.test(url) || /\.(?:mp4|webm|ogg)(?:[?#].*)?$/i.test(url); }).slice(0, 4).map(function(url){
       return /\.(?:mp4|webm|ogg)(?:[?#].*)?$/i.test(url) ? '<figure class="community-attachment-embed"><video controls preload="metadata" src="' + esc(url) + '"></video></figure>' : imageEmbed(url, 'Embedded image');
     }).join('');
-    return body + embeds + attachments.map(function(item){ return attachmentHtml(item, !!legacy && item === legacy); }).join('');
+    return replyHtml + body + embeds + attachments.map(function(item){ return attachmentHtml(item, !!legacy && item === legacy); }).join('');
   }
   function wireMentionComplete(el) {
     if (!el || el.dataset.mentionReady === '1') return;
@@ -9744,8 +9787,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       var key = collection + '/' + row.id;
       var version = String(row.updated_at || '') + ':' + String(row.attachment_count);
       var cached = state.attachmentCache && state.attachmentCache[key];
-      if (cached && cached.version === version) { row.attachments = cached.attachments; return; }
       if (cached && cached.version === version && cached.pending) { row.attachments = await cached.pending; return; }
+      if (cached && cached.version === version && cached.attachments) { row.attachments = cached.attachments; return; }
       try {
         state.attachmentCache = state.attachmentCache || {};
         var pending = state.client.db.collection(collection).doc(String(row.id)).collection('attachments').orderBy('sort_index', 'asc').limit(MAX_ATTACHMENTS).get().then(function(snapshot){ return snapshot.docs.map(function(doc){ return doc.data() || {}; }); });
@@ -10137,7 +10180,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   async function changeUserRole(username, newRole) { if (!isRealOwner()) { status('A real owner account is required to change roles.'); return; } if (!username) return; if (state.profile && username.toLowerCase() === String(state.profile.username || '').toLowerCase()) { status('You cannot change your own role here.'); loadMembers(state.tab === 'members'); return; } if (firebaseMode) { try { var target = await firebaseFindUser(username); if (!target) { status('Target not found.'); return; } if (target.data.role === 'owner') { status('Owners cannot change other owners.'); return; } var set = { role: newRole }; if (newRole === 'banned') set.banned_until = '2099-01-01T00:00:00.000Z'; else set.banned_until = null; await target.ref.set(set, { merge: true }); notifySaved('Role updated'); await loadMembers(state.tab === 'members'); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/staff/role', { method: 'POST', body: JSON.stringify({ username: username, role: newRole }) }); notifySaved('Role updated'); await loadMembers(state.tab === 'members'); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.rpc('set_user_role', { target_username: username, new_role: newRole }); if (res.error) { status(res.error.message); return; } notifySaved('Role updated'); await loadMembers(state.tab === 'members'); }
   async function changeUserRoleV2(username, newRole) {
     if (!firebaseMode) return changeUserRole(username, newRole);
-    if (!isRealOwner()) { status('A real owner account is required to change roles.'); return; }
+    if (!isRealSeniorStaff()) { status('A real owner or co-owner account is required to change roles.'); return; }
     if (!username) return;
     try {
       var target = await firebaseFindUser(username);
@@ -10163,7 +10206,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     return '<p class="community-profile-status ' + cls + '">Status: <b>' + esc(label) + '</b></p>';
   }
   function profileRoleControl(p) {
-    if (!isRealOwner() || !p.username || (state.user && String(p.id) === String(state.user.id))) return '<p>Role: <b>' + esc(p.role || 'member') + '</b></p>';
+    if (!isRealSeniorStaff() || !p.username || (state.user && String(p.id) === String(state.user.id))) return '<p>Role: <b>' + esc(p.role || 'member') + '</b></p>';
     var roles = isOwner() ? ['owner','co_owner','admin','mod','member','banned'] : ['co_owner','admin','mod','member','banned'];
     return '<label class="community-profile-role-label">Role<select id="community-profile-role">' + roles.map(function(r){ return '<option value="' + r + '"' + ((p.role || 'member') === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></label>';
   }
@@ -10171,8 +10214,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (!p.username || !isStaff()) return '';
     var rr = role();
     var buttons = ['<button class="community-btn secondary community-profile-command" data-profile-cmd="warn">Warn</button>'];
-    if (['owner','admin','mod'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="mute">Mute</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unmute">Unmute</button>');
-    if (['owner','admin'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="kick">Kick</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unkick">Unkick</button>');
+    if (['owner','co_owner','admin','mod'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="mute">Mute</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unmute">Unmute</button>');
+    if (['owner','co_owner','admin'].indexOf(rr) !== -1) buttons.push('<button class="community-btn secondary community-profile-command" data-profile-cmd="kick">Kick</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unkick">Unkick</button>');
     if (isRealSeniorStaff()) buttons.push('<button class="community-btn danger community-profile-command" data-profile-cmd="ban">Ban</button><button class="community-btn secondary community-profile-command" data-profile-cmd="unban">Unban</button><button class="community-btn danger community-profile-command" data-profile-cmd="deleteuser">Delete account</button>');
     return '<div class="community-profile-actions"><h3>Run command</h3><div class="community-profile-command-grid">' + buttons.join('') + '</div></div>';
   }
@@ -10182,7 +10225,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var ban = p.banned_until && new Date(p.banned_until) > new Date() ? '<p>Banned until: <b>' + esc(when(p.banned_until)) + '</b></p>' : '';
     var kick = p.kicked_until && new Date(p.kicked_until) > new Date() ? '<p>Kicked until: <b>' + esc(when(p.kicked_until)) + '</b></p>' : '';
     var mute = p.muted_until && new Date(p.muted_until) > new Date() ? '<p>Muted until: <b>' + esc(when(p.muted_until)) + '</b></p>' : '';
-    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><div class="community-profile-heading">' + profileAvatarHtml(p, 'large') + '<h2>' + esc(p.display_name || p.username || 'Member') + '</h2></div><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + (firebaseMode && isRealOwner() && p.username ? '<button class="community-btn secondary" id="community-profile-rename" type="button">Edit nickname</button>' : '') + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + profileCommandButtons(p) + '</div>';
+    modal.innerHTML = '<div class="community-profile-card"><button class="uz-profile-modal-close" id="community-profile-close">Close</button><div class="community-profile-heading">' + profileAvatarHtml(p, 'large') + '<h2>' + esc(p.display_name || p.username || 'Member') + '</h2></div><p>Username: <b>' + esc(p.username || 'unknown') + '</b></p>' + (firebaseMode && isRealOwner() && p.username ? '<button class="community-btn secondary" id="community-profile-rename" type="button">Edit nickname</button>' : '') + profileRoleControl(p) + profileStatusHtml(p) + '<p>Warnings: <b>' + esc(p.warnings || 0) + '</b></p>' + ban + kick + mute + (isStaff() ? '<p>Staff note: ' + esc(p.staff_note || 'None') + '</p>' : '') + (firebaseMode && isRealSeniorStaff() ? '<button class="community-btn secondary" id="community-profile-staff-note" type="button">Edit staff note</button>' : '') + profileCommandButtons(p) + '</div>';
     document.body.appendChild(modal); document.getElementById('community-profile-close').onclick = function(){ modal.remove(); };
     wireAvatarPreviews(modal);
     var rename = document.getElementById('community-profile-rename'); if (rename) rename.onclick = async function(){
@@ -10190,6 +10233,11 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       nickname = normalizeName(nickname); if (!validName(nickname)) { status('Choose a valid nickname.'); return; }
       try { await state.client.db.collection('profiles').doc(String(p.id)).set({ display_name: nickname }, { merge: true }); audit('nickname', p.username + ' -> ' + nickname); modal.remove(); notifySaved('Nickname updated'); }
       catch (error) { status(error.message || 'Nickname could not be updated.'); }
+    };
+    var noteButton = document.getElementById('community-profile-staff-note'); if (noteButton) noteButton.onclick = async function(){
+      var note = prompt('Staff note for ' + p.username, p.staff_note || ''); if (note == null) return;
+      try { await state.client.db.collection('profiles').doc(String(p.id)).set({ staff_note: note.trim().slice(0, 1000) }, { merge: true }); audit('staff-note', p.username + ': ' + note.trim().slice(0, 200)); modal.remove(); notifySaved('Staff note updated'); }
+      catch (error) { status(error.message || 'Staff note could not be saved.'); }
     };
     var roleSel = document.getElementById('community-profile-role'); if (roleSel) roleSel.onchange = async function(){ await changeUserRoleV2(p.username, roleSel.value); modal.remove(); };
     Array.prototype.forEach.call(modal.querySelectorAll('.community-profile-command'), function(btn){ btn.onclick = async function(){ var result = await runProfileCommand(p.username, btn.dataset.profileCmd); status(result.message); if (result.ok) { modal.remove(); await loadMembers(state.tab === 'members'); await loadItems(); } }; });
@@ -10282,9 +10330,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   function wireMessageActions(rows) {
     Array.prototype.forEach.call(document.querySelectorAll('.community-reply-message'), function(btn){ btn.onclick = function(){
       var row = messageById(rows, btn.dataset.messageId), input = $('community-chat-input'); if (!row || !input) return;
-      var name = (row.profiles && row.profiles.username) || row.username || 'member';
-      input.value = '> @' + name + ': ' + String(row.body || '').replace(/\s+/g, ' ').slice(0, 120) + '\n' + input.value;
-      input.dispatchEvent(new Event('input', { bubbles: true })); input.focus();
+      var profile = row.profiles || {}, name = profile.username || row.username || 'member';
+      state.replyTo = { username: name, name: profile.display_name || name, body: String(row.body || '').replace(/\s+/g, ' ').slice(0, 100) };
+      updateReplyPreview(); input.focus();
     }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-edit-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canEditMessage(row)) return; var body = prompt('Edit message', row.body || ''); if (body == null) return; body = body.trim(); if (!body) return; if (hasBadWord(body)) { status('Blocked word found. This edit will not save.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ body: body, updated_at: new Date().toISOString() }, { merge: true }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'PATCH', body: JSON.stringify({ body: body }) }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ body: body, updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-delete-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canDeleteMessage(row)) return; if (!confirm('Delete this message? It remains visible in this tab until you refresh or leave.')) return; state.recentlyDeletedMessages[String(row.id)] = true; var auditDetail = String(row.id) + ': ' + String(row.deleted_body || row.body || '').slice(0, 900); if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }, { merge: true }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'DELETE' }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }).eq('id', row.id); if (res.error) { delete state.recentlyDeletedMessages[String(row.id)]; status(res.error.message); } else { audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } }; });
@@ -10310,7 +10358,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var rr = role();
     if (['ban','unban','setrole','deleteuser'].indexOf(parsed.action) !== -1 && !isRealSeniorStaff()) return { ok: false, message: 'Owner or co-owner role required for /' + parsed.action + '.' };
     if (parsed.action === 'kick' && !(isRealSeniorStaff() || rr === 'admin')) return { ok: false, message: 'Admin, owner, or co-owner required for /kick.' };
-    if (['warn','mute','unmute'].indexOf(parsed.action) !== -1 && ['owner','admin','mod'].indexOf(rr) === -1) return { ok: false, message: 'Staff role required.' };
+    if (['warn','mute','unmute'].indexOf(parsed.action) !== -1 && ['owner','co_owner','admin','mod'].indexOf(rr) === -1) return { ok: false, message: 'Staff role required.' };
     if (parsed.action === 'deleteuser') return runStaffCommandText(text);
     try {
       var target = await firebaseFindUser(parsed.target);
@@ -10318,7 +10366,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       if (target.data.role === 'owner' && target.data.username !== profileUsername()) return { ok: false, message: 'Owners cannot moderate other owners.' };
       var set = {}, now = new Date().toISOString(), autoBanned = false;
       if (parsed.action === 'setrole') {
-        if (['owner','admin','mod','member','banned'].indexOf(parsed.newRole) === -1) return { ok: false, message: 'Choose owner, admin, mod, member, or banned.' };
+        if (['owner','co_owner','admin','mod','member','banned'].indexOf(parsed.newRole) === -1) return { ok: false, message: 'Choose owner, co_owner, admin, mod, member, or banned.' };
         set.role = parsed.newRole;
         if (parsed.newRole === 'banned') { set.banned_until = '2099-01-01T00:00:00.000Z'; set.banned_at = now; set.ban_id = now + ':' + target.id; }
         else { set.banned_until = null; set.banned_at = null; set.ban_id = null; }
@@ -10330,7 +10378,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       else if (parsed.action === 'kick') set.kicked_until = new Date(Date.now() + (parsed.minutes || 10) * 60000).toISOString();
       await target.ref.set(set, { merge: true });
       if (parsed.action === 'unban') clearDeviceBan(parsed.target);
-      audit('command', '/' + parsed.action + ' ' + parsed.target); notifySaved(autoBanned ? 'Third warning: account was banned.' : 'Command ran'); loadMembers(true); loadItems();
+      audit('command', '/' + parsed.action + ' ' + parsed.target + (parsed.reason ? ' | Reason: ' + parsed.reason : '')); notifySaved(autoBanned ? 'Third warning: account was banned.' : 'Command ran'); loadMembers(true); loadItems();
       return { ok: true, message: autoBanned ? 'Third warning issued. Account automatically banned.' : 'Command ran: /' + parsed.action + ' ' + parsed.target };
     } catch (error) { return { ok: false, message: error.message || 'Command failed.' }; }
   }
@@ -10341,9 +10389,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (state.user) sessionStorage.removeItem('uz-chat-draft:' + state.user.id + ':' + state.channelName);
   }
   async function sendMessageV2() {
-    if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; var sentText = plainInput && plainInput.value.trim(); await sendMessage(); if (firebaseMode && plainInput && !plainInput.value && sentText) await notifyMentionedUsers(sentText, { tab: 'chat' }); return; }
+    if (!firebaseMode || !(state.pendingChatAttachments || []).length) { var plainInput = $('community-chat-input'); if (plainInput && rejectRestrictedMention(plainInput.value, plainInput)) return; var sentText = plainInput && replyBody(plainInput.value.trim()); if (plainInput && state.replyTo) plainInput.value = sentText; state.jumpToLatest = true; await sendMessage(); if (plainInput && !plainInput.value && sentText) { if (firebaseMode) await notifyMentionedUsers(sentText, { tab: 'chat' }); state.replyTo = null; updateReplyPreview(); } return; }
     if (!state.user) { status('Sign in first.'); return; }
-    var input = $('community-chat-input'); var body = String((input && input.value) || '').trim();
+    var input = $('community-chat-input'); var body = replyBody(String((input && input.value) || '').trim());
     var attachments = state.pendingChatAttachments || [];
     if (!body && !attachments.length) return;
     if (hasBadWord(body)) { warnBlockedInput(input, 'Blocked word found. This message will not send.'); return; }
@@ -10351,7 +10399,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     try {
       initClient();
       await createFirebaseItemWithAttachments('messages', { user_id: state.user.id, username: profileUsername(), body: body, created_at: new Date().toISOString() }, attachments);
-      notifyMentionedUsers(body, { tab: 'chat' }); state.pendingChatAttachments = []; if (input) input.value = ''; clearChatDraft(); showAttachmentQueue('community-chat-file-choice', []); audit('message', body.slice(0,80)); notifySaved('Message sent'); loadItems();
+      notifyMentionedUsers(body, { tab: 'chat' }); state.pendingChatAttachments = []; state.replyTo = null; updateReplyPreview(); if (input) input.value = ''; clearChatDraft(); showAttachmentQueue('community-chat-file-choice', []); audit('message', body.slice(0,80)); notifySaved('Message sent'); state.jumpToLatest = true; loadItems();
     } catch (error) { status(error.message || 'Message could not be sent.'); }
   }
   async function sendPostMessage() {
@@ -10401,6 +10449,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   document.addEventListener('uz-notification-open', function(event){
     var item = event.detail || {}; var target = item.target || {};
+    var siteTab = target.tab === 'posts' ? 'announcements' : 'community';
+    var siteButton = document.querySelector('.sidebar-btn[data-tab="' + siteTab + '"]');
+    if (siteButton) siteButton.click();
     if (target.tab) setTab(target.tab, target.channel || (target.tab === 'chat' ? 'chat' : state.channelName));
     setTimeout(function(){ var selector = target.id ? '[data-message-id="' + String(target.id).replace(/"/g, '') + '"],[data-post-id="' + String(target.id).replace(/"/g, '') + '"],[data-announcement-id="' + String(target.id).replace(/"/g, '') + '"]' : ''; var found = selector ? document.querySelector(selector) : null; if (found) { found.scrollIntoView({ behavior: 'smooth', block: 'center' }); found.classList.add('community-notification-focus'); setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800); } }, 220);
   });
