@@ -1608,7 +1608,8 @@
   </style>
 <base target="_blank">
 <base target="_blank">
-<style id="uz-notification-layout">.uz-notification-item{line-height:1.4;overflow-wrap:anywhere}.uz-notification-item>b{display:block;margin-bottom:6px;font-size:12px;white-space:normal}.uz-notification-item.is-read{opacity:1!important}.uz-notification-item.is-read>b{color:#aaa}.uz-notification-item .uz-notification-actions button{opacity:1!important}</style>
+<style id="uz-notification-layout">.uz-notification-item{line-height:1.4;overflow-wrap:anywhere}.uz-notification-item>b{display:block;margin-bottom:6px;font-size:12px;white-space:normal}.uz-notification-item.is-read{opacity:1!important}.uz-notification-item.is-read>b{color:#aaa}.uz-notification-item .uz-notification-actions button{opacity:1!important}body.uz-notifications-off #uz-notification-tray{display:none!important}</style>
+<style>body:has(#panic-cover-frame.open) #glass-nav-wrap{visibility:hidden!important}</style>
 <style id="uz-image-actions">.community-image-embed{position:relative;width:max-content;max-width:100%}.community-image-embed img{cursor:zoom-in}.community-image-download{position:absolute;top:14px;right:14px;z-index:1;padding:7px 10px;border:1px solid var(--accent,#ff6a00);border-radius:5px;background:#09090c;color:#fff!important;text-decoration:none;font:700 12px Arial,sans-serif;opacity:0;transition:opacity .15s}.community-image-embed:hover .community-image-download,.community-image-download:focus-visible{opacity:1}.community-image-preview{display:grid;justify-items:center;gap:10px;max-width:94vw;max-height:94vh}.community-image-preview>img{display:block;max-width:94vw;max-height:calc(94vh - 52px);object-fit:contain}.community-image-preview-actions{display:flex;gap:10px}.community-image-preview-actions a,.community-image-preview-actions button{position:static;display:inline-flex;align-items:center;justify-content:center;width:auto;height:auto;padding:8px 12px;border:1px solid var(--accent,#ff6a00);border-radius:5px;background:#09090c;color:#fff;text-decoration:none;font:700 12px Arial,sans-serif;cursor:pointer}@media(hover:none){.community-image-download{opacity:1}}</style>
 </head>
 <body>
@@ -1843,7 +1844,7 @@
         <div class="quote-section">
           <div id="quote"></div>
         </div>
-        <details class="credits-box"><summary>Credits</summary><div class="credits-scroll"><p><b>UselessGamz</b> - Creator</p><p><b>AeroShift</b> - Proxy Maker</p></div></details>
+        <details class="credits-box"><summary>Credits</summary><div class="credits-scroll"><p><b>UselessGamz</b> - Creator</p><p><b>AeroShift</b> - Proxy Maker</p><p><b>BigSlavito</b> - Contributor</p></div></details>
         <div class="social-links">          <a href="https://www.youtube.com/@UselessGamz" target="_blank" class="social-btn"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.4.6A3 3 0 0 0 .5 6.2C0 7.9 0 12 0 12s0 4.1.5 5.8a3 3 0 0 0 2.1 2.1c1.7.6 9.4.6 9.4.6s7.7 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 16.1 24 12 24 12s0-4.1-.5-5.8zM9.75 15.5v-7l6.5 3.5-6.5 3.5z" fill="currentColor" stroke="none"></path></svg><span class="social-label">YouTube</span></a>        </div>
       </div>
 
@@ -3184,6 +3185,12 @@
       <div class="tab-content" id="settings">
         <div style="font-size:13px;color:#fff;font-weight:bold;margin-bottom:12px;">Version 2026.09.30</div>
         <div class="g4mes-grid" style="display:grid;gap:16px;">
+          <div class="g4mes-card" style="padding:20px;">
+            <h3>Notifications</h3>
+            <label style="display:flex;align-items:center;gap:10px;margin:12px 0;"><input id="uz-notifications-enabled" type="checkbox"> In-site notifications</label>
+            <label style="display:flex;align-items:center;gap:10px;margin:12px 0;"><input id="uz-browser-notifications-enabled" type="checkbox"> Browser alerts for pings</label>
+            <p id="uz-browser-notification-status" role="status" style="font-size:12px;color:#aaa;"></p>
+          </div>
           <div class="g4mes-card" style="padding:20px;">
             <div class="settings-card-head">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -5595,7 +5602,6 @@
     const quotes = [
       "That's la peace. - Kai Cenat",
       "Job's not finished. - Kobe Bryant",
-      "Impossible is nothing.",
       "I am the greatest. - Muhammad Ali",
       "Stay hungry. Stay foolish. - Steve Jobs",
       "Technoblade never dies! - Technoblade"
@@ -9074,6 +9080,45 @@ let DATA = {
    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',renderNotifications); else renderNotifications();
 })();
 </script>
+<script>
+(function(){
+  var enabledKey = 'uzNotificationsEnabled';
+  var browserKey = 'uzBrowserNotificationsEnabled';
+  function enabled(){ return localStorage.getItem(enabledKey) !== 'false'; }
+  function syncControls(){
+    document.body.classList.toggle('uz-notifications-off', !enabled());
+    var inSite = document.getElementById('uz-notifications-enabled');
+    var browser = document.getElementById('uz-browser-notifications-enabled');
+    if(inSite) inSite.checked = enabled();
+    if(browser) browser.checked = localStorage.getItem(browserKey) === 'true' && 'Notification' in window && Notification.permission === 'granted';
+  }
+  function setup(){
+    syncControls();
+    var inSite = document.getElementById('uz-notifications-enabled');
+    var browser = document.getElementById('uz-browser-notifications-enabled');
+    var status = document.getElementById('uz-browser-notification-status');
+    if(inSite) inSite.addEventListener('change', function(){ localStorage.setItem(enabledKey, inSite.checked ? 'true' : 'false'); syncControls(); });
+    if(browser) browser.addEventListener('change', async function(){
+      if(!browser.checked){ localStorage.setItem(browserKey, 'false'); syncControls(); return; }
+      if(!('Notification' in window)){ status.textContent = 'This browser does not support notifications.'; syncControls(); return; }
+      var permission = await Notification.requestPermission();
+      localStorage.setItem(browserKey, permission === 'granted' ? 'true' : 'false');
+      status.textContent = permission === 'granted' ? 'Browser alerts enabled while this page is open.' : 'Browser notification permission was not granted.';
+      syncControls();
+    });
+  }
+  var originalAdd = window.UZNotify && window.UZNotify.add;
+  if(originalAdd) window.UZNotify.add = function(text, id, meta){
+    if(!enabled()) return;
+    originalAdd(text, id, meta);
+    var recent = meta && meta.created_at && Date.now() - new Date(meta.created_at).getTime() < 30000;
+    if(recent && String(id || '').indexOf('remote:') === 0 && localStorage.getItem(browserKey) === 'true' && 'Notification' in window && Notification.permission === 'granted'){
+      try { new Notification('Community ping', { body: String(text || 'New ping').slice(0, 160), tag: String(id) }); } catch(e) {}
+    }
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+})();
+</script>
 
 <script>
 (function(){
@@ -9892,8 +9937,10 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     function restoreScroll(){
       var latest = state.jumpToLatest || wasNearBottom;
       if (latest) list.scrollTop = list.scrollHeight; else list.scrollTop = oldTop;
-      state.jumpToLatest = false;
-      requestAnimationFrame(function(){ if (latest) list.scrollTop = list.scrollHeight; updateChatNavigation(); });
+      requestAnimationFrame(function(){
+        if (latest) list.scrollTop = list.scrollHeight;
+        requestAnimationFrame(function(){ if (latest) list.scrollTop = list.scrollHeight; state.jumpToLatest = false; updateChatNavigation(); });
+      });
       updateChatNavigation();
     }
     if (firebaseMode && !firebaseAvailable()) { list.innerHTML = '<div class="community-message community-locked">Firebase is temporarily rate-limited. The countdown at the top shows when reads resume.</div>'; return; }
@@ -9962,7 +10009,11 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (canEditMessage(row)) chatActions += '<button class="community-btn secondary community-edit-message" data-message-id="' + esc(row.id) + '">Edit</button>';
     if (canDeleteMessage(row)) chatActions += '<button class="community-btn secondary community-delete-message" data-message-id="' + esc(row.id) + '">Delete</button>';
     chatActions += '</div>';
-    return '<article class="community-message ' + (row.deleted_at ? 'is-deleted ' : '') + (/@(?:everyone|here|[a-z0-9_.-]+)\b/i.test(String(row.body || '')) ? 'has-mention' : '') + '" data-message-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + ' ' + edited + deleted + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="' + bodyClass + '">' + renderedBody + '</div>' + chatActions + '</article>';
+    var mentions = String(row.body || '').match(/@([a-z0-9_.-]+)/ig) || [];
+    var mine = String(profileUsername() || '').toLowerCase();
+    var directedAtMe = state.user && String(row.user_id) !== String(state.user.id) && mentions.some(function(mention){ return mention.slice(1).toLowerCase() === mine; });
+    var broadcast = mentions.some(function(mention){ return /^(?:@everyone|@here)$/i.test(mention); });
+    return '<article class="community-message ' + (row.deleted_at ? 'is-deleted ' : '') + (directedAtMe || broadcast ? 'has-mention' : '') + '" data-message-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + ' ' + edited + deleted + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="' + bodyClass + '">' + renderedBody + '</div>' + chatActions + '</article>';
   }
   function renderCachedMembers(main) {
     var html = renderMembers(state.memberRows, main);

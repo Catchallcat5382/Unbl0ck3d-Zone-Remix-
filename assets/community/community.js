@@ -761,8 +761,10 @@
     function restoreScroll(){
       var latest = state.jumpToLatest || wasNearBottom;
       if (latest) list.scrollTop = list.scrollHeight; else list.scrollTop = oldTop;
-      state.jumpToLatest = false;
-      requestAnimationFrame(function(){ if (latest) list.scrollTop = list.scrollHeight; updateChatNavigation(); });
+      requestAnimationFrame(function(){
+        if (latest) list.scrollTop = list.scrollHeight;
+        requestAnimationFrame(function(){ if (latest) list.scrollTop = list.scrollHeight; state.jumpToLatest = false; updateChatNavigation(); });
+      });
       updateChatNavigation();
     }
     if (firebaseMode && !firebaseAvailable()) { list.innerHTML = '<div class="community-message community-locked">Firebase is temporarily rate-limited. The countdown at the top shows when reads resume.</div>'; return; }
@@ -831,7 +833,11 @@
     if (canEditMessage(row)) chatActions += '<button class="community-btn secondary community-edit-message" data-message-id="' + esc(row.id) + '">Edit</button>';
     if (canDeleteMessage(row)) chatActions += '<button class="community-btn secondary community-delete-message" data-message-id="' + esc(row.id) + '">Delete</button>';
     chatActions += '</div>';
-    return '<article class="community-message ' + (row.deleted_at ? 'is-deleted ' : '') + (/@(?:everyone|here|[a-z0-9_.-]+)\b/i.test(String(row.body || '')) ? 'has-mention' : '') + '" data-message-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + ' ' + edited + deleted + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="' + bodyClass + '">' + renderedBody + '</div>' + chatActions + '</article>';
+    var mentions = String(row.body || '').match(/@([a-z0-9_.-]+)/ig) || [];
+    var mine = String(profileUsername() || '').toLowerCase();
+    var directedAtMe = state.user && String(row.user_id) !== String(state.user.id) && mentions.some(function(mention){ return mention.slice(1).toLowerCase() === mine; });
+    var broadcast = mentions.some(function(mention){ return /^(?:@everyone|@here)$/i.test(mention); });
+    return '<article class="community-message ' + (row.deleted_at ? 'is-deleted ' : '') + (directedAtMe || broadcast ? 'has-mention' : '') + '" data-message-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + ' ' + edited + deleted + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="' + bodyClass + '">' + renderedBody + '</div>' + chatActions + '</article>';
   }
   function renderCachedMembers(main) {
     var html = renderMembers(state.memberRows, main);
