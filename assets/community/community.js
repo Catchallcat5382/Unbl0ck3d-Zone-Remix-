@@ -103,9 +103,9 @@
   function profileAvatarHtml(profile, sizeClass) { var name = (profile && (profile.display_name || profile.username)) || 'M'; var avatar = String((profile && profile.avatar_url) || '').trim(); return avatar ? '<button type="button" class="community-profile-avatar ' + (sizeClass || '') + '" data-avatar-preview="' + esc(avatar) + '" aria-label="View ' + esc(name) + ' profile image"><img src="' + esc(avatar) + '" alt="' + esc(name) + '"></button>' : '<span class="community-profile-avatar ' + (sizeClass || '') + '">' + esc(name.charAt(0).toUpperCase()) + '</span>'; }
   function mergeProfile(profile) { if (!profile) return; var rank = { member: 0, mod: 1, admin: 2, co_owner: 3, owner: 4 }; var cur = state.profile || {}; state.profile = Object.assign({}, cur, profile); if ((rank[(window.UZCurrentProfile || {}).role] || 0) > (rank[state.profile.role] || 0)) state.profile.role = window.UZCurrentProfile.role; window.UZCurrentProfile = state.profile; }
   function profileFields() { return 'id, username, display_name, role, warnings, banned_until, muted_until' + (state.kickReady ? ', kicked_until' : '') + ', staff_note' + (state.presenceReady ? ', last_seen' : ''); }
-  function isOnline(profile) { if (!profile) return false; if (state.user && String(profile.id) === String(state.user.id)) return true; if (state.onlineIds && state.onlineIds[String(profile.id)]) return true; if (!profile.last_seen) return false; var t = new Date(profile.last_seen).getTime(); return Number.isFinite(t) && Date.now() - t < 90000; }
-  async function touchPresence() { if (firebaseMode) { if (!state.user || !state.client) return; try { await state.client.db.collection('profiles').doc(state.user.id).set({ last_seen: new Date().toISOString(), email: state.user.email || '' }, { merge: true }); } catch(e) {} return; } if (mongoMode) { try { var mine = await mongoFetch('/me'); mergeProfile(fromMongoUser(mine.user)); } catch(e) { if (e.status === 401 || e.status === 403) await forceSignedOut(e.message || 'Your account session ended.', e.data && e.data.banned ? profileUsername() : null); } return; } if (!ready || !state.client || !state.user || !state.presenceReady) return; var res = await state.client.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', state.user.id).select(profileFields()).single(); if (res.error) { if (/last_seen/i.test(res.error.message || '')) state.presenceReady = false; return; } if (res.data) mergeProfile(res.data); }
-  function startHeartbeat() { clearInterval(state.heartbeatTimer); if (!state.user) return; touchPresence(); state.heartbeatTimer = setInterval(function(){ touchPresence(); }, (mongoMode || firebaseMode) ? 60000 : 25000); }
+  function isOnline(profile) { if (!profile) return false; if (state.user && String(profile.id) === String(state.user.id)) return true; if (state.onlineIds && state.onlineIds[String(profile.id)]) return true; if (!profile.last_seen) return false; var t = new Date(profile.last_seen).getTime(); return Number.isFinite(t) && Date.now() - t < (firebaseMode ? 360000 : 90000); }
+  async function touchPresence() { if (firebaseMode) { if (!state.user || !state.client || document.hidden || (state.lastPresenceUser === state.user.id && Date.now() - (state.lastPresenceWrite || 0) < 300000)) return; state.lastPresenceUser = state.user.id; state.lastPresenceWrite = Date.now(); try { await state.client.db.collection('profiles').doc(state.user.id).set({ last_seen: new Date().toISOString() }, { merge: true }); } catch(e) { state.lastPresenceWrite = 0; firebaseCooldown(e); } return; } if (mongoMode) { try { var mine = await mongoFetch('/me'); mergeProfile(fromMongoUser(mine.user)); } catch(e) { if (e.status === 401 || e.status === 403) await forceSignedOut(e.message || 'Your account session ended.', e.data && e.data.banned ? profileUsername() : null); } return; } if (!ready || !state.client || !state.user || !state.presenceReady) return; var res = await state.client.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', state.user.id).select(profileFields()).single(); if (res.error) { if (/last_seen/i.test(res.error.message || '')) state.presenceReady = false; return; } if (res.data) mergeProfile(res.data); }
+  function startHeartbeat() { clearInterval(state.heartbeatTimer); if (!state.user) return; touchPresence(); state.heartbeatTimer = setInterval(function(){ touchPresence(); }, firebaseMode ? 300000 : (mongoMode ? 60000 : 25000)); }
   function subscribePresence() {
     if (!ready || !state.client || !state.user) return;
     if (state.presenceChannel) state.client.removeChannel(state.presenceChannel);
@@ -144,7 +144,11 @@
         else if (isBanned(state.profile)) await forceSignedOut('This account is banned.', (state.profile && state.profile.username) || 'this account');
         else if (isKicked(state.profile)) await forceSignedOut('You were kicked from this account until ' + when(state.profile.kicked_until) + '.');
         else clearDeviceBan((state.profile && state.profile.username) || profileUsername());
-        loadMembers(state.tab === 'members');
+        if (state.memberRows.length) {
+          var own = state.memberRows.findIndex(function(p){ return String(p.id) === String(state.user.id); });
+          if (own >= 0) state.memberRows[own] = state.profile; else state.memberRows.push(state.profile);
+          renderCachedMembers(state.tab === 'members');
+        }
       });
       return;
     }
@@ -294,10 +298,9 @@
       var avatar = normalizeAvatar(localStorage.getItem('uzCommunityAvatar:' + username) || '');
       if (!doc.exists) {
         await ref.set({ id: state.user.id, username: username, display_name: displayName() || username, avatar_url: avatar, role: 'member', warnings: 0, email: state.user.email || '', created_at: new Date().toISOString(), last_seen: new Date().toISOString() });
-      } else {
-        await ref.set({ last_seen: new Date().toISOString(), email: state.user.email || '' }, { merge: true });
+        state.lastPresenceUser = state.user.id; state.lastPresenceWrite = Date.now();
       }
-      doc = await ref.get();
+      if (!doc.exists) doc = await ref.get();
       mergeProfile(fromFirebaseProfile(doc.id, doc.data()));
       if (isDeleted(state.profile)) await forceSignedOut('This account was deleted.', null, (state.profile && state.profile.username) || username);
       else if (isBanned(state.profile)) await forceSignedOut('This account is banned.', (state.profile && state.profile.username) || username);
@@ -720,7 +723,7 @@
   function wireAnnouncementActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-edit-announcement'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; try { await editAnnouncement(row); } catch(e) { status(e.message || 'Announcement edit failed.'); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-announcement'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row) || !confirm('Delete this announcement?')) return; initClient(); try { if (firebaseMode) await state.client.db.collection('posts').doc(String(row.id)).delete(); else if (mongoMode) await mongoFetch('/posts/' + encodeURIComponent(row.id), { method: 'DELETE' }); else { var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) throw res.error; } if (window.UZNotify && window.UZNotify.removeText) window.UZNotify.removeText('@everyone: ' + stripPostChannel(row.title || '')); audit('announcement-delete', row.id); notifySaved('Announcement deleted'); renderAnnouncementsPanel(); } catch(e) { status(e.message || 'Announcement delete failed.'); } }; }); }
   function attachAnnouncementFile(e) { var file = e && e.target && e.target.files ? e.target.files[0] : null; var body = $('announcement-body'); if (!file || !body) return; if (file.size > 250000) { status('File is too large for inline sharing. Upload it somewhere and paste a link.'); return; } var reader = new FileReader(); reader.onload = function(){ body.value += (body.value ? '\n\n' : '') + 'Attached file: ' + file.name + '\n' + String(reader.result || '').slice(0, 12000); status('File attached.'); }; reader.readAsDataURL(file); }
   function stripPostChannel(title) { return String(title || '').replace(/^\[[^\]]+\]\s*/, ''); }
-  async function loadItems() {
+  async function loadItems(firebaseSnapshot) {
     var list = $('community-list'); if (!list) return; renderChannelHeader();
     var oldTop = list.scrollTop, wasNearBottom = list.scrollHeight - list.clientHeight - oldTop < 48;
     function restoreScroll(){
@@ -736,9 +739,9 @@
     if (firebaseMode) {
       try {
         initClient();
-        if (state.tab === 'members') { await loadMembers(true); return; }
+        if (state.tab === 'members') { if (firebaseSnapshot) { state.memberRows = firebaseSnapshot.docs.map(function(doc){ return fromFirebaseProfile(doc.id, doc.data()); }).filter(function(profile){ return !isDeleted(profile); }); renderCachedMembers(true); } else await loadMembers(true); return; }
         var collection = state.tab === 'chat' ? 'messages' : 'posts';
-        var snap = await state.client.db.collection(collection).orderBy('created_at', 'desc').limit(100).get();
+        var snap = firebaseSnapshot || await state.client.db.collection(collection).orderBy('created_at', 'desc').limit(60).get();
         var rows = snap.docs.map(firebaseRow).reverse().filter(function(row){ return !row.deleted_at || !!state.recentlyDeletedMessages[String(row.id)]; });
         if (state.tab === 'posts') rows = rows.filter(function(row){ return normalizePostChannel(row.title) === state.channelName; });
         await loadFirebaseAttachments(collection, rows);
@@ -792,6 +795,12 @@
     chatActions += '</div>';
     return '<article class="community-message ' + (row.deleted_at ? 'is-deleted ' : '') + (/@(?:everyone|here|[a-z0-9_.-]+)\b/i.test(String(row.body || '')) ? 'has-mention' : '') + '" data-message-id="' + esc(row.id) + '"><div class="community-meta"><button class="community-user-link" data-user-id="' + esc(row.user_id) + '">' + authorLabel(p, row) + '</button><span> / ' + esc(r) + metaEmail(p) + ' ' + edited + deleted + '</span><span>' + esc(when(row.created_at)) + '</span></div><div class="' + bodyClass + '">' + renderedBody + '</div>' + chatActions + '</article>';
   }
+  function renderCachedMembers(main) {
+    var html = renderMembers(state.memberRows, main);
+    if (main && $('community-list')) $('community-list').innerHTML = html || '<div class="community-message">No members yet.</div>';
+    var side = $('community-side-members'); if (side) side.innerHTML = renderMembers(state.memberRows, false);
+    wireMemberActions(); wireProfileLinks();
+  }
   async function loadMembers(main) {
     if (!ready) return;
     if (firebaseMode) {
@@ -799,10 +808,7 @@
         initClient();
         var snap = await state.client.db.collection('profiles').limit(200).get();
         state.memberRows = snap.docs.map(function(doc){ return fromFirebaseProfile(doc.id, doc.data()); }).filter(function(profile){ return !isDeleted(profile); });
-        var html = renderMembers(state.memberRows, main);
-        if (main && $('community-list')) $('community-list').innerHTML = html || '<div class="community-message">No members yet.</div>';
-        var side = $('community-side-members'); if (side) side.innerHTML = renderMembers(state.memberRows, false);
-        wireMemberActions(); wireProfileLinks();
+        renderCachedMembers(main);
       } catch(e) { if (main && $('community-list')) $('community-list').innerHTML = '<div class="community-message community-locked">' + esc(e.message) + '</div>'; }
       return;
     }
@@ -1090,7 +1096,7 @@
     if (firebaseMode) {
       var collection = state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts');
       var query = collection === 'profiles' ? state.client.db.collection(collection).limit(200) : state.client.db.collection(collection).orderBy('created_at', 'desc').limit(60);
-      state.realtime = query.onSnapshot(function(){ loadItems(); }, function(error){ firebaseCooldown(error); });
+      state.realtime = query.onSnapshot(function(snapshot){ if (collection === (state.tab === 'members' ? 'profiles' : (state.tab === 'chat' ? 'messages' : 'posts'))) loadItems(snapshot); }, function(error){ firebaseCooldown(error); });
       return;
     }
     if (state.tab === 'members') return;
