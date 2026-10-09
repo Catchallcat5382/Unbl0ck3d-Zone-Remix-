@@ -213,12 +213,36 @@
     state.notificationUserId = state.user.id;
     state.notificationUnsub = state.client.db.collection('notifications').where('recipient_id', '==', state.user.id).limit(100).onSnapshot(function(snapshot){
       snapshot.docChanges().forEach(function(change){
-        if (change.type !== 'added') return;
+        if (change.type === 'removed') {
+          if (window.UZNotify && window.UZNotify.remove) window.UZNotify.remove('remote:' + change.doc.id);
+          return;
+        }
+        if (change.type !== 'added' && change.type !== 'modified') return;
         var data = change.doc.data() || {};
+        if (data.dismissed || data.read) {
+          if (window.UZNotify && window.UZNotify.remove) window.UZNotify.remove('remote:' + change.doc.id);
+          return;
+        }
         if (window.UZNotify && window.UZNotify.add) window.UZNotify.add(data.text || 'New notification', 'remote:' + change.doc.id, data);
       });
     }, function(error){ debugLog('notifications-failed', error && error.message); });
   }
+  async function syncRemoteNotification(id, action) {
+    if (!firebaseMode || !state.client || !id) return;
+    try { await state.client.db.collection('notifications').doc(String(id)).set({ read: action === 'read', dismissed: action === 'dismiss', updated_at: new Date().toISOString() }, { merge: true }); }
+    catch(error) { debugLog('notification-sync-failed', error && error.message); }
+  }
+  async function purgeRemoteNotifications(sourceId) {
+    if (!firebaseMode || !state.client || !sourceId) return;
+    try {
+      var snap = await state.client.db.collection('notifications').where('source_id', '==', String(sourceId)).limit(450).get();
+      if (!snap.empty) { var batch = state.client.db.batch(); snap.docs.forEach(function(doc){ batch.delete(doc.ref); }); await batch.commit(); }
+    } catch(error) { debugLog('notification-purge-failed', error && error.message); }
+  }
+  document.addEventListener('uz-notification-action', function(event){
+    var detail = event.detail || {};
+    if (detail.remoteId) syncRemoteNotification(detail.remoteId, detail.action || 'read');
+  });
   function subscribeAppealAlerts() {
     if (!firebaseMode || !state.client || !state.user || !['owner','co_owner','admin'].includes(role()) || state.appealAlertsUnsub) return;
     state.appealAlertsUnsub = state.client.db.collection('appeals').orderBy('created_at', 'desc').limit(20).onSnapshot(function(snapshot){
@@ -233,7 +257,7 @@
     var ids = (userIds || []).map(String).filter(function(id, index, all){ return id && id !== String(state.user.id) && all.indexOf(id) === index; }).slice(0, 450);
     if (!ids.length) return;
     var batch = state.client.db.batch();
-    ids.forEach(function(id){ var ref = state.client.db.collection('notifications').doc(); batch.set(ref, { recipient_id: id, sender_id: state.user.id, sender_username: profileUsername(), text: String(text || 'Notification').slice(0, 500), target: target || null, read: false, created_at: new Date().toISOString() }); });
+    ids.forEach(function(id){ var ref = state.client.db.collection('notifications').doc(); batch.set(ref, { recipient_id: id, sender_id: state.user.id, sender_username: profileUsername(), text: String(text || 'Notification').slice(0, 500), target: target || null, source_id: target && target.id ? String(target.id) : null, source_tab: target && target.tab ? String(target.tab) : null, read: false, dismissed: false, created_at: new Date().toISOString() }); });
     try { await batch.commit(); } catch(e) { debugLog('notification-write-failed', e && e.message); }
   }
   function notifyMentionedUsers(text, target) {
@@ -363,7 +387,8 @@
   }
   function replyBody(body) {
     if (!state.replyTo) return body;
-    return '> @' + state.replyTo.username + ': ' + state.replyTo.body + '\n' + body;
+    var target = state.replyTo.id ? '[reply:' + String(state.replyTo.id).replace(/[\[\]\r\n]/g, '') + '] ' : '';
+    return '> ' + target + '@' + state.replyTo.username + ': ' + state.replyTo.body + '\n' + body;
   }
   function renderComposer() {
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
@@ -436,9 +461,9 @@
   }
   function renderRichBody(text, attachment) {
     var raw = String(text || '');
-    var reply = raw.match(/^> @([a-z0-9_.-]+): ([^\n]*)\n/i);
+    var reply = raw.match(/^> (?:\[reply:([^\]\r\n]+)\] )?@([a-z0-9_.-]+): ([^\n]*)\n/i);
     var replyHtml = '';
-    if (reply) { replyHtml = '<div class="community-reply-reference">' + decorateMentions('@' + reply[1]) + ' <span>' + esc(reply[2]) + '</span></div>'; raw = raw.slice(reply[0].length); }
+    if (reply) { var replyTarget = reply[1] ? ' data-reply-target="' + esc(reply[1]) + '" role="button" tabindex="0" title="Jump to replied message"' : ''; replyHtml = '<div class="community-reply-reference"' + replyTarget + '>' + decorateMentions('@' + reply[2]) + ' <span>' + esc(reply[3]) + '</span></div>'; raw = raw.slice(reply[0].length); }
     var match = raw.match(/(?:^|\n)Attached file:\s*([^\n]+)\n(data:[^\s]+)/);
     var legacy = null;
     if (match) {
@@ -718,7 +743,7 @@
   }
   function wireAnnouncementActionsV2(rows) {
     Array.prototype.forEach.call(document.querySelectorAll('.community-edit-announcement'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (row && canEditPost(row)) beginAnnouncementEdit(row); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('.community-delete-announcement'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row) || !confirm('Delete this announcement?')) return; try { initClient(); if (firebaseMode) await state.client.db.collection('posts').doc(String(row.id)).delete(); else if (mongoMode) await mongoFetch('/posts/' + encodeURIComponent(row.id), { method: 'DELETE' }); else { var result = await state.client.from('posts').delete().eq('id', row.id); if (result.error) throw result.error; } if (window.UZNotify && window.UZNotify.removeText) window.UZNotify.removeText('@everyone: ' + stripPostChannel(row.title || '')); audit('announcement-delete', row.id); notifySaved('Announcement deleted'); await renderAnnouncementsPanelV2(); } catch(error) { status(error.message || 'Announcement delete failed.'); } }; });
+    Array.prototype.forEach.call(document.querySelectorAll('.community-delete-announcement'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row) || !confirm('Delete this announcement?')) return; try { initClient(); if (firebaseMode) await state.client.db.collection('posts').doc(String(row.id)).delete(); else if (mongoMode) await mongoFetch('/posts/' + encodeURIComponent(row.id), { method: 'DELETE' }); else { var result = await state.client.from('posts').delete().eq('id', row.id); if (result.error) throw result.error; } if (window.UZNotify && window.UZNotify.removeText) window.UZNotify.removeText('@everyone: ' + stripPostChannel(row.title || '')); purgeRemoteNotifications(row.id); audit('announcement-delete', row.id); notifySaved('Announcement deleted'); await renderAnnouncementsPanelV2(); } catch(error) { status(error.message || 'Announcement delete failed.'); } }; });
   }
   async function renderAnnouncementsPanelV2() {
     var list = $('announcements-list');
@@ -1097,20 +1122,41 @@
   function wirePostActionsV2(rows) {
     Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (row && canEditPost(row)) beginPostEdit(row); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row) || !confirm('Delete this post?')) return; try { initClient(); if (firebaseMode) await state.client.db.collection('posts').doc(String(row.id)).delete(); else if (mongoMode) await mongoFetch('/posts/' + encodeURIComponent(row.id), { method: 'DELETE' }); else { var result = await state.client.from('posts').delete().eq('id', row.id); if (result.error) throw result.error; } audit('post-delete', row.id); notifySaved('Post deleted'); loadItems(); } catch(error) { status(error.message || 'Post delete failed.'); } }; });
+    Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row) || !confirm('Delete this post?')) return; try { initClient(); if (firebaseMode) await state.client.db.collection('posts').doc(String(row.id)).delete(); else if (mongoMode) await mongoFetch('/posts/' + encodeURIComponent(row.id), { method: 'DELETE' }); else { var result = await state.client.from('posts').delete().eq('id', row.id); if (result.error) throw result.error; } purgeRemoteNotifications(row.id); audit('post-delete', row.id); notifySaved('Post deleted'); loadItems(); } catch(error) { status(error.message || 'Post delete failed.'); } }; });
   }
-  function wirePostActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; var title = prompt('Post title', stripPostChannel(row.title || '')); if (title == null) return; var body = prompt('Post body', row.body || ''); if (body == null) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).set({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }, { merge: true }); audit('post-edit', row.id); notifySaved('Post updated'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').update({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post updated'); loadItems(); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row)) return; if (!confirm('Delete this post?')) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).delete(); audit('post-delete', row.id); notifySaved('Post deleted'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post deleted'); loadItems(); } }; }); }
+  function wirePostActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; var title = prompt('Post title', stripPostChannel(row.title || '')); if (title == null) return; var body = prompt('Post body', row.body || ''); if (body == null) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).set({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }, { merge: true }); audit('post-edit', row.id); notifySaved('Post updated'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').update({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post updated'); loadItems(); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row)) return; if (!confirm('Delete this post?')) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).delete(); purgeRemoteNotifications(row.id); audit('post-delete', row.id); notifySaved('Post deleted'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post deleted'); loadItems(); } }; }); }
   function messageById(rows, id) { return rows.filter(function(r){ return String(r.id) === String(id); })[0]; }
   function wireMessageActions(rows) {
     Array.prototype.forEach.call(document.querySelectorAll('.community-reply-message'), function(btn){ btn.onclick = function(){
       var row = messageById(rows, btn.dataset.messageId), input = $('community-chat-input'); if (!row || !input) return;
       var profile = row.profiles || {}, name = profile.username || row.username || 'member';
-      state.replyTo = { username: name, name: profile.display_name || name, body: String(row.body || '').replace(/\s+/g, ' ').slice(0, 100) };
+      state.replyTo = { id: row.id, username: name, name: profile.display_name || name, body: String(row.body || '').replace(/\s+/g, ' ').slice(0, 100) };
       updateReplyPreview(); input.focus();
     }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-edit-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canEditMessage(row)) return; var body = prompt('Edit message', row.body || ''); if (body == null) return; body = body.trim(); if (!body) return; if (hasBadWord(body)) { status('Blocked word found. This edit will not save.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ body: body, updated_at: new Date().toISOString() }, { merge: true }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'PATCH', body: JSON.stringify({ body: body }) }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ body: body, updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } }; });
-    Array.prototype.forEach.call(document.querySelectorAll('.community-delete-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canDeleteMessage(row)) return; if (!confirm('Delete this message? It remains visible in this tab until you refresh or leave.')) return; state.recentlyDeletedMessages[String(row.id)] = true; var auditDetail = String(row.id) + ': ' + String(row.deleted_body || row.body || '').slice(0, 900); if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }, { merge: true }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'DELETE' }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }).eq('id', row.id); if (res.error) { delete state.recentlyDeletedMessages[String(row.id)]; status(res.error.message); } else { audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } }; });
+    Array.prototype.forEach.call(document.querySelectorAll('.community-delete-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canDeleteMessage(row)) return; if (!confirm('Delete this message? It remains visible in this tab until you refresh or leave.')) return; state.recentlyDeletedMessages[String(row.id)] = true; var auditDetail = String(row.id) + ': ' + String(row.deleted_body || row.body || '').slice(0, 900); if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }, { merge: true }); purgeRemoteNotifications(row.id); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'DELETE' }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }).eq('id', row.id); if (res.error) { delete state.recentlyDeletedMessages[String(row.id)]; status(res.error.message); } else { audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } }; });
   }
+  function jumpToMessage(id) {
+    var safe = String(id || '').replace(/[^a-zA-Z0-9_:.@-]/g, '');
+    if (!safe) return false;
+    var found = document.querySelector('[data-message-id="' + safe + '"]');
+    if (!found) return false;
+    found.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    found.classList.add('community-notification-focus');
+    setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800);
+    return true;
+  }
+  document.addEventListener('click', function(event){
+    var reference = event.target && event.target.closest ? event.target.closest('.community-reply-reference[data-reply-target]') : null;
+    if (!reference || !jumpToMessage(reference.getAttribute('data-reply-target'))) return;
+    event.preventDefault();
+  });
+  document.addEventListener('keydown', function(event){
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    var reference = event.target && event.target.closest ? event.target.closest('.community-reply-reference[data-reply-target]') : null;
+    if (!reference || !jumpToMessage(reference.getAttribute('data-reply-target'))) return;
+    event.preventDefault();
+  });
   function parseDurationToken(v, fallback) { v = String(v || '').toLowerCase(); if (v === 'perm' || v === 'perma' || v === 'forever') return 52560000; var m = v.match(/^(\d+)(m|h|d)?$/); if (!m) return fallback; var n = parseInt(m[1], 10); return m[2] === 'h' ? n * 60 : (m[2] === 'd' ? n * 1440 : n); }
   function parseStaffCommand(text) { var parts = String(text || '').trim().split(/\s+/); var cmd = (parts.shift() || '').replace(/^\//, '').toLowerCase(); if (!cmd) return null; if (cmd === 'role') return { local: 'Current role: ' + role() }; if (cmd === 'setrole') return { action: 'setrole', target: (parts.shift() || '').toLowerCase(), newRole: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (cmd === 'deleteuser') return { action: 'deleteuser', target: (parts.shift() || '').toLowerCase(), reason: parts.join(' ') }; if (cmd === 'mute' || cmd === 'kick') { var target = (parts.shift() || '').toLowerCase(); var minutes = parseDurationToken(parts[0], cmd === 'kick' ? 10 : 10); if (/^(\d+)(m|h|d)?$|^perm|^perma|^forever/i.test(parts[0] || '')) parts.shift(); return { action: cmd, target: target, minutes: minutes, reason: parts.join(' ') }; } if (['warn','ban','unban','unmute'].indexOf(cmd) !== -1) return { action: cmd, target: (parts.shift() || '').toLowerCase(), minutes: null, reason: parts.join(' ') }; return { error: 'Unknown command.' }; }
   async function runStaffCommandTextV2(text) {

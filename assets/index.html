@@ -3301,6 +3301,8 @@
             </select>
             <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:14px 0;">
             <p style="color:#aaa;font-size:13px;font-weight:bold;">Panic Key</p>
+            <button class="settings-btn" id="uz-load-best-cloak-preset" type="button" style="margin-top:8px;">Load best cloak preset</button>
+            <p id="uz-best-cloak-help" style="color:#aaa;font-size:12px;margin:8px 0 0;">ClassLink cloaking uses the backtick key (`). Press it once to show the ClassLink cover and press it again to return.</p>
             <label style="display:flex;align-items:center;gap:10px;margin-top:10px;cursor:pointer;color:var(--accent);font-family:'ApplePixel',sans-serif;font-size:14px;">
               <input type="checkbox" id="panic-enabled-check" onchange="setPanicEnabled(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
               Enable panic key
@@ -3311,8 +3313,8 @@
             </div>
             <select id="panic-action-select" class="settings-input" onchange="savePanicSettings()" style="margin-top:12px;">
               <option value="redirect">Redirect to URL</option>
-              <option value="cover">Visual cover</option>
-              <option value="embed">Embed cover</option>
+              <option value="cover">ClassLink cloaking</option>
+              <option value="embed">Login + ClassLink cloaking</option>
               <option value="close">Close this tab</option>
               <option value="blank">Blank page</option>
               <option value="history-back" disabled>Legacy cover</option>
@@ -5076,7 +5078,7 @@
       return localStorage.getItem('panicUrl') || 'https://www.google.com';
     }
     function getPanicAction() {
-      var action = localStorage.getItem('panicAction') || 'redirect';
+      var action = localStorage.getItem('panicAction') || 'embed';
       return action === 'history-back' ? 'cover' : action;
     }
     function savePanicSettings() {
@@ -5221,9 +5223,9 @@
       var apps = [
         ['Freckle (Student Dashboard)', 'FrontRow.png'], ['Ed - Your Friend in Learning', 'ED-YFIL.png'], ['Canva', 'Canva.png'], ['Canvas', 'canvas.png'], ['Code.org', 'codeai_new-1783962879713.png'], ['Discovery Education', 'Discovery_Education3.png'], ['Brain Pop', 'BrainPOP1.png'], ['Brain Pop Jr.', 'BrainPOP-Jr1.png'], ['Microsoft 365', 'Microsoft_365_New.png'],
         ['Smart Futures', 'Smart_Futures_New.png'], ['Think Central', 'ThinkCentral2-Student.png'], ['WeVideo for School', 'WeVideo.png'], ['Code Spark', 'CodeSpark.png'], ['My Backpack', 'my_backback.png'], ['Teach Your Monster to Read', 'teachyourmonster.png'], ['BreakOutEdu Student', 'BreakoutEdu.png'], ['Splash Learn', 'Splash_Learn.png'], ['Scholastic Digital Manager', 'Scholastic_News.png'],
-        ['Book Creator', 'Book_Creator.png'], ['Seesaw', 'Seesaw3.png'], ['Kodable', 'Kodable.png'], ['TCI', 'TCI-Volusia.png'], ['Quill', 'Quill.png'], ['Student Support Resources', ''], ['Infinite Campus student', 'Infinite-Campus.png'], ['Learning A-Z', 'Kids_A-Z_LCISD.png'],
+        ['Book Creator', 'Book_Creator.png'], ['Seesaw', 'Seesaw3.png'], ['Kodable', 'Kodable.png'], ['TCI', 'TCI-Volusia.png'], ['Quill', 'Quill.png'], ['Infinite Campus student', 'Infinite-Campus.png'], ['Learning A-Z', 'Kids_A-Z_LCISD.png'],
         ['ConnectEd', 'ConnectEd2.png'], ['Great Minds InSync', 'GreatMinds.png'], ['NUITEQ Chorus', 'Nuiteq_Chorus.png'], ['Status Dashboard', 'NPSD_statusgator.png'], ['Adobe Express', 'Adobe_Express.png'], ['Gale', 'gale.png'], ['Membean Students', 'Membean.png'], ['Carolina Science Online', 'Carolina_Science.png'],
-        ['Desmos Calculators', ''], ['Edficiency Tohickon', 'generic_web.png'], ['Flex (FlexTime Manager)', 'Flextime_manager3.png'], ['Naviance Student', 'Naviance2.png'], ['ReadWorks Digital (Student)', 'ReadWorksDigital.png'], ['SketchUp - Microsoft Login', 'SketchUp2.png'], ['Google Translate', 'google-translate040814.png'], ['Lightspeed Classroom', 'Lightspeed_Classroom.png'], ['Summit K12', 'SummitK-12.png']
+        ['Edficiency Tohickon', 'generic_web.png'], ['Flex (FlexTime Manager)', 'Flextime_manager3.png'], ['Naviance Student', 'Naviance2.png'], ['ReadWorks Digital (Student)', 'ReadWorksDigital.png'], ['SketchUp - Microsoft Login', 'SketchUp2.png'], ['Google Translate', 'google-translate040814.png'], ['Lightspeed Classroom', 'Lightspeed_Classroom.png'], ['Summit K12', 'SummitK-12.png']
       ];
       var page = document.createElement('div'); page.className = 'uz-embed-cover';
       var skin = document.createElement('style'); skin.textContent = '.uz-embed-cover{position:absolute!important;inset:0!important;height:auto!important;grid-template-columns:245px minmax(0,1fr)!important;background:#f7f7f7!important;font:14px Arial,sans-serif!important}.uz-embed-cover aside{background:#d83510!important;padding:0 14px!important;gap:0!important}.uz-embed-brand{height:72px;display:flex;align-items:center;gap:14px;color:#fff}.uz-embed-brand span{font:italic 34px Georgia,serif;color:#17669d;letter-spacing:-10px;width:44px}.uz-embed-brand strong{font-size:16px!important;margin:0!important;color:#fff!important}.uz-embed-cover aside button{display:flex;align-items:center;gap:18px;width:100%;min-height:45px;padding:8px 0!important;font-size:13px!important}.uz-embed-cover aside button b{width:26px;text-align:center;font-size:23px}.uz-embed-cover aside hr{width:100%;border:0;border-top:1px solid #ffffff39;margin:13px 0 20px}.uz-embed-content{position:relative!important;min-height:100%!important;background:#fafafa!important;overflow:auto!important}.uz-embed-cover header{height:50px;box-sizing:border-box;padding:4px 30px!important;display:flex;align-items:center;gap:16px;background:#f0f0f0!important}.uz-embed-cover header input{height:39px!important;min-width:0;flex:1}.uz-embed-top-actions{display:flex;align-items:center;gap:7px;color:#34383d}.uz-embed-top-actions button{width:31px;height:35px;padding:0;border:0;background:transparent;color:#34383d;font-size:18px;cursor:pointer}.uz-embed-top-actions button:last-child{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#e5e5e5}.uz-embed-top-actions img{display:block;width:100%;height:100%;object-fit:contain}.uz-embed-cover main{min-height:100%;box-sizing:border-box;padding:36px 65px 90px 44px!important;max-width:none!important}.uz-embed-cover-grid{grid-template-columns:repeat(9,minmax(0,1fr))!important;gap:24px 12px!important}.uz-embed-app{min-width:0;min-height:126px!important;gap:7px!important;padding:0!important;font:13px/1.13 Arial,sans-serif!important}.uz-embed-app>span:last-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:126px;min-height:30px;text-align:center}.uz-embed-app-icon{width:76px!important;height:76px!important;border-radius:18px!important;background:#fff!important;color:#e33b0b!important;box-shadow:0 2px 12px #0002!important;overflow:hidden;font-size:18px!important}.uz-embed-app-icon img{display:block;width:100%;height:100%;object-fit:contain}.uz-embed-app-icon.is-folder{background:#d93610!important;color:#fff!important}.uz-embed-dock{position:fixed;left:245px;right:0;bottom:0;display:flex;justify-content:center;align-items:center;gap:12px;height:74px;background:transparent}.uz-embed-dock button{width:60px;height:60px;padding:0;border:0;border-radius:14px;background:#fff;box-shadow:0 2px 7px #0002;cursor:pointer}.uz-embed-dock img{width:100%;height:100%;object-fit:contain;border-radius:14px}@media(max-width:1450px){.uz-embed-cover-grid{grid-template-columns:repeat(7,minmax(0,1fr))!important}}@media(max-width:1050px){.uz-embed-cover-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}.uz-embed-cover main{padding:24px 48px 90px 20px!important}}@media(max-width:650px){.uz-embed-cover{grid-template-columns:82px minmax(0,1fr)!important}.uz-embed-cover aside{padding:0 5px!important}.uz-embed-brand{gap:3px}.uz-embed-brand span{display:none}.uz-embed-brand strong{font-size:14px!important}.uz-embed-cover aside button{font-size:10px!important;gap:2px}.uz-embed-cover aside button b{font-size:14px;width:12px}.uz-embed-cover header{padding:4px 8px!important}.uz-embed-top-actions{gap:0}.uz-embed-top-actions button{width:25px}.uz-embed-cover-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:16px 3px!important}.uz-embed-cover main{padding:18px 5px 90px!important}.uz-embed-dock{left:82px;gap:3px}.uz-embed-dock button{width:42px;height:42px}}'; page.appendChild(skin);
@@ -9529,12 +9531,25 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     state.notificationUserId = state.user.id;
     state.notificationUnsub = state.client.db.collection('notifications').where('recipient_id', '==', state.user.id).limit(100).onSnapshot(function(snapshot){
       snapshot.docChanges().forEach(function(change){
-        if (change.type !== 'added') return;
+        if (change.type === 'removed') { if (window.UZNotify && window.UZNotify.remove) window.UZNotify.remove('remote:' + change.doc.id); return; }
+        if (change.type !== 'added' && change.type !== 'modified') return;
         var data = change.doc.data() || {};
+        if (data.dismissed || data.read) { if (window.UZNotify && window.UZNotify.remove) window.UZNotify.remove('remote:' + change.doc.id); return; }
         if (window.UZNotify && window.UZNotify.add) window.UZNotify.add(data.text || 'New notification', 'remote:' + change.doc.id, data);
       });
     }, function(error){ debugLog('notifications-failed', error && error.message); });
   }
+  async function syncRemoteNotification(id, action) {
+    if (!firebaseMode || !state.client || !id) return;
+    try { await state.client.db.collection('notifications').doc(String(id)).set({ read: action === 'read', dismissed: action === 'dismiss', updated_at: new Date().toISOString() }, { merge: true }); }
+    catch(error) { debugLog('notification-sync-failed', error && error.message); }
+  }
+  async function purgeRemoteNotifications(sourceId) {
+    if (!firebaseMode || !state.client || !sourceId) return;
+    try { var snap = await state.client.db.collection('notifications').where('source_id', '==', String(sourceId)).limit(450).get(); if (!snap.empty) { var batch = state.client.db.batch(); snap.docs.forEach(function(doc){ batch.delete(doc.ref); }); await batch.commit(); } }
+    catch(error) { debugLog('notification-purge-failed', error && error.message); }
+  }
+  document.addEventListener('uz-notification-action', function(event){ var detail = event.detail || {}; if (detail.remoteId) syncRemoteNotification(detail.remoteId, detail.action || 'read'); });
   function subscribeAppealAlerts() {
     if (!firebaseMode || !state.client || !state.user || !['owner','co_owner','admin'].includes(role()) || state.appealAlertsUnsub) return;
     state.appealAlertsUnsub = state.client.db.collection('appeals').orderBy('created_at', 'desc').limit(20).onSnapshot(function(snapshot){
@@ -9549,7 +9564,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var ids = (userIds || []).map(String).filter(function(id, index, all){ return id && id !== String(state.user.id) && all.indexOf(id) === index; }).slice(0, 450);
     if (!ids.length) return;
     var batch = state.client.db.batch();
-    ids.forEach(function(id){ var ref = state.client.db.collection('notifications').doc(); batch.set(ref, { recipient_id: id, sender_id: state.user.id, sender_username: profileUsername(), text: String(text || 'Notification').slice(0, 500), target: target || null, read: false, created_at: new Date().toISOString() }); });
+    ids.forEach(function(id){ var ref = state.client.db.collection('notifications').doc(); batch.set(ref, { recipient_id: id, sender_id: state.user.id, sender_username: profileUsername(), text: String(text || 'Notification').slice(0, 500), target: target || null, source_id: target && target.id ? String(target.id) : null, source_tab: target && target.tab ? String(target.tab) : null, read: false, dismissed: false, created_at: new Date().toISOString() }); });
     try { await batch.commit(); } catch(e) { debugLog('notification-write-failed', e && e.message); }
   }
   function notifyMentionedUsers(text, target) {
@@ -9679,7 +9694,8 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function replyBody(body) {
     if (!state.replyTo) return body;
-    return '> @' + state.replyTo.username + ': ' + state.replyTo.body + '\n' + body;
+    var target = state.replyTo.id ? '[reply:' + String(state.replyTo.id).replace(/[\[\]\r\n]/g, '') + '] ' : '';
+    return '> ' + target + '@' + state.replyTo.username + ': ' + state.replyTo.body + '\n' + body;
   }
   function renderComposer() {
     var chat = $('community-chat-form'); var post = $('community-post-form'); var staff = $('community-staff-form'); if (!chat || !post || !staff) return;
@@ -9752,9 +9768,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
   }
   function renderRichBody(text, attachment) {
     var raw = String(text || '');
-    var reply = raw.match(/^> @([a-z0-9_.-]+): ([^\n]*)\n/i);
+    var reply = raw.match(/^> (?:\[reply:([^\]\r\n]+)\] )?@([a-z0-9_.-]+): ([^\n]*)\n/i);
     var replyHtml = '';
-    if (reply) { replyHtml = '<div class="community-reply-reference">' + decorateMentions('@' + reply[1]) + ' <span>' + esc(reply[2]) + '</span></div>'; raw = raw.slice(reply[0].length); }
+    if (reply) { var replyTarget = reply[1] ? ' data-reply-target="' + esc(reply[1]) + '" role="button" tabindex="0" title="Jump to replied message"' : ''; replyHtml = '<div class="community-reply-reference"' + replyTarget + '>' + decorateMentions('@' + reply[2]) + ' <span>' + esc(reply[3]) + '</span></div>'; raw = raw.slice(reply[0].length); }
     var match = raw.match(/(?:^|\n)Attached file:\s*([^\n]+)\n(data:[^\s]+)/);
     var legacy = null;
     if (match) {
@@ -10421,7 +10437,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     Array.prototype.forEach.call(document.querySelectorAll('.community-reply-message'), function(btn){ btn.onclick = function(){
       var row = messageById(rows, btn.dataset.messageId), input = $('community-chat-input'); if (!row || !input) return;
       var profile = row.profiles || {}, name = profile.username || row.username || 'member';
-      state.replyTo = { username: name, name: profile.display_name || name, body: String(row.body || '').replace(/\s+/g, ' ').slice(0, 100) };
+      state.replyTo = { id: row.id, username: name, name: profile.display_name || name, body: String(row.body || '').replace(/\s+/g, ' ').slice(0, 100) };
       updateReplyPreview(); input.focus();
     }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-edit-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canEditMessage(row)) return; var body = prompt('Edit message', row.body || ''); if (body == null) return; body = body.trim(); if (!body) return; if (hasBadWord(body)) { status('Blocked word found. This edit will not save.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ body: body, updated_at: new Date().toISOString() }, { merge: true }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'PATCH', body: JSON.stringify({ body: body }) }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ body: body, updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } }; });
@@ -11622,6 +11638,52 @@ async function check() { if (authTransition) return; if (isTempOwner()) { setLig
     document.body.appendChild(gate);
   }
   setTimeout(showAuthFallback, 4500);
+})();
+</script>
+<script>
+(function(){
+  function rows(){ try { var value = JSON.parse(localStorage.getItem('uzNotifications') || '[]'); return Array.isArray(value) ? value : []; } catch(e) { return []; } }
+  function key(row){ return String(row && (row.id || row.text) || ''); }
+  function emit(row, action){ if (row && row.remoteId) document.dispatchEvent(new CustomEvent('uz-notification-action', { detail: { remoteId: row.remoteId, action: action } })); }
+  function installNotificationBridge(){
+    if (!window.UZNotify || window.UZNotify.__bridgeReady) return;
+    var api = window.UZNotify;
+    api.remove = function(id){ var next = rows().filter(function(row){ return key(row) !== String(id); }); localStorage.setItem('uzNotifications', JSON.stringify(next)); if (api.render) api.render(); };
+    api.__bridgeReady = true;
+  }
+  document.addEventListener('click', function(event){
+    var target = event.target;
+    if (!target || !target.dataset) return;
+    var id = target.dataset.notificationDismiss || target.dataset.notificationRead || null;
+    var action = target.dataset.notificationDismiss !== undefined ? 'dismiss' : target.dataset.notificationRead !== undefined ? 'read' : '';
+    if (id && action) rows().forEach(function(row){ if (key(row) === String(id)) emit(row, action); });
+    if (target.dataset.notificationDismissAll !== undefined) rows().forEach(function(row){ emit(row, 'dismiss'); });
+  }, true);
+  document.addEventListener('click', function(event){
+    var reference = event.target && event.target.closest ? event.target.closest('.community-reply-reference[data-reply-target]') : null;
+    if (!reference) return;
+    var id = String(reference.getAttribute('data-reply-target') || '').replace(/[^a-zA-Z0-9_:.@-]/g, '');
+    var found = id ? document.querySelector('[data-message-id="' + id + '"]') : null;
+    if (!found) return;
+    event.preventDefault(); found.scrollIntoView({ behavior: 'smooth', block: 'center' }); found.classList.add('community-notification-focus');
+    setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800);
+  });
+  function loadPreset(){
+    try { localStorage.setItem('cloakPreset', 'classlink'); localStorage.setItem('panicKey', 'Backquote'); localStorage.setItem('panicAction', 'embed'); } catch(e) {}
+    if (typeof applyCloakPreset === 'function') applyCloakPreset('classlink');
+    var action = document.getElementById('panic-action-select'); if (action) action.value = 'embed';
+    var keyInput = document.getElementById('panic-key-input'); if (keyInput) keyInput.value = '`';
+    if (typeof notifyAutosave === 'function') notifyAutosave('Best ClassLink cloak preset loaded');
+  }
+  function setup(){
+    installNotificationBridge();
+    var style = document.createElement('style'); style.id = 'uz-notification-compact-style';
+    style.textContent = '#uz-notification-list{width:min(300px,calc(100vw - 24px))!important;max-height:min(42vh,280px)!important;padding:7px!important;border-radius:8px!important}#uz-notification-list .uz-notification-item{padding:6px 4px!important;font-size:12px!important}#uz-notification-list .uz-notification-actions{gap:4px!important;margin-top:5px!important}#uz-notification-list .uz-notification-actions button{padding:3px 5px!important;font-size:10px!important}.community-reply-reference[data-reply-target]{cursor:pointer;text-decoration:underline;text-decoration-style:dotted}.community-reply-reference[data-reply-target]:hover{color:var(--accent);text-decoration-style:solid}';
+    document.head.appendChild(style);
+    var preset = document.getElementById('uz-load-best-cloak-preset'); if (preset) preset.onclick = loadPreset;
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  setTimeout(installNotificationBridge, 300); setTimeout(installNotificationBridge, 1200);
 })();
 </script>
 </body>
