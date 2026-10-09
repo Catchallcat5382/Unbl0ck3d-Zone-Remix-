@@ -6888,8 +6888,9 @@ let DATA = {
 
     async function loadOneDrive() {
       if (DATA.onedrive.length) return;
-      const image = sc13nc3Url() + '/assets/img/onedrive.png';
-      const base = sc13nc3Url() + '/assets/html/onedrive/';
+      const siteAssets = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/';
+      const image = siteAssets + 'img/onedrive.png';
+      const base = siteAssets + 'html/onedrive/';
       try {
         const response = await fetch(base + 'zip-games.json', { cache: 'force-cache' });
         if (!response.ok) throw new Error('ZIP game manifest request failed');
@@ -6907,7 +6908,7 @@ let DATA = {
     async function loadForked() {
       if (DATA.forked.length) return;
       const image = 'https://github.githubassets.com/favicons/favicon.svg';
-      const manifestUrl = sc13nc3Url() + '/assets/html/forked-from-github.json';
+      const manifestUrl = 'https://raw.githubusercontent.com/Catchallcat5382/Unbl0ck3d-Zone-Remix-/master/assets/html/forked-from-github.json';
       try {
         const response = await fetch(manifestUrl, { cache: 'force-cache' });
         if (!response.ok) throw new Error('GitHub game manifest request failed');
