@@ -194,6 +194,9 @@
       state.client.db.collection('staffLogs').add({ action: entry.action, detail: entry.detail, actor_id: state.user.id, actor_username: entry.by, created_at: entry.at }).catch(function(error){ debugLog('staff-log-failed', error && error.message); state.staffLogError = error && error.message || 'Shared log write failed'; status('Shared staff log could not save: ' + state.staffLogError); });
     }
   }
+  function logHtmlDownload(file, url) {
+    audit('html-download', JSON.stringify({ file: String(file || 'g4mes.html').slice(0, 160), url: String(url || '').slice(0, 500), at: new Date().toISOString() }));
+  }
   async function loadStaffLogs() {
     var local = [];
     try { local = JSON.parse(localStorage.getItem('uzAuditLog') || '[]'); } catch(e) {}
@@ -1292,7 +1295,7 @@
     if (target.tab) setTab(target.tab, target.channel || (target.tab === 'chat' ? 'chat' : state.channelName));
     setTimeout(function(){ var selector = target.id ? '[data-message-id="' + String(target.id).replace(/"/g, '') + '"],[data-post-id="' + String(target.id).replace(/"/g, '') + '"],[data-announcement-id="' + String(target.id).replace(/"/g, '') + '"]' : ''; var found = selector ? document.querySelector(selector) : null; if (found) { found.scrollIntoView({ behavior: 'smooth', block: 'center' }); found.classList.add('community-notification-focus'); setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800); } }, 220);
   });
-  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, staffLogError: staffLogError, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, scrollLatest: function(){ var list = $('community-list'); if (!list) return; state.jumpToLatest = true; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; state.jumpToLatest = false; updateChatNavigation(); }); }); }, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
+  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, staffLogError: staffLogError, logHtmlDownload: logHtmlDownload, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, scrollLatest: function(){ var list = $('community-list'); if (!list) return; state.jumpToLatest = true; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; state.jumpToLatest = false; updateChatNavigation(); }); }); }, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
   window.UZ_ACCOUNT_DEBUG.push('community-js-ready');
   window.initCommunity = function () { ensureCommunityTools(); Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initCommunity); else window.initCommunity();

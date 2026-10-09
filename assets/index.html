@@ -2408,6 +2408,7 @@
 <button class="g4mes-cat" data-cat="bloxy"><img class="cat-logo" src="https://quantil.jsdelivr.net/gh/s0n-1m-cr1n3/sc13nc3/assets/img/bloxy.png" alt="Bloxy" title="Bloxy"></button>
 <button class="g4mes-cat" data-cat="yt"><img class="cat-logo" src="https://quantil.jsdelivr.net/gh/s0n-1m-cr1n3/sc13nc3/assets/img/youtube.png" alt="YouTube Playables" title="YouTube Playables"></button>
 <button class="g4mes-cat" data-cat="blox"><img class="cat-logo" src="https://quantil.jsdelivr.net/gh/s0n-1m-cr1n3/sc13nc3/assets/img/blox.png" alt="Blox" title="Blox"></button>
+<button class="g4mes-cat" data-cat="onedrive"><img class="cat-logo" src="assets/img/onedrive.png" alt="OneDrive" title="OneDrive"></button>
         <button class="g4mes-cat" data-cat="all">All</button>
 <button class="g4mes-cat" data-cat="favs" style="color:#ff4444;">&#9829; Favs</button>
         </div>
@@ -6248,6 +6249,7 @@ if (/<head/i.test(html)) html = html.replace(/<head([^>]*)>/i, '<head$1>' + ytSt
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = name + '.html';
+        if (window.UZCommunity && window.UZCommunity.logHtmlDownload) window.UZCommunity.logHtmlDownload(a.download, url);
         a.click();
         URL.revokeObjectURL(a.href);
       }).catch(function(){ alert('Could not download  g4mes may not be fetchable.'); });
@@ -6840,7 +6842,8 @@ let DATA = {
       seraph: [],
       ckv: [],
       noah: [],
-      lumin: []
+      lumin: [],
+      onedrive: []
     };
 
     let CURRENT = [];
@@ -7644,6 +7647,10 @@ let DATA = {
       window.__renderToken = (window.__renderToken || 0) + 1; const renderToken = window.__renderToken;
       g4mesGrid.innerHTML = "";
       const pool = FILTERED.filter(g => g && g.name && g.url && g.url !== '#');
+      if (activeCat === 'onedrive' && !pool.length) {
+        g4mesGrid.innerHTML = '<div class="g4mes-card" style="grid-column:1/-1;text-align:center;padding:28px;"><img src="assets/img/onedrive.png" alt="OneDrive" style="width:72px;height:72px;object-fit:contain;margin:auto;background:#fff;border-radius:12px;padding:8px;"><h3>OneDrive</h3><p style="color:#aaa;margin:8px 0 0;">No approved OneDrive games are bundled yet.</p></div>';
+        return;
+      }
 
       if (window.__rndInt) { clearInterval(window.__rndInt); window.__rndInt = null; }
       if (window.__rndObs) { try { window.__rndObs.disconnect(); } catch(e) {} window.__rndObs = null; }
@@ -9512,6 +9519,9 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
       state.client.db.collection('staffLogs').add({ action: entry.action, detail: entry.detail, actor_id: state.user.id, actor_username: entry.by, created_at: entry.at }).catch(function(error){ debugLog('staff-log-failed', error && error.message); state.staffLogError = error && error.message || 'Shared log write failed'; status('Shared staff log could not save: ' + state.staffLogError); });
     }
   }
+  function logHtmlDownload(file, url) {
+    audit('html-download', JSON.stringify({ file: String(file || 'g4mes.html').slice(0, 160), url: String(url || '').slice(0, 500), at: new Date().toISOString() }));
+  }
   async function loadStaffLogs() {
     var local = [];
     try { local = JSON.parse(localStorage.getItem('uzAuditLog') || '[]'); } catch(e) {}
@@ -10578,7 +10588,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (target.tab) setTab(target.tab, target.channel || (target.tab === 'chat' ? 'chat' : state.channelName));
     setTimeout(function(){ var selector = target.id ? '[data-message-id="' + String(target.id).replace(/"/g, '') + '"],[data-post-id="' + String(target.id).replace(/"/g, '') + '"],[data-announcement-id="' + String(target.id).replace(/"/g, '') + '"]' : ''; var found = selector ? document.querySelector(selector) : null; if (found) { found.scrollIntoView({ behavior: 'smooth', block: 'center' }); found.classList.add('community-notification-focus'); setTimeout(function(){ found.classList.remove('community-notification-focus'); }, 1800); } }, 220);
   });
-  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, staffLogError: staffLogError, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, scrollLatest: function(){ var list = $('community-list'); if (!list) return; state.jumpToLatest = true; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; state.jumpToLatest = false; updateChatNavigation(); }); }); }, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
+  window.UZCommunity = { saveProfile: saveProfile, updateProfile: updateProfileDetails, loadStaffLogs: loadStaffLogs, staffLogError: staffLogError, logHtmlDownload: logHtmlDownload, logout: logout, refresh: refreshSession, role: role, isStaff: isStaff, runCommand: runStaffCommandTextV2, renderAnnouncements: renderAnnouncementsPanel, scrollLatest: function(){ var list = $('community-list'); if (!list) return; state.jumpToLatest = true; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; requestAnimationFrame(function(){ list.scrollTop = list.scrollHeight; state.jumpToLatest = false; updateChatNavigation(); }); }); }, openTerminal: function(){ if (window.openUZCommandPalette) window.openUZCommandPalette(); } };
   window.UZ_ACCOUNT_DEBUG.push('community-js-ready');
   window.initCommunity = function () { ensureCommunityTools(); Array.prototype.forEach.call(document.querySelectorAll('.community-tab'), function(btn){ btn.onclick = function(){ setTab(btn.dataset.communityTab, btn.dataset.communityChannel); }; }); renderChannelHeader(); refreshSession(); setTab('chat', 'chat'); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initCommunity); else window.initCommunity();
