@@ -2410,6 +2410,7 @@
 <button class="g4mes-cat" data-cat="yt"><img class="cat-logo" src="https://quantil.jsdelivr.net/gh/s0n-1m-cr1n3/sc13nc3/assets/img/youtube.png" alt="YouTube Playables" title="YouTube Playables"></button>
 <button class="g4mes-cat" data-cat="blox"><img class="cat-logo" src="https://quantil.jsdelivr.net/gh/s0n-1m-cr1n3/sc13nc3/assets/img/blox.png" alt="Blox" title="Blox"></button>
 <button class="g4mes-cat" data-cat="onedrive"><img class="cat-logo" src="https://quantil.jsdelivr.net/gh/Catchallcat5382/Unbl0ck3d-Zone-Remix-@master/assets/img/onedrive.png" alt="OneDrive" title="OneDrive"></button>
+<button class="g4mes-cat" data-cat="forked"><img class="cat-logo" src="https://github.githubassets.com/favicons/favicon.svg" alt="Forked from GitHub" title="Forked from GitHub"></button>
         <button class="g4mes-cat" data-cat="all">All</button>
 <button class="g4mes-cat" data-cat="favs" style="color:#ff4444;">&#9829; Favs</button>
         </div>
@@ -6850,7 +6851,8 @@ let DATA = {
       ckv: [],
       noah: [],
       lumin: [],
-      onedrive: []
+      onedrive: [],
+      forked: []
     };
 
     let CURRENT = [];
@@ -6876,7 +6878,8 @@ let DATA = {
       ckv: 'Chicken Kings Vault',
       noah: "Noah's Tutoring",
       lumin: 'Lumin SDK',
-      onedrive: 'OneDrive'
+      onedrive: 'OneDrive',
+      forked: 'Forked from GitHub'
     };
     function stashLabel(key) { return STASH_NAMES[key] || key || ''; }
     function tagStash(arr, key) {
@@ -6887,12 +6890,35 @@ let DATA = {
       if (DATA.onedrive.length) return;
       const image = sc13nc3Url() + '/assets/img/onedrive.png';
       const base = sc13nc3Url() + '/assets/html/onedrive/';
-      DATA.onedrive = [
-        ['Google Dino', 'googledino.html'],
-        ['Candy Crush', 'candycrush.html'],
-        ['Boxing Random', 'boxingrandom.htm'],
-        ['Drive Mad', 'drivemad.htm']
-      ].map(function(item) { return normalizeg4mes({ name: item[0], img: image, url: base + item[1] }); });
+      try {
+        const response = await fetch(base + 'zip-games.json', { cache: 'force-cache' });
+        if (!response.ok) throw new Error('ZIP game manifest request failed');
+        const catalog = await response.json();
+        DATA.onedrive = (Array.isArray(catalog) ? catalog : []).map(function(item) {
+          const url = item.local ? base + encodeURIComponent(item.file || '') : item.url;
+          return normalizeg4mes({ name: item.name, img: image, url: url, source: item.source || 'ZIP archive' });
+        }).filter(function(game) { return game.url && game.url !== '#'; });
+      } catch (error) {
+        console.warn('OneDrive game catalog failed:', error);
+        DATA.onedrive = [];
+      }
+    }
+
+    async function loadForked() {
+      if (DATA.forked.length) return;
+      const image = 'https://github.githubassets.com/favicons/favicon.svg';
+      const manifestUrl = sc13nc3Url() + '/assets/html/forked-from-github.json';
+      try {
+        const response = await fetch(manifestUrl, { cache: 'force-cache' });
+        if (!response.ok) throw new Error('GitHub game manifest request failed');
+        const catalog = await response.json();
+        DATA.forked = (Array.isArray(catalog) ? catalog : []).map(function(item) {
+          return normalizeg4mes({ name: item.name, img: image, url: item.url, source: item.source || 'Forked from GitHub' });
+        }).filter(function(game) { return game.url && game.url !== '#'; });
+      } catch (error) {
+        console.warn('Forked from GitHub catalog failed:', error);
+        DATA.forked = [];
+      }
     }
 
     async function loadUBZ() {
@@ -7403,7 +7429,8 @@ let DATA = {
           ckv: loadCKV,
           noah: loadNoah,
           lumin: loadLumin,
-          onedrive: loadOneDrive
+          onedrive: loadOneDrive,
+          forked: loadForked
         };
 
         if (cat === "favs") {
@@ -7437,7 +7464,7 @@ let DATA = {
     function ubEnsureAllGames() {
       const loaders = {
         ubz: loadUBZ, gn: loadGN, elite: loadElite, ugs: loadUGS,
-        seraph: loadSeraph, ckv: loadCKV, noah: loadNoah, lumin: loadLumin, onedrive: loadOneDrive
+        seraph: loadSeraph, ckv: loadCKV, noah: loadNoah, lumin: loadLumin, onedrive: loadOneDrive, forked: loadForked
       };
       var anyMissing = false;
       for (var k in DATA) { if (!DATA[k].length) anyMissing = true; }
