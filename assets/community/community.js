@@ -282,6 +282,7 @@
     box.innerHTML = '<div class="community-auth"><p>' + signed + '</p><p>Role: <b>' + esc(role()) + '</b></p><p>Pick a channel on the left. Open member cards to view profiles. Owners can adjust roles in Members.</p>' + review + '</div>';
     var reviewButton = $('community-review-appeals'); if (reviewButton) reviewButton.onclick = openAppealReview;
     Array.prototype.forEach.call(document.querySelectorAll('.community-staff-tab,.community-staff-only'), function(btn){ btn.classList.toggle('community-hidden', !isStaff()); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-owner-only]'), function(btn){ btn.classList.toggle('community-hidden', !isRealOwner()); });
   }
   function proofMarkup(appeal) {
     var image = String(appeal.proof_image || '').trim();
@@ -1129,6 +1130,36 @@
   }
   function wirePostActions(rows) { Array.prototype.forEach.call(document.querySelectorAll('.community-copy-post'), function(btn){ btn.onclick = function(){ var row = postById(rows, btn.dataset.postId); if (!row) return; navigator.clipboard.writeText(stripPostChannel(row.title || '') + '\n\n' + (row.body || '')).then(function(){ notifySaved('Post copied'); }).catch(function(){ status('Could not copy post.'); }); }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-edit-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canEditPost(row)) return; var title = prompt('Post title', stripPostChannel(row.title || '')); if (title == null) return; var body = prompt('Post body', row.body || ''); if (body == null) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).set({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }, { merge: true }); audit('post-edit', row.id); notifySaved('Post updated'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').update({ title: '[' + state.channelName + '] ' + title.trim(), body: body.trim(), updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post updated'); loadItems(); } }; }); Array.prototype.forEach.call(document.querySelectorAll('.community-delete-post'), function(btn){ btn.onclick = async function(){ var row = postById(rows, btn.dataset.postId); if (!row || !canDeletePost(row)) return; if (!confirm('Delete this post?')) return; initClient(); if (firebaseMode) { try { await state.client.db.collection('posts').doc(String(row.id)).delete(); purgeRemoteNotifications(row.id); audit('post-delete', row.id); notifySaved('Post deleted'); loadItems(); } catch(e) { status(e.message); } return; } var res = await state.client.from('posts').delete().eq('id', row.id); if (res.error) status(res.error.message); else { notifySaved('Post deleted'); loadItems(); } }; }); }
   function messageById(rows, id) { return rows.filter(function(r){ return String(r.id) === String(id); })[0]; }
+  function beginMessageEdit(row) {
+    var root = document.querySelector('[data-message-id="' + String(row.id).replace(/"/g, '') + '"]');
+    var bodyEl = root && root.querySelector('.community-body');
+    if (!root || !bodyEl || root.querySelector('.community-inline-edit')) return;
+    var editor = document.createElement('div'); editor.className = 'community-inline-edit';
+    var area = document.createElement('textarea'); area.className = 'community-inline-edit-input'; area.value = String(row.body || ''); area.rows = 3;
+    var bar = document.createElement('div'); bar.className = 'community-inline-edit-bar';
+    var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'community-btn secondary'; cancel.textContent = 'Cancel';
+    var save = document.createElement('button'); save.type = 'button'; save.className = 'community-btn'; save.textContent = 'Save';
+    var hint = document.createElement('span'); hint.className = 'community-inline-edit-hint'; hint.textContent = 'Ctrl+Enter to save';
+    bar.appendChild(hint); bar.appendChild(cancel); bar.appendChild(save); editor.appendChild(area); editor.appendChild(bar);
+    bodyEl.style.display = 'none'; editor.dataset.originalBody = String(row.body || ''); root.appendChild(editor);
+    var actions = root.querySelector('.community-message-actions'); if (actions) actions.style.display = 'none';
+    var close = function(){ editor.remove(); bodyEl.style.display = ''; if (actions) actions.style.display = ''; };
+    var commit = async function(){
+      var body = area.value.trim(); if (!body) { status('Message cannot be empty.'); area.focus(); return; }
+      if (hasBadWord(body)) { status('Blocked word found. This edit will not save.'); return; }
+      save.disabled = true;
+      try {
+        initClient();
+        if (firebaseMode) await state.client.db.collection('messages').doc(String(row.id)).set({ body: body, updated_at: new Date().toISOString() }, { merge: true });
+        else if (mongoMode) await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'PATCH', body: JSON.stringify({ body: body }) });
+        else { var result = await state.client.from('chat_messages').update({ body: body, updated_at: new Date().toISOString() }).eq('id', row.id); if (result.error) throw result.error; }
+        audit('message-edit', row.id); notifySaved('Message edited'); close(); loadItems();
+      } catch(e) { save.disabled = false; status(e.message || 'Message edit failed.'); }
+    };
+    cancel.onclick = close; save.onclick = commit;
+    area.addEventListener('keydown', function(event){ if (event.key === 'Escape') { event.preventDefault(); close(); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); commit(); } });
+    area.focus(); area.setSelectionRange(area.value.length, area.value.length);
+  }
   function wireMessageActions(rows) {
     Array.prototype.forEach.call(document.querySelectorAll('.community-reply-message'), function(btn){ btn.onclick = function(){
       var row = messageById(rows, btn.dataset.messageId), input = $('community-chat-input'); if (!row || !input) return;
@@ -1136,7 +1167,7 @@
       state.replyTo = { id: row.id, username: name, name: profile.display_name || name, body: String(row.body || '').replace(/\s+/g, ' ').slice(0, 100) };
       updateReplyPreview(); input.focus();
     }; });
-    Array.prototype.forEach.call(document.querySelectorAll('.community-edit-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canEditMessage(row)) return; var body = prompt('Edit message', row.body || ''); if (body == null) return; body = body.trim(); if (!body) return; if (hasBadWord(body)) { status('Blocked word found. This edit will not save.'); return; } if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ body: body, updated_at: new Date().toISOString() }, { merge: true }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'PATCH', body: JSON.stringify({ body: body }) }); audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } catch(e) { status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ body: body, updated_at: new Date().toISOString() }).eq('id', row.id); if (res.error) status(res.error.message); else { audit('message-edit', row.id); notifySaved('Message edited'); loadItems(); } }; });
+    Array.prototype.forEach.call(document.querySelectorAll('.community-edit-message'), function(btn){ btn.onclick = function(){ var row = messageById(rows, btn.dataset.messageId); if (row && canEditMessage(row)) beginMessageEdit(row); }; });
     Array.prototype.forEach.call(document.querySelectorAll('.community-delete-message'), function(btn){ btn.onclick = async function(){ var row = messageById(rows, btn.dataset.messageId); if (!row || !canDeleteMessage(row)) return; if (!confirm('Delete this message? It remains visible in this tab until you refresh or leave.')) return; state.recentlyDeletedMessages[String(row.id)] = true; var auditDetail = String(row.id) + ': ' + String(row.deleted_body || row.body || '').slice(0, 900); if (firebaseMode) { try { await state.client.db.collection('messages').doc(String(row.id)).set({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }, { merge: true }); purgeRemoteNotifications(row.id); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } if (mongoMode) { try { await mongoFetch('/messages/' + encodeURIComponent(row.id), { method: 'DELETE' }); audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } catch(e) { delete state.recentlyDeletedMessages[String(row.id)]; status(e.message); } return; } initClient(); var res = await state.client.from('chat_messages').update({ deleted_at: new Date().toISOString(), deleted_body: row.deleted_body || row.body, body: '[deleted]' }).eq('id', row.id); if (res.error) { delete state.recentlyDeletedMessages[String(row.id)]; status(res.error.message); } else { audit('message-delete', auditDetail); notifySaved('Message deleted'); loadItems(); } }; });
   }
   function jumpToMessage(id) {
