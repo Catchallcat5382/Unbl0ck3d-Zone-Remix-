@@ -6086,11 +6086,29 @@ function injectg4mesAudio(fw, doc) {
 
     function prepareg4mesHTML(html, url) {
       var base = url.replace(/[^/]*$/, '');
+      var compatibilityBridge = '<scr' + 'ipt>(function(){try{if(window.parent && typeof window.parent.maeExportApis_ !== "function") window.parent.maeExportApis_=function(){};}catch(e){}})();</scr' + 'ipt>';
       if (!/<base\b/i.test(html)) {
-        html = html.replace(/<head(.*?)>/i, '<head$1><base href="' + base + '">');
+        var baseTag = '<base href="' + base.replace(/"/g, '&quot;') + '">';
+        if (/<head\b/i.test(html)) {
+          html = html.replace(/<head(.*?)>/i, '<head$1>' + baseTag + compatibilityBridge);
+        } else if (/<html\b/i.test(html)) {
+          // A lot of compact game builds omit <head>; without a base tag,
+          // every relative script, image, and data file points at about:blank.
+          html = html.replace(/<html([^>]*)>/i, '<html$1><head>' + baseTag + compatibilityBridge + '</head>');
+        } else {
+          html = baseTag + compatibilityBridge + html;
+        }
+      } else if (/<head\b/i.test(html)) {
+        html = html.replace(/<head(.*?)>/i, '<head$1>' + compatibilityBridge);
+      } else {
+        html = compatibilityBridge + html;
       }
-      html = html.replace(/https?:\/\/[^/]*\.jsdelivr\.net\//g, _cdn + '/');
-      if (_cdn.indexOf('cdn.staticdelivr.com') !== -1) html = html.replace(/@/g, '/');
+      // Preserve the source pack's CDN URLs. Rewriting them through the
+      // custom mirror can return stale or incomplete asset responses.
+      if (!/^https?:\/\/raw\.githubusercontent\.com\//i.test(String(url || ''))) {
+        html = html.replace(/https?:\/\/[^/]*\.jsdelivr\.net\//g, _cdn + '/');
+        if (_cdn.indexOf('cdn.staticdelivr.com') !== -1) html = html.replace(/@/g, '/');
+      }
       // Drop the YouTube Playables SDK: without a real host it mutes audio and nulls storage in an iframe.
       html = html.replace(/<script[^>]*?\bsrc=["'][^"']*ytg4mes[^"']*\.js[^"']*["'][^>]*>\s*<\/script>/gi, '');
       var ytStub = '<scr' + 'ipt>(function(){try{if(typeof window.ytg4mes==="undefined"){window.ytg4mes={IN_PLAYABLES_ENV:false,system:{isAudioEnabled:function(){return true;},onAudioEnabledChange:function(cb){if(typeof cb==="function"){try{setTimeout(function(){cb(true);},0);}catch(e){}}},getLanguage:function(){return Promise.resolve("en");}},g4mes:{firstFrameReady:function(){},g4mesReady:function(){},saveData:function(){return Promise.resolve(null);},loadData:function(){return Promise.resolve(null);}},engagement:{sendScore:function(){return Promise.resolve(null);}}};}}catch(e){}})();</scr' + 'ipt>';
