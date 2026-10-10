@@ -9524,6 +9524,22 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     members: { tab: 'members', label: 'members', title: 'Members', note: 'Profiles and role hierarchy.' }
   };
   function $(id) { return document.getElementById(id); }
+  function enableBrowserLanguageHints(root) {
+    var selector = 'textarea, input[type="text"], input:not([type]), [contenteditable="true"]';
+    var fields = [];
+    if (root && root.matches && root.matches(selector)) fields.push(root);
+    if (root && root.querySelectorAll) fields = fields.concat(Array.prototype.slice.call(root.querySelectorAll(selector)));
+    fields.forEach(function(el) {
+      if (!el || el.disabled || el.readOnly || el.matches('[data-language-hints="off"], #uz-command-input, #uz-cmd-user, #uz-cmd-reason')) return;
+      el.spellcheck = true;
+      if (!el.getAttribute('lang')) el.setAttribute('lang', document.documentElement.lang || 'en-US');
+      el.setAttribute('autocorrect', 'on');
+      el.setAttribute('autocapitalize', 'sentences');
+    });
+  }
+  window.UZEnableBrowserLanguageHints = enableBrowserLanguageHints;
+  enableBrowserLanguageHints(document);
+  document.addEventListener('focusin', function(event) { enableBrowserLanguageHints(event.target); }, true);
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function when(ts) { try { return new Date(ts).toLocaleString(); } catch (e) { return ''; } }
   function status(msg) { var el = $('community-status'); if (el) el.textContent = msg || ''; }
@@ -9910,6 +9926,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var titlePh = state.channelName === 'settings' ? 'Preset name' : (state.channelName === 'suggestions' ? 'Suggestion title' : 'Thread title');
     var bodyPh = state.channelName === 'settings' ? 'Describe this settings preset, or press Attach settings.' : 'Post text, links, updates, settings, images, or files.';
     post.innerHTML = postOk ? '<div class="community-post-composer"><input id="community-post-title" maxlength="120" placeholder="' + titlePh + '"><textarea id="community-post-body" maxlength="7000" placeholder="' + bodyPh + '"></textarea><div class="community-composer-actions"><button class="community-btn secondary" id="community-attach-settings" type="button">Attach settings</button><label class="community-file-label">Upload file<input id="community-file-input" type="file"></label><span class="community-attachment-choice" id="community-file-choice">No file selected</span><button class="community-btn" id="community-send-post">Publish</button></div></div>' : '<div class="community-message community-locked">' + postAllowedMessage() + '</div>';
+    enableBrowserLanguageHints(chat); enableBrowserLanguageHints(post);
     var sendChat = $('community-send-chat'); if (sendChat) sendChat.onclick = sendMessageV2;
     var chatFile = $('community-chat-file-input'); if (chatFile) chatFile.onchange = attachFileToChat;
     var sendPost = $('community-send-post'); if (sendPost) sendPost.onclick = sendPostMessage;
@@ -10177,6 +10194,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     if (!compose) return;
     if (!(state.user && isStaff())) { compose.innerHTML = '<div class="community-message community-locked">Mod, admin, or owner required to publish announcements.</div>'; return; }
     compose.innerHTML = announcementComposerMarkup();
+    enableBrowserLanguageHints(compose);
     showAttachmentQueue('announcement-file-choice', state.pendingAnnouncementAttachments);
     var file = $('announcement-file-input'); if (file) file.onchange = attachAnnouncementFileV2;
     var send = $('announcement-send'); if (send) send.onclick = publishAnnouncementV2;
@@ -10608,6 +10626,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var id = String(row.id);
     state.pendingPostEdits[id] = row.attachment || null;
     card.innerHTML = postEditorMarkup(row, state.pendingPostEdits[id]);
+    enableBrowserLanguageHints(card);
     var file = card.querySelector('.community-post-edit-file');
     if (file) file.onchange = async function(e) { try { state.pendingPostEdits[id] = await fileToImageAttachment(e.target.files && e.target.files[0]); card.querySelector('.community-post-edit-choice').textContent = 'Ready: ' + attachmentName(state.pendingPostEdits[id]); } catch(error) { status(error.message || 'File upload failed.'); } };
     var remove = card.querySelector('.community-post-edit-remove-image'); if (remove) remove.onclick = function(){ state.pendingPostEdits[id] = null; card.querySelector('.community-post-edit-choice').textContent = 'No file selected'; remove.remove(); };
@@ -10648,6 +10667,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var hint = document.createElement('span'); hint.className = 'community-inline-edit-hint'; hint.textContent = 'Ctrl+Enter to save';
     bar.appendChild(hint); bar.appendChild(cancel); bar.appendChild(save); editor.appendChild(area); editor.appendChild(bar);
     bodyEl.style.display = 'none'; editor.dataset.originalBody = String(row.body || ''); root.appendChild(editor);
+    enableBrowserLanguageHints(editor);
     var actions = root.querySelector('.community-message-actions'); if (actions) actions.style.display = 'none';
     var close = function(){ editor.remove(); bodyEl.style.display = ''; if (actions) actions.style.display = ''; };
     var commit = async function(){
@@ -11581,6 +11601,7 @@ window.UZ_ACCOUNT_DEBUG.push('config-loaded:' + window.UZ_COMMUNITY_CONFIG.mongo
     var switchButton = temporary ? '' : switchAccountsHtml(username);
     var deleteButton = temporary ? '' : '<button class="community-btn danger" id="uz-profile-delete">Delete account</button>';
     mount.innerHTML = '<button class="uz-profile-chip" id="uz-profile-toggle"><span class="uz-profile-avatar">' + (avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(name.charAt(0).toUpperCase() || 'P')) + '</span><span>' + esc(name) + '</span></button><div class="uz-profile-panel" id="uz-profile-panel"><label>Display name</label><input id="uz-profile-name" maxlength="24" value="' + esc(savedName) + '" placeholder="Choose a name"' + disabled + '><label>Image URL</label><input id="uz-profile-avatar" value="' + esc(avatar) + '" placeholder="https://..."' + disabled + '><label class="community-file-label">Upload profile image<input id="uz-profile-avatar-file" type="file" accept="image/*"' + disabled + '></label><span class="uz-profile-upload-note" id="uz-profile-upload-note">Images are resized before saving.</span><div class="community-row"><button class="community-btn" id="uz-profile-save"' + disabled + '>Save</button><button class="community-btn secondary" id="uz-profile-open" type="button">Expand profile settings</button><button class="community-btn secondary" id="uz-profile-logout">Log out</button></div>' + switchButton + passwordTools + deleteButton + readonlyNote + '<p>Account: <b>' + esc(username || 'Not signed in') + '</b></p><p>Role: <b>' + esc(owner ? 'owner' : 'member') + '</b></p></div>';
+    if (window.UZEnableBrowserLanguageHints) window.UZEnableBrowserLanguageHints(mount);
     document.getElementById('uz-profile-toggle').onclick = function () { document.getElementById('uz-profile-panel').classList.toggle('open'); };
     var openProfile = document.getElementById('uz-profile-open');
     if (openProfile) openProfile.onclick = function () { openProfileSettings(username, name, avatar, owner, temporary); };
