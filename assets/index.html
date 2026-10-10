@@ -4596,11 +4596,19 @@
       if (mode !== 'custom' && mode !== 'gradient') clearWallpaperMedia();
     }
     var savedBgModeBeforeg4mes = null;
+    var savedBgAudioBeforeg4mes = null;
     var bgSuspended = false;
     function pauseBackgrounds() {
       if (savedBgModeBeforeg4mes === null) {
         try { savedBgModeBeforeg4mes = localStorage.getItem('bgMode') || 'starfield'; } catch (e) { savedBgModeBeforeg4mes = 'starfield'; }
         try { setBackground('perf-static', true); } catch (e) {}
+      }
+      if (savedBgAudioBeforeg4mes === null) {
+        try {
+          var backgroundAudio = document.getElementById('bg-music');
+          savedBgAudioBeforeg4mes = backgroundAudio ? { paused: backgroundAudio.paused, muted: backgroundAudio.muted, volume: backgroundAudio.volume } : { paused: true };
+          if (backgroundAudio && !backgroundAudio.paused) backgroundAudio.pause();
+        } catch (e) { savedBgAudioBeforeg4mes = { paused: true }; }
       }
       document.documentElement.classList.add('g4mes-open');
       bgSuspended = true;
@@ -4610,6 +4618,16 @@
       document.documentElement.classList.remove('g4mes-open');
       try { setBackground(savedBgModeBeforeg4mes, true); } catch (e) {}
       savedBgModeBeforeg4mes = null;
+      try {
+        var audioState = savedBgAudioBeforeg4mes;
+        var backgroundAudio = document.getElementById('bg-music');
+        if (audioState && backgroundAudio) {
+          backgroundAudio.muted = !!audioState.muted;
+          if (typeof audioState.volume === 'number') backgroundAudio.volume = audioState.volume;
+          if (!audioState.paused && !window.__perfMode) backgroundAudio.play().catch(function() {});
+        }
+      } catch (e) {}
+      savedBgAudioBeforeg4mes = null;
       bgSuspended = false;
     }
     function bgShouldRun() {
@@ -5749,6 +5767,9 @@
     }
 
     function makeCdnFriendly(url) {
+      // Keep raw GitHub game files on their source origin so relative assets
+      // resolve correctly and the custom mirror cannot serve a stale copy.
+      if (/^https?:\/\/raw\.githubusercontent\.com\//i.test(String(url || ''))) return url;
       const rawMatch = url.match(/^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.+)/);
       if (rawMatch) {
         var base = _cdn + '/gh/' + rawMatch[1] + '/' + rawMatch[2];
@@ -6105,9 +6126,9 @@ if (/<head/i.test(html)) html = html.replace(/<head([^>]*)>/i, '<head$1>' + ytSt
         showg4mesError(currentg4mesName);
         return;
       }
-      fetch(url, { method: 'HEAD' })
-        .then(function(r) { return r.ok ? fetch(url) : Promise.reject(new Error('head-failed')); })
-        .catch(function() { return fetch(url); })
+      // Fetch the document once. A HEAD probe is unreliable on raw GitHub
+      // and some school-network mirrors reject it even when GET is allowed.
+      fetch(url)
         .then(function(r) { if (!r.ok) throw new Error('get-failed'); return r.text(); })
         .then(function(html) {
           var embed = extractEmbedg4mes(html, url);
